@@ -223,6 +223,9 @@ public:
 
     Copter(void);
 
+    void send_generator_status(const GCS_MAVLINK &channel);
+
+
 private:
 
     // key aircraft parameters passed to multiple libraries

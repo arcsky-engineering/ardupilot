@@ -743,6 +743,24 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
+    // @Param: GEN_FUEL_PCT
+    // @DisplayName: Generator fuel percentage setting
+    // @Description: Set starting fuel percentage or adjust it after startup
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 100
+    // @Increment: 1
+    GSCALAR(gen_fuel_pct,  "GEN_FUEL_PCT",  100),
+
+    // @Param: GEN_F_SCALE
+    // @DisplayName: Generator energy to fuel scale adjustment
+    // @Description: Modify scaling of generator energy usage
+    // @User: Standard
+    // @Units: none
+    // @Range: -2.0 2.0
+    // @Increment: 0.0001
+    GSCALAR(gen_f_scale,  "GEN_F_SCALE",  1.0),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),

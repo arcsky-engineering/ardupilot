@@ -170,3 +170,7 @@ enum LoggingParameters {
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
 #define THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND (1<<1)
 #define THR_BEHAVE_DISARM_ON_LAND_DETECT (1<<2)
+
+// DEFINES FOR GENERATOR STUFF
+#define GEN_ENERGY_THRESH_KJ 10000.0 // number of kJ in the full tank
+#define GEN_ENERGY_MAX_KJ 20000.0 // max number of kJ to log up to

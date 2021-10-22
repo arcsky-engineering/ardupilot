@@ -48,6 +48,8 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 
+#include <../ArduCopter/Copter.h>
+
 #include <stdio.h>
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -4751,11 +4753,12 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 void GCS_MAVLINK::send_generator_status() const
 {
 #if GENERATOR_ENABLED
-    AP_Generator *generator = AP::generator();
-    if (generator == nullptr) {
-        return;
-    }
-    generator->send_generator_status(*this);
+//    AP_Generator *generator = AP::generator();
+//    if (generator == nullptr) {
+//        return;
+//    }
+    //generator->send_generator_status(*this);
+    copter.send_generator_status(*this);
 #endif
 }
 
