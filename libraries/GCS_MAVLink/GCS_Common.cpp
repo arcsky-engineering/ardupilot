@@ -48,6 +48,9 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 
+// test
+#include <../ArduCopter/Copter.h>
+
 #include <stdio.h>
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -4755,7 +4758,8 @@ void GCS_MAVLINK::send_generator_status() const
     if (generator == nullptr) {
         return;
     }
-    generator->send_generator_status(*this);
+    //generator->send_generator_status(*this);
+    copter.send_generator_status(*this);
 #endif
 }
 

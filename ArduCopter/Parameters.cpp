@@ -737,6 +737,24 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(throw_motor_start, "THROW_MOT_START", (float)ModeThrow::PreThrowMotorState::STOPPED),
 #endif
 
+    // @Param: GEN_FUEL_PCT
+    // @DisplayName: Generator fuel percentage setting
+    // @Description: Set starting fuel percentage or adjust it after startup
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 100
+    // @Increment: 1
+    GSCALAR(gen_fuel_pct,  "GEN_FUEL_PCT",  100),
+
+    // @Param: GEN_F_SCALE
+    // @DisplayName: Generator energy to fuel scale adjustment
+    // @Description: Modify scaling of generator energy usage
+    // @User: Standard
+    // @Units: none
+    // @Range: -2.0 2.0
+    // @Increment: 0.0001
+    GSCALAR(gen_f_scale,  "GEN_F_SCALE",  1.0),
+
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     // @Group: OSD
     // @Path: ../libraries/AP_OSD/AP_OSD.cpp
