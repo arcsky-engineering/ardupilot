@@ -1,11 +1,14 @@
+#include <AP_SerialManager/AP_SerialManager.h>
 #include "Copter.h"
 
-extern const AP_HAL::HAL& hal;
+//TODO - calculate current difference between the generator current and the system current
 
-// adding this to access voltage from battery monitoring
+
+// used for analog stuff only
+//extern const AP_HAL::HAL& hal;
+
+// adding this to access voltage and current from battery monitoring
 const AP_BattMonitor &battery = AP::battery();
-
-AP_HAL::AnalogSource* chan;    //delare a pointer to AnalogSource object. AnalogSource class can be found in : AP_HAL->AnalogIn.h
 
 // reported mode from the generator:
 enum GenMode {
@@ -19,7 +22,7 @@ enum GenMode {
 // un-packed data from the generator:
 struct Reading {
     uint32_t    runtime; //seconds
-    uint32_t    seconds_until_maintenance;
+    int32_t    seconds_until_maintenance;
     uint16_t    errors;
     uint16_t    rpm;
     float       output_voltage;
@@ -27,6 +30,10 @@ struct Reading {
     GenMode     mode;
     float 		pwrIntegral;
     float		pwrGenerated;
+    float		batt_current;
+    float 		batt_current_setpoint;
+    int16_t		rectTemp;
+    int16_t		genTemp;
 };
 
 // declare some variables to use
@@ -46,44 +53,45 @@ float runTimeSec;
 
 float energyScaleFact;
 
-uint16_t genRadioCmd;
-uint16_t lastGenRadioCmd;
+//uint16_t genRadioCmd;
+//uint16_t lastGenRadioCmd;
 uint16_t genCmdOut;
 
 uint64_t status;
+
+GenMode currentGenMode = IDLE;
+
+AP_HAL::UARTDriver *uart;
+
+uint8_t RxBuf[36] = {0};
+// number of bytes currently in the buffer
+uint8_t body_length;
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
-    // put your initialisation code here
-    // this will be called once at start-up
-    // initialize analog channel for reading external current sensor on ADC port
-    chan = hal.analogin->channel(15);    //initialization of chan variable. AnalogIn class can be found in : AP_HAL->AnalogIn.h
 
-    chan->set_pin(15);
+	// initialize the serial manager, according to how it's done in RichenPower
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
+    if (uart != nullptr) {
+        //const uint32_t baud = serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0);
+        //uart->begin(baud, 256, 256);
+        // try 57600 directly
+        uart->begin(57600,256,256);
+    }
+
 
     startingFuelPct = (uint8_t)(g.gen_fuel_pct);
 
     energyScaleFact = g.gen_f_scale;
 
-    runTimeMsLast = AP_HAL::millis();
-    runTimeActive = 0;
-    runTimeSec = 0.0;
-
     status = 0;
 
     // set output to be "OFF" initially for the generator
-    genCmdOut = 998;
-    lastGenRadioCmd = 998;
-//#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    //BoardConfig.init();
-//#endif
-    //hal.rcout->enable_ch(10);
-//
-    //hal.rcout->write(10, genCmdOut);
-   // hal.rcout->push();
+    genCmdOut = 1000;
+    SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
 }
 #endif
 
@@ -98,261 +106,159 @@ void Copter::userhook_FastLoop()
 void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
-    // put your 50Hz code here
-	// update the readings here
 
-	if(ap.rc_receiver_present)
+	// check for vehicle arm state
+	if(AP::arming().is_armed())
 	{
-//		//gcs().send_text(MAV_SEVERITY_INFO, "rcv pres");
-		if (!(failsafe.radio))
+		if (currentGenMode != RUN)
 		{
-			// update previous value
-			lastGenRadioCmd = genRadioCmd;
-
-			// read the user-commanded status of channel 9 [0 index based]
-			genRadioCmd = hal.rcin->read(8); // actually channel 9
-
-			// update output to match it
-			genCmdOut = genRadioCmd;
-
-		} // if (!(failsafe.radio))
-		else
-		{
-			// there was a radio failsafe
-			genCmdOut = lastGenRadioCmd;
-		} // else - from if (!(failsafe.radio))
-	} // if the receiver was detected to be present in the system
-
-
-	// update the output to the G3 setup
-	//hal.rcout->write(10, genCmdOut);
-	//hal.rcout->push();
-	SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, genCmdOut);
-
-
-	// set mode based on the value
-	if ((genCmdOut > 900) && (genCmdOut < 1200))
-	{
-		last_reading.mode = OFF;
-	}
-	else if ((genCmdOut > 1200)&&(genCmdOut < 1700))
-	{
-		last_reading.mode = IDLE;
-	}
-	else if ((genCmdOut > 1700)&&(genCmdOut < 2300))
-	{
-		last_reading.mode = RUN;
+			currentGenMode = RUN;
+			// set pwm output
+			genCmdOut = 2000;
+			SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+		}
 	}
 	else
 	{
-		last_reading.mode = OFF;
-	}
+		// not armed
+		if (currentGenMode != IDLE)
+		{
+			currentGenMode = IDLE;
+			// set pwm output
+			genCmdOut = 1000;
+			SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+		}
+	} // else - from if vehicle was armed
 
 
-	runTimeDt = 0.0;
-	if (((last_reading.mode == IDLE) || (last_reading.mode == RUN))&&(runTimeActive))
-	{
-		 runTimeDt = (float)(AP_HAL::millis() - runTimeMsLast) * 0.001; // convert to seconds (dt)
-		 runTimeMsLast = AP_HAL::millis();
-	}
-	else if (((last_reading.mode == IDLE) || (last_reading.mode == RUN))&&(!runTimeActive))
-	{
-		runTimeMsLast = AP_HAL::millis();
-		runTimeActive = 1;
-	}
-	else if ((last_reading.mode == OFF)&&(runTimeActive))
-	{
-		runTimeActive = 0;
-	}
+	// check for UART and process it into data, populate last_reading structure
 
-	// temporary - just counting seconds from boot up of flight controller with this
-    //last_reading.runtime = (uint32_t)(AP_HAL::millis()*0.001);
+	(void)get_reading();
+//
+//	// try UART stuff
+//
+//	uint32_t nbytes = uart->read(RxBuf, 36);
+//	if(nbytes>0)
+//	{
+//		gcs().send_text(MAV_SEVERITY_INFO, "Read UART bytes: %d",(uint8_t)nbytes);
+//	}
+//
+//	if (nbytes >= 36)
+//	{
+//		// we have read at least a full packet
+//		//gcs().send_text(MAV_SEVERITY_INFO, "Read UART bytes: %d",tempBuf[1]);
+//
+//		// transmit back
+//		uart->printf("Byte %d\n",RxBuf[0]);
+//		//uart->write(tempBuf, 4);
+//	}
 
-
-	// using measured RC IN values
-	runTimeSec += runTimeDt;
-    last_reading.runtime = (uint32_t)(runTimeSec);
-
-
-    last_reading.seconds_until_maintenance = (uint32_t)(AP_HAL::millis()*0.001);
-
-    // temporary - just setting errors to 0
-    uint16_t errors;
-    errors = 0;
-    last_reading.errors = errors;
-
-    // temporary - just setting rpm to arbitrary number
-
-    // TODO - base it on run state
-    uint16_t rpmTemp;
-
-    switch(last_reading.mode)
-    {
-    case GenMode::OFF:
-    	rpmTemp = 0;
-    	break;
-    case GenMode::IDLE:
-    	rpmTemp = 3000;
-    	break;
-    case GenMode::RUN:
-    	rpmTemp = 14000;
-    	break;
-    default:
-    	rpmTemp = 5000;
-    	break;
-    } // switch(last_reading.mode)
-
-//    rpmTemp = 12000;
-    last_reading.rpm = rpmTemp;
+	last_reading.mode = currentGenMode;
 
     // get voltage from battery monitor
-    last_reading.output_voltage = battery.voltage();
-
-    //last_reading.output_voltage = 51.0;
-
-    //gcs().send_text(MAV_SEVERITY_CRITICAL, "GEN update %.2f",last_reading.output_voltage);
-
-    // get analog reading and convert it to current
-	float I_vm  = chan->voltage_average();
-	I_vm = I_vm/2.0; // scale voltage according to the documentation (it is multiplied by 2)
-
-	//gcs().send_text(MAV_SEVERITY_CRITICAL, "GEN update %.2f",I_vm);
-
-	float cur_local;
-	// scale into current
-	//cur_local = (I_vm*0.000805664 - 0.5) * 16.667;
-	// NOTE**
-	// Original PX4 version was scaling the ADC to 5V equivalent (I think).
-	// now, it's scaled (from above) to 3.3V equivalent. The 16.667 was from
-	// the PX4 version, but now I need to scale it back up to match the 5V version.
-	// This is why there is the 1.515151 factor (5V/3.3V)
-	cur_local = (I_vm - 0.5) * 16.667 * 1.515151;// * energyScaleFact;
-
-	if (cur_local < 0.0)
+    //last_reading.output_voltage = battery.voltage();
+	float tempCur;
+    if(battery.current_amps(tempCur))
 	{
-		cur_local = 0.0;
+    	last_reading.batt_current = tempCur - last_reading.output_current;
 	}
+    else
+    {
+    	last_reading.batt_current = 0;
+    }
 
-	// filter it
-	last_reading.output_current = lastCurrent * 0.7 + cur_local * 0.3;
-
-	if (last_reading.output_current < 0.5)
-	{
-		// cap it to zero
-		last_reading.output_current = 0.0;
-	}
-
-	lastCurrent = last_reading.output_current;
-
-	last_reading_ms = AP_HAL::millis();
-
-//	uint8_t tempMode = 0x01; // RUN
-//    last_reading.mode = (GenMode)tempMode;
-
-    // calculate instantaneous power
-
-    // TEMP!!
-    //last_reading.output_voltage = 51.2;
-
-    last_reading.pwrGenerated = last_reading.output_current * last_reading.output_voltage;
-
-    // *************************************************************************************************
-    // *********** ENERGY INTEGRAL CALCULATION *********************************************************
-    // *************************************************************************************************
-
-	float dt;
-
-	if (!timeCaptured)
-	{
-		timeCaptured = 1;
-
-		dt = 0.0;
-		lastMs = AP_HAL::millis();
-	}
-	else
-	{
-		// we got the value once already
-		dt = ((float)(AP_HAL::millis() - lastMs)) * 0.001; // convert to seconds
-		// update previous time
-		lastMs = AP_HAL::millis();
-	}
-
-	if (last_reading.pwrIntegral > GEN_ENERGY_MAX_KJ)
-	{
-		last_reading.pwrIntegral = GEN_ENERGY_MAX_KJ;
-	}
-	else
-	{
-		last_reading.pwrIntegral += last_reading.pwrGenerated * dt * 0.001; // converting to kJ
-	}
-
-
+//    // *************************************************************************************************
+//    // *********** ENERGY INTEGRAL CALCULATION *********************************************************
+//    // *************************************************************************************************
+//
+//	float dt;
+//
+//	if (!timeCaptured)
+//	{
+//		timeCaptured = 1;
+//
+//		dt = 0.0;
+//		lastMs = AP_HAL::millis();
+//	}
+//	else
+//	{
+//		// we got the value once already
+//		dt = ((float)(AP_HAL::millis() - lastMs)) * 0.001; // convert to seconds
+//		// update previous time
+//		lastMs = AP_HAL::millis();
+//	}
+//
+//	if (last_reading.pwrIntegral > GEN_ENERGY_MAX_KJ)
+//	{
+//		last_reading.pwrIntegral = GEN_ENERGY_MAX_KJ;
+//	}
+//	else
+//	{
+//		last_reading.pwrIntegral += last_reading.pwrGenerated * dt * 0.001; // converting to kJ
+//	}
+//
+//    // *************************************************************************************************
+//    // *********** END OF ENERGY INTEGRAL CALCULATION **************************************************
+//    // *************************************************************************************************
+//
+//
+//	fuelPctLocal = (float)(startingFuelPct) - last_reading.pwrIntegral / (GEN_ENERGY_THRESH_KJ * energyScaleFact) * 100.0;
+//
+//	fuelPctLocal /= 100.0; // to keep within 0 and 1 bounds that is expected
+//
+//	if (fuelPctLocal > 100.0)
+//	{
+//		fuelPctLocal = 100.0;
+//	}
+//
+//	if (fuelPctLocal < 0.0)
+//	{
+//		fuelPctLocal = 0.0;
+//	}
 
 
-    // *************************************************************************************************
-    // *********** END OF ENERGY INTEGRAL CALCULATION **************************************************
-    // *************************************************************************************************
-
-
-
-	fuelPctLocal = (float)(startingFuelPct) - last_reading.pwrIntegral / (GEN_ENERGY_THRESH_KJ * energyScaleFact) * 100.0;
-
-	fuelPctLocal /= 100.0; // to keep within 0 and 1 bounds that is expected
-
-	if (fuelPctLocal > 100.0)
-	{
-		fuelPctLocal = 100.0;
-	}
-
-	if (fuelPctLocal < 0.0)
-	{
-		fuelPctLocal = 0.0;
-	}
-
-
-
-	static uint8_t counterSend = 0;
-	static uint8_t counter1 = 25;
-	counter1++;
-	if (counter1 > 100) {
-	    counter1 = 0;
-		//temp
-	    uint8_t fuelPctAdj;
-	    fuelPctAdj = (uint8_t)(g.gen_fuel_pct);
-	    if (fuelPctAdj != startingFuelPct)
-	    {
-	    	// re-adjust and reset power integral
-	    	startingFuelPct = fuelPctAdj;
-	    	last_reading.pwrIntegral = 0;
-	    }
-
-	    float tempScaleFact;
-	    tempScaleFact = (float)(g.gen_f_scale);
-	    float diffScaleFac;
-	    diffScaleFac = tempScaleFact - energyScaleFact;
-	    if(diffScaleFac < 0.0)
-	    {
-	    	diffScaleFac = -diffScaleFac;
-	    }
-
-	    if(diffScaleFac > 0.0001)
-	    {
-	    	energyScaleFact = tempScaleFact;
-	    }
-
-	    // display output to console
-
-	    if(counterSend < 30)
-	    {
-	    	counterSend++;
-	    }
-	    else
-	    {
-	    	counterSend = 0;
-	    	gcs().send_text(MAV_SEVERITY_INFO, "GEN: %.1f A, %.2f kW, %.1f %% ",last_reading.output_current,last_reading.pwrGenerated*0.001,fuelPctLocal*100);
-	    }
-	    //gcs().send_text(MAV_SEVERITY_INFO, "PWM: %d",genRadioCmd);
-	}
+//	static uint8_t counterSend = 0;
+//	static uint8_t counter1 = 25;
+//	counter1++;
+//	if (counter1 > 100) {
+//	    counter1 = 0;
+//		//temp
+//	    uint8_t fuelPctAdj;
+//	    fuelPctAdj = (uint8_t)(g.gen_fuel_pct);
+//	    if (fuelPctAdj != startingFuelPct)
+//	    {
+//	    	// re-adjust and reset power integral
+//	    	startingFuelPct = fuelPctAdj;
+//	    	last_reading.pwrIntegral = 0;
+//	    }
+//
+//	    float tempScaleFact;
+//	    tempScaleFact = (float)(g.gen_f_scale);
+//	    float diffScaleFac;
+//	    diffScaleFac = tempScaleFact - energyScaleFact;
+//	    if(diffScaleFac < 0.0)
+//	    {
+//	    	diffScaleFac = -diffScaleFac;
+//	    }
+//
+//	    if(diffScaleFac > 0.0001)
+//	    {
+//	    	energyScaleFact = tempScaleFact;
+//	    }
+//
+//	    // display output to console
+//
+//	    if(counterSend < 30)
+//	    {
+//	    	counterSend++;
+//	    }
+//	    else
+//	    {
+//	    	counterSend = 0;
+//	    	gcs().send_text(MAV_SEVERITY_INFO, "GEN: %.1f A, %.2f kW, %.1f %% ",last_reading.output_current,last_reading.pwrGenerated*0.001,fuelPctLocal*100);
+//	    }
+//	    //gcs().send_text(MAV_SEVERITY_INFO, "PWM: %d",genRadioCmd);
+//	}
 
 	static uint8_t counter2;
 	counter2++;
@@ -361,37 +267,39 @@ void Copter::userhook_50Hz()
 		counter2 = 0;
 		// log //	 log runtime, current, power, mode
 
-//	    AP::logger().Write(
-//	        "GEN",
-//	        "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,mode",
-//	        "s-------",
-//	        "F-------",
-//	        "QIIHHffB",
-//	        AP_HAL::micros64(),
-//	        last_reading.runtime,
-//	        last_reading.seconds_until_maintenance,
-//	        last_reading.errors,
-//	        last_reading.rpm,
-//	        last_reading.output_voltage,
-//	        last_reading.output_current,
-//	        last_reading.mode
-//	        );
-
 	    AP::logger().Write(
 	        "GEN",
-	        "TimeUS,runtime,current,power,mode",
-			//"ssAW-", // units
-			//"F----", // scaling
-	        "QQffB",
+	        "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,trect,tgen,mode",
+	        "s---qvAOO-",
+	        "F---------",
+	        "QIIHHffhhB",
 	        AP_HAL::micros64(),
 	        last_reading.runtime,
+	        last_reading.seconds_until_maintenance,
+	        last_reading.errors,
+	        last_reading.rpm,
+	        last_reading.output_voltage,
 	        last_reading.output_current,
-			last_reading.pwrGenerated,
+			last_reading.rectTemp,
+			last_reading.genTemp,
 	        last_reading.mode
 	        );
 
+//	    AP::logger().Write(
+//	        "GEN",
+//	        "TimeUS,runtime,current,power,mode",
+//			//"ssAW-", // units
+//			//"F----", // scaling
+//	        "QQffB",
+//	        AP_HAL::micros64(),
+//	        last_reading.runtime,
+//	        last_reading.output_current,
+//			last_reading.pwrGenerated,
+//	        last_reading.mode
+//	        );
+
 	} // counter 2
-}
+} // end of 50 hz loop
 #endif
 
 #ifdef USERHOOK_MEDIUMLOOP
@@ -525,15 +433,140 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
         channel.get_chan(),
         status,//
         last_reading.rpm, // generator_speed
-        std::numeric_limits<double>::quiet_NaN(), // battery_current; current into/out of battery
+        last_reading.batt_current, // battery_current; current into/out of battery
 		last_reading.output_current, // load_current; Current going to UAV
-        //std::numeric_limits<double>::quiet_NaN(), // power_generated; the power being generated
 		last_reading.pwrGenerated,
         last_reading.output_voltage, // bus_voltage; Voltage of the bus seen at the generator
-        INT16_MAX, // rectifier_temperature
-        std::numeric_limits<double>::quiet_NaN(), // bat_current_setpoint; The target battery current
-        INT16_MAX, // generator temperature
+        last_reading.rectTemp, // rectifier_temperature
+        last_reading.batt_current_setpoint, // bat_current_setpoint; The target battery current
+        last_reading.genTemp, // generator temperature
         last_reading.runtime,
-        (int32_t)last_reading.seconds_until_maintenance
+        last_reading.seconds_until_maintenance
         );
-}
+} // end of send_generator_status
+
+// read - read serial port, return true if a new reading has been found
+bool Copter::get_reading()
+{
+
+    // fill our buffer some more:
+    uint32_t nbytes = uart->read(&RxBuf[body_length],
+                                 ARRAY_SIZE(RxBuf)-body_length);
+    if (nbytes == 0) {
+        return false;
+    }
+    body_length += nbytes;
+
+    move_header_in_buffer(0);
+
+    // header byte 1 is correct.
+    if (body_length < ARRAY_SIZE(RxBuf)) {
+        // need a full buffer to have a valid message...
+        return false;
+    }
+
+    if (RxBuf[1] != HEADER_MAGIC2) {
+        move_header_in_buffer(1);
+        return false;
+    }
+
+    // check for the footer signature:
+    if (RxBuf[34] != FOOTER_MAGIC1) {
+        move_header_in_buffer(1);
+        return false;
+    }
+    if (RxBuf[35] != FOOTER_MAGIC2) {
+        move_header_in_buffer(1);
+        return false;
+    }
+
+    // calculate checksum....
+//    uint16_t checksum = 0;
+//    const uint8_t *checksum_buffer = &u.parse_buffer[2];
+//    for (uint8_t i=0; i<5; i++) {
+//        checksum += be16toh_ptr(&checksum_buffer[2*i]);
+//    }
+
+//    if (checksum != be16toh(u.packet.checksum)) {
+//        move_header_in_buffer(1);
+//        return false;
+//    }
+
+    // check the version:
+//    const uint16_t version = be16toh(u.packet.version);
+//    const uint8_t major = version / 100;
+//    const uint8_t minor = (version % 100) / 10;
+//    const uint8_t point = version % 10;
+//    if (!protocol_information_anounced) {
+//        gcs().send_text(MAV_SEVERITY_INFO, "RichenPower: protocol %u.%u.%u", major, minor, point);
+//        protocol_information_anounced = true;
+//    }
+
+    // define some temporary variables for unpacking the data
+    uint32_t tempUint32 = 0;
+    int32_t tempInt32 = 0;
+    uint16_t tempUint16 = 0;
+    int16_t tempInt16 = 0;
+
+    tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
+    last_reading.runtime =  tempUint32;
+    tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
+    last_reading.seconds_until_maintenance = tempInt32;
+    last_reading.errors = 0;
+    // get RPM
+    tempUint16 = (RxBuf[29]<<8) | RxBuf[28];
+    last_reading.rpm = tempUint16;
+    // get voltage
+    tempUint16 = (RxBuf[17]<<8) | RxBuf[16];
+    last_reading.output_voltage = ((float)(tempUint16)) * 0.01;
+    // get current
+    tempUint16 = (RxBuf[13]<<8) | RxBuf[12];
+    last_reading.output_current = ((float)(tempUint16)) * 0.01;
+    // get power generated
+    tempUint16 = (RxBuf[15]<<8) | RxBuf[14];
+    last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
+    // get batt current setpoint
+    tempUint16 = (RxBuf[19]<<8) | RxBuf[18];
+    last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+    // get batt current
+    //tempUint16 = (RxBuf[19]<<8) | RxBuf[18];
+    //last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+    // get temperatures
+    tempInt16 = (RxBuf[31]<<8) | RxBuf[30];
+    last_reading.rectTemp = tempInt16 * 0.01;
+    tempInt16 = (RxBuf[33]<<8) | RxBuf[32];
+    last_reading.genTemp = tempInt16 * 0.01;
+
+    //last_reading_ms = AP_HAL::millis();
+
+    body_length = 0;
+
+    // update the time we started idling at:
+//    if (last_reading.mode == Mode::IDLE) {
+//        if (idle_state_start_ms == 0) {
+//            idle_state_start_ms = last_reading_ms;
+//        }
+//    } else {
+//        idle_state_start_ms = 0;
+//    }
+
+    return true;
+} // end of get_reading
+
+// find a Generator message in the buffer, starting at
+// initial_offset.  If found, that message (or partial message) will
+// be moved to the start of the buffer.
+void Copter::move_header_in_buffer(uint8_t initial_offset)
+{
+    uint8_t header_offset;
+    for (header_offset=initial_offset; header_offset<body_length; header_offset++) {
+        if (RxBuf[header_offset] == HEADER_MAGIC1) {
+            break;
+        }
+    }
+    if (header_offset != 0) {
+        // header was found, but not at index 0; move it back to start of array
+        memmove(RxBuf, &RxBuf[header_offset], body_length - header_offset);
+        body_length -= header_offset;
+    }
+} // end of move_header_in_buffer
