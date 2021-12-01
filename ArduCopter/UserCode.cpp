@@ -34,6 +34,7 @@ struct Reading {
     float 		batt_current_setpoint;
     int16_t		rectTemp;
     int16_t		genTemp;
+    uint16_t	servoCmd;
 };
 
 // declare some variables to use
@@ -53,9 +54,11 @@ float runTimeSec;
 
 float energyScaleFact;
 
-//uint16_t genRadioCmd;
+uint16_t genRadioCmd;
 //uint16_t lastGenRadioCmd;
 uint16_t genCmdOut;
+
+uint8_t killState = 0;
 
 uint64_t status;
 
@@ -63,7 +66,7 @@ GenMode currentGenMode = IDLE;
 
 AP_HAL::UARTDriver *uart;
 
-uint8_t RxBuf[36] = {0};
+uint8_t RxBuf[38] = {0};
 // number of bytes currently in the buffer
 uint8_t body_length;
 
@@ -107,28 +110,68 @@ void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
 
-	// check for vehicle arm state
-	if(AP::arming().is_armed())
+	// check for value on channel 9
+	// channels are 0 index based
+	// only do so if failsafe is not active
+	if (!(failsafe.radio))
 	{
-		if (currentGenMode != RUN)
-		{
-			currentGenMode = RUN;
-			// set pwm output
-			genCmdOut = 2000;
-			SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-		}
+		genRadioCmd = hal.rcin->read(8);
 	}
 	else
 	{
-		// not armed
-		if (currentGenMode != IDLE)
+		genRadioCmd = 1000; // low is default value - no kill
+	}
+
+
+	if (genRadioCmd > 1500)
+	{
+		// request kill state
+		killState = 1;
+	}
+	else if (genRadioCmd > 800)
+	{
+		// normal state - no kill
+		killState = 0;
+	}
+	else
+	{
+		// kill if something is weird?
+		// TODO - figure out if this is a good way to handle it
+		killState = 1;
+	}
+
+	// if we are not in kill state, go ahead and set run/idle commands
+	if (!killState)
+	{
+		// check for vehicle arm state
+		if(AP::arming().is_armed())
 		{
-			currentGenMode = IDLE;
-			// set pwm output
-			genCmdOut = 1000;
-			SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-		}
-	} // else - from if vehicle was armed
+			if (currentGenMode != RUN)
+			{
+				currentGenMode = RUN;
+				// set pwm output
+				genCmdOut = 2000;
+				SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+			}
+		} // if armed
+		else
+		{
+			// not armed
+			if (currentGenMode != IDLE)
+			{
+				currentGenMode = IDLE;
+				// set pwm output
+				genCmdOut = 1500;
+				SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+			}
+		} // else - from if vehicle was armed
+	} // if (!killState)
+	else // kill state is active - keep setting the kill command on PWM output
+	{
+		currentGenMode = OFF;
+		genCmdOut = 1000;
+		SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+	}
 
 
 	// check for UART and process it into data, populate last_reading structure
@@ -269,10 +312,10 @@ void Copter::userhook_50Hz()
 
 	    AP::logger().Write(
 	        "GEN",
-	        "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,trect,tgen,mode",
-	        "s---qvAOO-",
-	        "F---------",
-	        "QIIHHffhhB",
+	        "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,bcurr,trect,tgen,mode,throt",
+	        "s---qvAAOO--",
+	        "F-----------",
+	        "QIIHHfffhhBH",
 	        AP_HAL::micros64(),
 	        last_reading.runtime,
 	        last_reading.seconds_until_maintenance,
@@ -280,9 +323,11 @@ void Copter::userhook_50Hz()
 	        last_reading.rpm,
 	        last_reading.output_voltage,
 	        last_reading.output_current,
+			last_reading.batt_current,
 			last_reading.rectTemp,
 			last_reading.genTemp,
-	        last_reading.mode
+	        last_reading.mode,
+			last_reading.servoCmd
 	        );
 
 //	    AP::logger().Write(
@@ -471,11 +516,11 @@ bool Copter::get_reading()
     }
 
     // check for the footer signature:
-    if (RxBuf[34] != FOOTER_MAGIC1) {
+    if (RxBuf[36] != FOOTER_MAGIC1) {
         move_header_in_buffer(1);
         return false;
     }
-    if (RxBuf[35] != FOOTER_MAGIC2) {
+    if (RxBuf[37] != FOOTER_MAGIC2) {
         move_header_in_buffer(1);
         return false;
     }
@@ -536,6 +581,10 @@ bool Copter::get_reading()
     last_reading.rectTemp = tempInt16 * 0.01;
     tempInt16 = (RxBuf[33]<<8) | RxBuf[32];
     last_reading.genTemp = tempInt16 * 0.01;
+
+    // get servo ctrl value
+    tempUint16 = (RxBuf[35]<<8) | RxBuf[34];
+    last_reading.servoCmd = tempUint16;
 
     //last_reading_ms = AP_HAL::millis();
 
