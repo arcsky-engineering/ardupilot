@@ -93,7 +93,7 @@ void Copter::userhook_init()
     status = 0;
 
     // set output to be "OFF" initially for the generator
-    genCmdOut = 1000;
+    genCmdOut = 1500;
     SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
 }
 #endif
@@ -137,7 +137,7 @@ void Copter::userhook_50Hz()
 	{
 		// kill if something is weird?
 		// TODO - figure out if this is a good way to handle it
-		killState = 1;
+		killState = 0;
 	}
 
 	// if we are not in kill state, go ahead and set run/idle commands
@@ -200,6 +200,7 @@ void Copter::userhook_50Hz()
 
     // get voltage from battery monitor
     //last_reading.output_voltage = battery.voltage();
+	// TODO - remove this when rectifier PCB revision is calculating battery current directly
 	float tempCur;
     if(battery.current_amps(tempCur))
 	{
@@ -312,22 +313,21 @@ void Copter::userhook_50Hz()
 
 	    AP::logger().Write(
 	        "GEN",
-	        "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,bcurr,trect,tgen,mode,throt",
-	        "s---qvAAOO--",
-	        "F-----------",
-	        "QIIHHfffhhBH",
+	        "TimeUS,runTime,maintTime,throt,rpm,ovolt,ocurr,bcurr,trect,tgen,mode",
+	        "s---qvAAOO-",
+	        "F----------",
+	        "QIIHHfffhhB",
 	        AP_HAL::micros64(),
 	        last_reading.runtime,
 	        last_reading.seconds_until_maintenance,
-	        last_reading.errors,
+	        last_reading.servoCmd,
 	        last_reading.rpm,
 	        last_reading.output_voltage,
 	        last_reading.output_current,
 			last_reading.batt_current,
 			last_reading.rectTemp,
 			last_reading.genTemp,
-	        last_reading.mode,
-			last_reading.servoCmd
+	        last_reading.mode
 	        );
 
 //	    AP::logger().Write(
