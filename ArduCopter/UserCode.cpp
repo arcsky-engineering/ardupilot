@@ -35,6 +35,16 @@ struct Reading {
     int16_t		rectTemp;
     int16_t		genTemp;
     uint16_t	servoCmd;
+    // these are from status flag
+    uint16_t 	pwm_avg;
+    uint8_t		currentPwmInputState;
+    uint8_t		detectedPwmState;
+    uint8_t		operateMode;
+    uint8_t		requestedOperateMode;
+    uint8_t		operateModeTransitionActive;
+    uint8_t		engineKillState;
+    uint16_t	servoSetVal;
+    uint16_t	ctrlOutputFilt;
 };
 
 // declare some variables to use
@@ -201,15 +211,16 @@ void Copter::userhook_50Hz()
     // get voltage from battery monitor
     //last_reading.output_voltage = battery.voltage();
 	// TODO - remove this when rectifier PCB revision is calculating battery current directly
-	float tempCur;
-    if(battery.current_amps(tempCur))
-	{
-    	last_reading.batt_current = tempCur - last_reading.output_current;
-	}
-    else
-    {
-    	last_reading.batt_current = 0;
-    }
+
+	//	float tempCur;
+//    if(battery.current_amps(tempCur))
+//	{
+//    	last_reading.batt_current = tempCur - last_reading.output_current;
+//	}
+//    else
+//    {
+//    	last_reading.batt_current = 0;
+//    }
 
 //    // *************************************************************************************************
 //    // *********** ENERGY INTEGRAL CALCULATION *********************************************************
@@ -313,10 +324,10 @@ void Copter::userhook_50Hz()
 
 	    AP::logger().Write(
 	        "GEN",
-	        "TimeUS,runTime,maintTime,throt,rpm,ovolt,ocurr,bcurr,trect,tgen,mode",
-	        "s---qvAAOO-",
-	        "F----------",
-	        "QIIHHfffhhB",
+	        "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,ss",
+	        "s---qvAAOO------",
+	        "F---------------",
+	        "QIIHHfffhhBHBBBH",
 	        AP_HAL::micros64(),
 	        last_reading.runtime,
 	        last_reading.seconds_until_maintenance,
@@ -327,7 +338,12 @@ void Copter::userhook_50Hz()
 			last_reading.batt_current,
 			last_reading.rectTemp,
 			last_reading.genTemp,
-	        last_reading.mode
+	        last_reading.mode,
+			last_reading.pwm_avg,
+			last_reading.operateMode,
+			last_reading.requestedOperateMode,
+			last_reading.operateModeTransitionActive,
+			last_reading.servoSetVal
 	        );
 
 //	    AP::logger().Write(
@@ -553,6 +569,21 @@ bool Copter::get_reading()
     uint16_t tempUint16 = 0;
     int16_t tempInt16 = 0;
 
+    // get the status flags
+    tempUint16 = ((RxBuf[3]<<8) | RxBuf[2]);
+    last_reading.pwm_avg = tempUint16;
+    last_reading.currentPwmInputState = (RxBuf[4] & 0x0F); // Least significant 4 bits
+    last_reading.detectedPwmState = ((RxBuf[4] >> 4) & 0x0F); // Most significant 4 bits
+    last_reading.operateMode = (RxBuf[5] & 0x03); // least significant 2 bits
+    last_reading.requestedOperateMode = ((RxBuf[5] >> 2) & 0x03); // next 2 bits
+    last_reading.operateModeTransitionActive = ((RxBuf[5] >> 4) & 0x03); // next 2 bits
+    last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
+    tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
+    last_reading.servoSetVal = tempUint16;
+    tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
+    last_reading.ctrlOutputFilt = tempUint16;
+
+
     tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
     last_reading.runtime =  tempUint32;
     tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
@@ -574,8 +605,8 @@ bool Copter::get_reading()
     tempUint16 = (RxBuf[19]<<8) | RxBuf[18];
     last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
     // get batt current
-    //tempUint16 = (RxBuf[19]<<8) | RxBuf[18];
-    //last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+    tempInt16 = (RxBuf[11]<<8) | RxBuf[10];
+    last_reading.batt_current = ((float)(tempInt16)) * 0.01;
     // get temperatures
     tempInt16 = (RxBuf[31]<<8) | RxBuf[30];
     last_reading.rectTemp = tempInt16 * 0.01;
