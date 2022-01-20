@@ -7,6 +7,9 @@
 // used for analog stuff only
 //extern const AP_HAL::HAL& hal;
 
+// used for failsafe actions?
+//extern Copter copter;
+
 // adding this to access voltage and current from battery monitoring
 const AP_BattMonitor &battery = AP::battery();
 
@@ -45,12 +48,18 @@ struct Reading {
     uint8_t		engineKillState;
     uint16_t	servoSetVal;
     uint16_t	ctrlOutputFilt;
+
+    // new things (Jan 19, 2022)
+    uint8_t 	fuelPct;
+    uint8_t		engineDied;
+    uint8_t		engineDiedNoticeSent;
 };
 
 // declare some variables to use
 struct Reading last_reading;
 
 uint8_t startingFuelPct;
+uint8_t fuelPctInitialized;
 float lastCurrent;
 float fuelPctLocal;
 uint32_t last_reading_ms;
@@ -86,6 +95,8 @@ void Copter::userhook_init()
     // put your initialisation code here
     // this will be called once at start-up
 
+	last_reading.engineDiedNoticeSent = 0;
+
 	// initialize the serial manager, according to how it's done in RichenPower
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
     if (uart != nullptr) {
@@ -96,9 +107,11 @@ void Copter::userhook_init()
     }
 
 
-    startingFuelPct = (uint8_t)(g.gen_fuel_pct);
+    // commented out Jan 19, 2022 to make way for UART message fuel pct from generator
+    //startingFuelPct = (uint8_t)(g.gen_fuel_pct);
+    //energyScaleFact = g.gen_f_scale;
 
-    energyScaleFact = g.gen_f_scale;
+    fuelPctInitialized = 0;
 
     status = 0;
 
@@ -186,7 +199,59 @@ void Copter::userhook_50Hz()
 
 	// check for UART and process it into data, populate last_reading structure
 
-	(void)get_reading();
+	//(void)get_reading();
+
+	if (get_reading())
+	{
+		if(!fuelPctInitialized)
+		{
+			// send fuel percentage warnings every 10 percentage change
+			startingFuelPct = last_reading.fuelPct;
+			// broadcast fuel percent to ground station
+			gcs().send_text(MAV_SEVERITY_INFO, "Initial Fuel: %d%%",last_reading.fuelPct);
+
+		}
+		else
+		{
+			if (startingFuelPct >= last_reading.fuelPct)
+			{
+				// if we have changed by more than 10, and we are at an even division of 10,
+				// broadcast the current status
+				if (((startingFuelPct - last_reading.fuelPct) > 10) && ((last_reading.fuelPct % 10)==0))
+				{
+					gcs().send_text(MAV_SEVERITY_INFO, "Remaining Fuel: %d%%",last_reading.fuelPct);
+				}
+			}
+		} // else - from if (!fuelPctInitialized)
+	} // if (get_reading())
+
+	if (last_reading.engineDied)
+	{
+		if (!last_reading.engineDiedNoticeSent)
+		{
+			// failsafe stuff for engine stoppage
+			gcs().send_text(MAV_SEVERITY_WARNING, "Generator Failsafe");
+			// TODO - in the future, add failsafe actions and configurable ways of
+			// managing this, possibly by modifying parameters and using the previous
+			// GEN parameters (e.g. g.gen_fuel_pct) to be g.gen_fs_action.
+
+			// call functions (possibly write custom function) in events.cpp file
+			Failsafe_Action desired_action;
+			desired_action = Failsafe_Action_None;
+			copter.do_failsafe_action(desired_action, ModeReason::FAILSAFE);
+			//do_failsafe_action(Failsafe_Action action, ModeReason reason)
+
+			last_reading.engineDiedNoticeSent = 1;
+		}
+	} // if (last_reading.engineDied)
+	else
+	{
+		// check if we had previously died and need to recover
+		// TODO
+	}
+
+
+
 //
 //	// try UART stuff
 //
@@ -324,10 +389,10 @@ void Copter::userhook_50Hz()
 
 	    AP::logger().Write(
 	        "GEN",
-	        "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,ss",
+	        "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,fp",
 	        "s---qvAAOO------",
 	        "F---------------",
-	        "QIIHHfffhhBHBBBH",
+	        "QIIHHfffhhBHBBBB",
 	        AP_HAL::micros64(),
 	        last_reading.runtime,
 	        last_reading.seconds_until_maintenance,
@@ -343,7 +408,7 @@ void Copter::userhook_50Hz()
 			last_reading.operateMode,
 			last_reading.requestedOperateMode,
 			last_reading.operateModeTransitionActive,
-			last_reading.servoSetVal
+			last_reading.fuelPct
 	        );
 
 //	    AP::logger().Write(
@@ -580,8 +645,13 @@ bool Copter::get_reading()
     last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
     tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
     last_reading.servoSetVal = tempUint16;
-    tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
-    last_reading.ctrlOutputFilt = tempUint16;
+
+    last_reading.engineDied = ((RxBuf[6])&0x03); // only 2 LSBits
+    last_reading.fuelPct = RxBuf[7];
+
+    // old
+    //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
+    //last_reading.ctrlOutputFilt = tempUint16;
 
 
     tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
