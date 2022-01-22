@@ -62,6 +62,7 @@ uint8_t startingFuelPct;
 uint8_t fuelPctInitialized;
 float lastCurrent;
 float fuelPctLocal;
+uint16_t fuelSendCnt;
 uint32_t last_reading_ms;
 uint8_t timeCaptured;
 uint32_t lastMs;
@@ -89,13 +90,20 @@ uint8_t RxBuf[38] = {0};
 // number of bytes currently in the buffer
 uint8_t body_length;
 
+uint8_t fs_dummy = 0;
+
+
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
     // put your initialisation code here
     // this will be called once at start-up
 
+	fs_dummy = (uint8_t)(g.gen_fs);
+
+
 	last_reading.engineDiedNoticeSent = 0;
+	fuelSendCnt = 0;
 
 	// initialize the serial manager, according to how it's done in RichenPower
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
@@ -200,26 +208,49 @@ void Copter::userhook_50Hz()
 	// check for UART and process it into data, populate last_reading structure
 
 	//(void)get_reading();
-
 	if (get_reading())
 	{
+		// temporary
+		//gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
+
 		if(!fuelPctInitialized)
 		{
-			// send fuel percentage warnings every 10 percentage change
-			startingFuelPct = last_reading.fuelPct;
-			// broadcast fuel percent to ground station
-			gcs().send_text(MAV_SEVERITY_INFO, "Initial Fuel: %d%%",last_reading.fuelPct);
-
-		}
+			// wait for a while (e.g. to allow for connection to establish)
+			// before transmitting the first initialized signal
+			if (fuelSendCnt < 50)
+			{
+				fuelSendCnt++;
+			}
+			else
+			{
+				// send fuel percentage warnings every 10 percentage change
+				startingFuelPct = last_reading.fuelPct;
+				// broadcast fuel percent to ground station
+				gcs().send_text(MAV_SEVERITY_INFO, "Initial Fuel: %u%%",last_reading.fuelPct);
+				fuelPctInitialized = 1;
+			}
+		} // if (!fuelPctInitialized)
 		else
 		{
 			if (startingFuelPct >= last_reading.fuelPct)
 			{
 				// if we have changed by more than 10, and we are at an even division of 10,
 				// broadcast the current status
-				if (((startingFuelPct - last_reading.fuelPct) > 10) && ((last_reading.fuelPct % 10)==0))
+				if (((startingFuelPct - last_reading.fuelPct) >= 10) && ((last_reading.fuelPct % 10)==0))
 				{
-					gcs().send_text(MAV_SEVERITY_INFO, "Remaining Fuel: %d%%",last_reading.fuelPct);
+					gcs().send_text(MAV_SEVERITY_INFO, "Remaining Fuel: %u%%",last_reading.fuelPct);
+					// reset starting fuel pct here?
+					startingFuelPct = last_reading.fuelPct;
+				}
+			}
+			else
+			{
+				// the current fuel reading has exceeded the previous one (i.e. we have gained fuel)
+				if ((last_reading.fuelPct - startingFuelPct) > 10)
+				{
+					// reset the fuel system
+					fuelPctInitialized = 0;
+					fuelSendCnt = 0;
 				}
 			}
 		} // else - from if (!fuelPctInitialized)
@@ -231,14 +262,16 @@ void Copter::userhook_50Hz()
 		{
 			// failsafe stuff for engine stoppage
 			gcs().send_text(MAV_SEVERITY_WARNING, "Generator Failsafe");
+			gcs().send_text(MAV_SEVERITY_INFO, "Generator Failsafe %u",fs_dummy);
 			// TODO - in the future, add failsafe actions and configurable ways of
 			// managing this, possibly by modifying parameters and using the previous
 			// GEN parameters (e.g. g.gen_fuel_pct) to be g.gen_fs_action.
 
+			Failsafe_Action desired_gen_fs_action;
+			desired_gen_fs_action = (Failsafe_Action)(fs_dummy);
+
 			// call functions (possibly write custom function) in events.cpp file
-			Failsafe_Action desired_action;
-			desired_action = Failsafe_Action_None;
-			copter.do_failsafe_action(desired_action, ModeReason::FAILSAFE);
+			copter.do_failsafe_action(desired_gen_fs_action, ModeReason::FAILSAFE);
 			//do_failsafe_action(Failsafe_Action action, ModeReason reason)
 
 			last_reading.engineDiedNoticeSent = 1;
@@ -270,6 +303,7 @@ void Copter::userhook_50Hz()
 //		uart->printf("Byte %d\n",RxBuf[0]);
 //		//uart->write(tempBuf, 4);
 //	}
+
 
 	last_reading.mode = currentGenMode;
 
@@ -384,6 +418,11 @@ void Copter::userhook_50Hz()
 	counter2++;
 	if (counter2 > 10)
 	{
+
+		// temp debug stuff
+		//gcs().send_text(MAV_SEVERITY_INFO, "Engine Died: %d",last_reading.engineDied);
+
+
 		counter2 = 0;
 		// log //	 log runtime, current, power, mode
 
@@ -646,8 +685,8 @@ bool Copter::get_reading()
     tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
     last_reading.servoSetVal = tempUint16;
 
-    last_reading.engineDied = ((RxBuf[6])&0x03); // only 2 LSBits
-    last_reading.fuelPct = RxBuf[7];
+    last_reading.engineDied = ((RxBuf[8])&0x03); // only 2 LSBits
+    last_reading.fuelPct = RxBuf[9];
 
     // old
     //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);

@@ -191,7 +191,7 @@ public:
         k_param_rssi = 97,
 
 		// 98: CUSTOM
-        k_param_gen_fuel_pct = 98,
+        k_param_gen_fs = 98,
 		k_param_gen_f_scale = 99,
 
         //
@@ -459,7 +459,7 @@ public:
     AP_Int16        gcs_pid_mask;
 
     // custom
-    AP_Int8			gen_fuel_pct;
+    AP_Int8			gen_fs;
     AP_Float		gen_f_scale;
 
 #if MODE_THROW_ENABLED == ENABLED

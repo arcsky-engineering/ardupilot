@@ -743,14 +743,15 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
-    // @Param: GEN_FUEL_PCT
-    // @DisplayName: Generator fuel percentage setting
-    // @Description: Set starting fuel percentage or adjust it after startup
+    // @Param: GEN_FS
+    // @DisplayName: Generator failsafe setting
+    // @Description: Set failsafe setting for generator dying
+	// @Values: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL_Land,5:Terminate
     // @User: Standard
     // @Units: none
-    // @Range: 0 100
+    // @Range: 0 5
     // @Increment: 1
-    GSCALAR(gen_fuel_pct,  "GEN_FUEL_PCT",  100),
+    GSCALAR(gen_fs,  "GEN_FS",  5),
 
     // @Param: GEN_F_SCALE
     // @DisplayName: Generator energy to fuel scale adjustment
