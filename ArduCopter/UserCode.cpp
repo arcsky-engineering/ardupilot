@@ -86,7 +86,7 @@ GenMode currentGenMode = IDLE;
 
 AP_HAL::UARTDriver *uart;
 
-uint8_t RxBuf[38] = {0};
+uint8_t RxBuf[40] = {0};
 // number of bytes currently in the buffer
 uint8_t body_length;
 
@@ -636,26 +636,99 @@ bool Copter::get_reading()
     }
 
     // check for the footer signature:
-    if (RxBuf[36] != FOOTER_MAGIC1) {
+    if (RxBuf[38] != FOOTER_MAGIC1) {
         move_header_in_buffer(1);
         return false;
     }
-    if (RxBuf[37] != FOOTER_MAGIC2) {
+    if (RxBuf[39] != FOOTER_MAGIC2) {
         move_header_in_buffer(1);
         return false;
     }
 
-    // calculate checksum....
-//    uint16_t checksum = 0;
-//    const uint8_t *checksum_buffer = &u.parse_buffer[2];
-//    for (uint8_t i=0; i<5; i++) {
-//        checksum += be16toh_ptr(&checksum_buffer[2*i]);
-//    }
+    // calculate checksum
+    uint8_t cs1 = 0;
+    uint8_t cs2 = 0;
+    for (int i = 0; i < 36; i++)
+    {
+        cs1 += RxBuf[i];
+        cs2 += cs1;
+    }
 
-//    if (checksum != be16toh(u.packet.checksum)) {
-//        move_header_in_buffer(1);
-//        return false;
-//    }
+    // check that it matches
+    if ((cs1 == RxBuf[36]) && (cs2 == RxBuf[37]))
+    {
+        // process the data
+    // define some temporary variables for unpacking the data
+        uint32_t tempUint32 = 0;
+        int32_t tempInt32 = 0;
+        uint16_t tempUint16 = 0;
+        int16_t tempInt16 = 0;
+
+        // get the status flags
+        tempUint16 = ((RxBuf[3] << 8) | RxBuf[2]);
+        last_reading.pwm_avg = tempUint16;
+        last_reading.currentPwmInputState = (RxBuf[4] & 0x0F); // Least significant 4 bits
+        last_reading.detectedPwmState = ((RxBuf[4] >> 4) & 0x0F); // Most significant 4 bits
+        last_reading.operateMode = (RxBuf[5] & 0x03); // least significant 2 bits
+        last_reading.requestedOperateMode = ((RxBuf[5] >> 2) & 0x03); // next 2 bits
+        last_reading.operateModeTransitionActive = ((RxBuf[5] >> 4) & 0x03); // next 2 bits
+        last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
+        tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
+        last_reading.servoSetVal = tempUint16;
+
+        last_reading.engineDied = ((RxBuf[8]) & 0x03); // only 2 LSBits
+        last_reading.fuelPct = RxBuf[9];
+
+        // old
+        //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
+        //last_reading.ctrlOutputFilt = tempUint16;
+
+
+        tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
+        last_reading.runtime = tempUint32;
+        tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
+        last_reading.seconds_until_maintenance = tempInt32;
+        last_reading.errors = 0;
+        // get RPM
+        tempUint16 = (RxBuf[29] << 8) | RxBuf[28];
+        last_reading.rpm = tempUint16;
+        // get voltage
+        tempUint16 = (RxBuf[17] << 8) | RxBuf[16];
+        last_reading.output_voltage = ((float)(tempUint16)) * 0.01;
+        // get current
+        tempUint16 = (RxBuf[13] << 8) | RxBuf[12];
+        last_reading.output_current = ((float)(tempUint16)) * 0.01;
+        // get power generated
+        tempUint16 = (RxBuf[15] << 8) | RxBuf[14];
+        last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
+        // get batt current setpoint
+        tempUint16 = (RxBuf[19] << 8) | RxBuf[18];
+        last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+        // get batt current
+        tempInt16 = (RxBuf[11] << 8) | RxBuf[10];
+        last_reading.batt_current = ((float)(tempInt16)) * 0.01;
+        // get temperatures
+        tempInt16 = (RxBuf[31] << 8) | RxBuf[30];
+        last_reading.rectTemp = tempInt16 * 0.01;
+        tempInt16 = (RxBuf[33] << 8) | RxBuf[32];
+        last_reading.genTemp = tempInt16 * 0.01;
+
+        // get servo ctrl value
+        tempUint16 = (RxBuf[35] << 8) | RxBuf[34];
+        last_reading.servoCmd = tempUint16;
+
+        //last_reading_ms = AP_HAL::millis();
+        body_length = 0;
+
+        return true;
+    }
+    else
+    {
+        // reject data (possibly in the future increment a counter?)
+        body_length = 0;
+        return false;
+    }
+
 
     // check the version:
 //    const uint16_t version = be16toh(u.packet.version);
@@ -666,80 +739,7 @@ bool Copter::get_reading()
 //        gcs().send_text(MAV_SEVERITY_INFO, "RichenPower: protocol %u.%u.%u", major, minor, point);
 //        protocol_information_anounced = true;
 //    }
-
-    // define some temporary variables for unpacking the data
-    uint32_t tempUint32 = 0;
-    int32_t tempInt32 = 0;
-    uint16_t tempUint16 = 0;
-    int16_t tempInt16 = 0;
-
-    // get the status flags
-    tempUint16 = ((RxBuf[3]<<8) | RxBuf[2]);
-    last_reading.pwm_avg = tempUint16;
-    last_reading.currentPwmInputState = (RxBuf[4] & 0x0F); // Least significant 4 bits
-    last_reading.detectedPwmState = ((RxBuf[4] >> 4) & 0x0F); // Most significant 4 bits
-    last_reading.operateMode = (RxBuf[5] & 0x03); // least significant 2 bits
-    last_reading.requestedOperateMode = ((RxBuf[5] >> 2) & 0x03); // next 2 bits
-    last_reading.operateModeTransitionActive = ((RxBuf[5] >> 4) & 0x03); // next 2 bits
-    last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
-    tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
-    last_reading.servoSetVal = tempUint16;
-
-    last_reading.engineDied = ((RxBuf[8])&0x03); // only 2 LSBits
-    last_reading.fuelPct = RxBuf[9];
-
-    // old
-    //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
-    //last_reading.ctrlOutputFilt = tempUint16;
-
-
-    tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
-    last_reading.runtime =  tempUint32;
-    tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
-    last_reading.seconds_until_maintenance = tempInt32;
-    last_reading.errors = 0;
-    // get RPM
-    tempUint16 = (RxBuf[29]<<8) | RxBuf[28];
-    last_reading.rpm = tempUint16;
-    // get voltage
-    tempUint16 = (RxBuf[17]<<8) | RxBuf[16];
-    last_reading.output_voltage = ((float)(tempUint16)) * 0.01;
-    // get current
-    tempUint16 = (RxBuf[13]<<8) | RxBuf[12];
-    last_reading.output_current = ((float)(tempUint16)) * 0.01;
-    // get power generated
-    tempUint16 = (RxBuf[15]<<8) | RxBuf[14];
-    last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
-    // get batt current setpoint
-    tempUint16 = (RxBuf[19]<<8) | RxBuf[18];
-    last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
-    // get batt current
-    tempInt16 = (RxBuf[11]<<8) | RxBuf[10];
-    last_reading.batt_current = ((float)(tempInt16)) * 0.01;
-    // get temperatures
-    tempInt16 = (RxBuf[31]<<8) | RxBuf[30];
-    last_reading.rectTemp = tempInt16 * 0.01;
-    tempInt16 = (RxBuf[33]<<8) | RxBuf[32];
-    last_reading.genTemp = tempInt16 * 0.01;
-
-    // get servo ctrl value
-    tempUint16 = (RxBuf[35]<<8) | RxBuf[34];
-    last_reading.servoCmd = tempUint16;
-
-    //last_reading_ms = AP_HAL::millis();
-
-    body_length = 0;
-
-    // update the time we started idling at:
-//    if (last_reading.mode == Mode::IDLE) {
-//        if (idle_state_start_ms == 0) {
-//            idle_state_start_ms = last_reading_ms;
-//        }
-//    } else {
-//        idle_state_start_ms = 0;
-//    }
-
-    return true;
+    
 } // end of get_reading
 
 // find a Generator message in the buffer, starting at
