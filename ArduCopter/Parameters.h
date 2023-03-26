@@ -189,6 +189,10 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 98: CUSTOM
+        k_param_gen_fs = 98,
+        k_param_gen_fs_oc = 99,
                 
         //
         // 100: Inertial Nav
@@ -200,6 +204,11 @@ public:
         k_param_circle_nav,
         k_param_loiter_nav,     // 105
         k_param_custom_control,
+
+        // 107: Gen stuff2
+        k_param_gen_fuel_fs_action = 107,
+        k_param_gen_fuel_fs_pct = 108,
+        k_param_gen_fuel_warn_pct = 109,
 
         // 110: Telemetry control
         //
@@ -454,6 +463,14 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+
+    // custom
+    AP_Int8         gen_fs;
+    AP_Int8         gen_fs_oc;
+
+    AP_Int8         gen_fuel_fs_pct;
+    AP_Int8         gen_fuel_fs_action;
+    AP_Int8         gen_fuel_warn_pct;
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;

@@ -17,6 +17,7 @@
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
+#include "AP_BattMonitor_Generic_Fuel.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -306,7 +307,8 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
                 break;
             case Type::GENERATOR_FUEL:
-                drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                //drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                drivers[instance] = new AP_BattMonitor_Generic_Fuel(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_GENERATOR_ENABLED
 #if HAL_BATTMON_INA2XX_ENABLED

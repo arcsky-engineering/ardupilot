@@ -327,6 +327,26 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+#ifndef GEN_FUEL_FS_PCT_DEFAULT
+#define GEN_FUEL_FS_PCT_DEFAULT 20
+#endif
+
+#ifndef GEN_FUEL_WRN_PCT_DEFAULT
+#define GEN_FUEL_WRN_PCT_DEFAULT 30
+#endif
+
+#ifndef GEN_FUEL_FS_ACT_DEFAULT
+#define GEN_FUEL_FS_ACT_DEFAULT 0
+#endif
+
+#ifndef GEN_FS_OC_DEFAULT
+#define GEN_FUEL_FS_OC_DEFAULT 0
+#endif
+
+#ifndef GEN_FS_DEFAULT
+#define GEN_FUEL_FS_DEFAULT 0
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -60,6 +60,8 @@
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
 
+#include <../ArduCopter/Copter.h>
+
 #include <stdio.h>
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -5226,11 +5228,12 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 #if HAL_GENERATOR_ENABLED
 void GCS_MAVLINK::send_generator_status() const
 {
-    AP_Generator *generator = AP::generator();
-    if (generator == nullptr) {
-        return;
-    }
-    generator->send_generator_status(*this);
+//    AP_Generator *generator = AP::generator();
+//    if (generator == nullptr) {
+//        return;
+//    }
+//    generator->send_generator_status(*this);
+    copter.send_generator_status(*this);
 }
 #endif
 

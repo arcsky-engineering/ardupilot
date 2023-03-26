@@ -229,6 +229,20 @@ public:
 
     Copter(void);
 
+    void send_generator_status(const GCS_MAVLINK &channel);
+    bool get_reading();
+    uint8_t get_fuel_pct();
+    uint8_t get_gen_detected();
+    // move the expected header bytes into &buffer[0], adjusting
+    // body_length as appropriate.
+    void move_header_in_buffer(uint8_t initial_offset);
+
+    const uint8_t HEADER_MAGIC1 = 0xFE;
+    const uint8_t HEADER_MAGIC2 = 0xFE;
+
+    const uint8_t FOOTER_MAGIC1 = 0xFD;
+    const uint8_t FOOTER_MAGIC2 = 0xFD;
+
 private:
 
     // key aircraft parameters passed to multiple libraries
