@@ -21,8 +21,16 @@
 #define CURRENT_ERROR_SEND_INTERVAL 32 // cycles at 3.3 Hz (0.303) seconds
 #define FUEL_WARNING_SEND_INTERVAL 42 // cycles at 3.3 Hz (0.303) seconds
 #define GENERATOR_TIMEOUT_SEND_INTERVAL 43 // cycles at 3.3 Hz
+#define VOLTAGE_WRN_SEND_INTERVAL 37 // cycles at 3.3 Hz
 
 #define GENERATOR_TIMEOUT_ERROR_CNT 33 // cycles at 3.3 Hz (equates to about 10 seconds)
+
+#define LOW_VOLTAGE_WARNING_CNT 33 // cycles at 3.3 Hz (equates to about 10 seconds)
+
+#define ALFA_VOLTAGE_FILTER 0.003 // filter amount for new value
+#define ALFA_VOLTAGE_FILTER_INV 0.997 // so we don't have to do this math every time
+
+#define GENERATOR_LOW_VOLTAGE_LEVEL 47.0 // low voltage level after which we should be concerned about being able to land
 
 // reported mode from the generator:
 enum GenMode {
@@ -40,6 +48,12 @@ struct Reading {
     uint16_t    errors;
     uint16_t    rpm;
     float       output_voltage;
+    float       filtered_output_voltage;
+    uint8_t     filtered_voltage_initialized;
+    uint8_t     lowVoltageWarningSent;
+    uint8_t     low_voltage_wrn_cnt;
+    uint8_t     low_voltage_warning;
+    uint8_t     lowVoltageWrnSendCnt;
     float       output_current;
     GenMode     mode;
     float       pwrIntegral;
@@ -145,6 +159,12 @@ void Copter::userhook_init()
     last_reading.generatorTimeoutCnt = 0;
     last_reading.generatorTimeoutErrorSendCnt = GENERATOR_TIMEOUT_SEND_INTERVAL;
     fuelSendCnt = 0;
+    last_reading.filtered_output_voltage = 0;
+
+    last_reading.lowVoltageWarningSent = 0;
+    last_reading.low_voltage_wrn_cnt = 0;
+    last_reading.low_voltage_warning = 0;
+    last_reading.lowVoltageWrnSendCnt = 0;
 
     // initialize the serial manager, according to how it's done in RichenPower
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
@@ -788,6 +808,76 @@ void Copter::userhook_SlowLoop()
 
     if (get_reading())
     {
+        if (!last_reading.filtered_voltage_initialized)
+        {
+            if (last_reading.output_voltage > 20.0)
+            {
+                last_reading.filtered_output_voltage = last_reading.output_voltage;
+                last_reading.filtered_voltage_initialized = 1;
+            }
+        } // if !filtered_voltage_initialized
+        else
+        {
+            // it has been initialized - do the filtering here
+            last_reading.filtered_output_voltage = (ALFA_VOLTAGE_FILTER * last_reading.output_voltage) + (ALFA_VOLTAGE_FILTER_INV * last_reading.filtered_output_voltage);
+        }
+
+        // do the low voltage check algorithm here
+        if (last_reading.filtered_output_voltage < GENERATOR_LOW_VOLTAGE_LEVEL)
+        {
+            if (last_reading.low_voltage_wrn_cnt < LOW_VOLTAGE_WARNING_CNT)
+            {
+                last_reading.low_voltage_wrn_cnt++;
+            }
+            else
+            {
+                last_reading.low_voltage_warning = 1;
+            }
+        }
+        else
+        { // voltage is above low warning level
+            if (last_reading.low_voltage_warning)
+            { // if the warning is already active
+                if (last_reading.low_voltage_wrn_cnt)
+                {
+                    last_reading.low_voltage_wrn_cnt--;
+                }
+                else
+                {
+                    last_reading.low_voltage_warning = 0;
+                }
+            }
+        }
+
+        if (last_reading.low_voltage_warning)
+        {
+            // if it's active at all
+            if (last_reading.lowVoltageWrnSendCnt < VOLTAGE_WRN_SEND_INTERVAL)
+            {
+                last_reading.lowVoltageWrnSendCnt++;
+            }
+            else
+            {
+
+                // warn the user
+                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE LOW!");
+
+                // set sent flag
+                last_reading.lowVoltageWarningSent = 1;
+
+                // reset counter
+                last_reading.lowVoltageWrnSendCnt = 0;
+            }
+        } // if last_reading.low_voltage_warning
+        else
+        {
+            if (last_reading.lowVoltageWarningSent)
+            {
+                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE NORMAL");
+                last_reading.lowVoltageWarningSent = 0;
+            }
+        }
+
 
         // temporary
         //gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
@@ -1031,30 +1121,33 @@ void Copter::userhook_SlowLoop()
 
         counter2 = 0;
         // log //    log runtime, current, power, mode, etc.
-
-        AP::logger().Write(
-            "GEN",
-            "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,fp",
-            "s---qvAAOO------",
-            "F---------------",
-            "QIIHHfffhhBHBBBB",
-            AP_HAL::micros64(),
-            last_reading.runtime,
-            last_reading.seconds_until_maintenance,
-            last_reading.servoCmd,
-            last_reading.rpm,
-            last_reading.output_voltage,
-            last_reading.output_current,
-            last_reading.batt_current,
-            last_reading.rectTemp,
-            last_reading.genTemp,
-            last_reading.mode,
-            last_reading.pwm_avg,
-            last_reading.operateMode,
-            last_reading.requestedOperateMode,
-            last_reading.operateModeTransitionActive,
-            last_reading.fuelPct
-            );
+        if (last_reading.generatorDetected)
+        {
+            AP::logger().Write(
+                "GEN",
+                "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,fp",
+                "s---qvAAOO------",
+                "F---------------",
+                "QIIHHfffhhBHBBBB",
+                AP_HAL::micros64(),
+                last_reading.runtime,
+                last_reading.seconds_until_maintenance,
+                last_reading.servoCmd,
+                last_reading.rpm,
+                //last_reading.output_voltage,
+                last_reading.filtered_output_voltage,
+                last_reading.output_current,
+                last_reading.batt_current,
+                last_reading.rectTemp,
+                last_reading.genTemp,
+                last_reading.mode,
+                last_reading.pwm_avg,
+                last_reading.operateMode,
+                last_reading.requestedOperateMode,
+                last_reading.operateModeTransitionActive,
+                last_reading.fuelPct
+                );
+        }
 
     } // counter 2
 
@@ -1136,8 +1229,10 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
         break;
     }
 
-
-    mavlink_msg_generator_status_send(
+    // only send the MAVLink message if the Hybrid Module is detected in the system
+    if (last_reading.generatorDetected)
+    {
+        mavlink_msg_generator_status_send(
         channel.get_chan(),
         status,//
         last_reading.rpm, // generator_speed
@@ -1151,6 +1246,9 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
         last_reading.runtime,
         last_reading.seconds_until_maintenance
         );
+    }
+
+
 } // end of send_generator_status
 
 // read - read serial port, return true if a new reading has been found
