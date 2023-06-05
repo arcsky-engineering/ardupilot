@@ -808,7 +808,7 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
 
         // if these variables don't work for some reason (following data type of EFI_STATUS message online)
         // then possibly use the data types found in the AP_EFI.cpp file
-        uint8_t ecu_index = 1;
+        float ecu_index = 1;
         float dummyZero = 0.001;
         float erpm = ((float)(last_reading.efiRPM));
         float engineLoad = ((float)(last_reading.fuelload))*0.1;
@@ -819,10 +819,10 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         float injtime = ((float)(last_reading.pulseWidthms))*0.001;
         float ptcomp = ((float)(last_reading.baroCorrection))*0.1;
         float bv = ((float)(last_reading.bv))*0.1;
-        
+
         mavlink_msg_efi_status_send(
         channel.get_chan(),
-        last_reading.efiMsgReceived,
+        (float)(last_reading.efiMsgReceived),
         ecu_index,
         erpm,
         dummyZero,
@@ -839,8 +839,7 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         dummyZero,
         tps,
         ptcomp,
-        bv,
-        dummyZero
+        bv
         );
     }
 
