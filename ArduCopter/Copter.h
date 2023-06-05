@@ -230,6 +230,7 @@ public:
     Copter(void);
 
     void send_generator_status(const GCS_MAVLINK &channel);
+    void send_efi_status(const GCS_MAVLINK &channel);
     bool get_reading();
     uint8_t get_fuel_pct();
     uint8_t get_gen_detected();
@@ -242,6 +243,9 @@ public:
 
     const uint8_t FOOTER_MAGIC1 = 0xFD;
     const uint8_t FOOTER_MAGIC2 = 0xFD;
+
+    const uint8_t FOOTER_MAGIC3 = 0xFC;
+    const uint8_t FOOTER_MAGIC4 = 0xFC;
 
 private:
 

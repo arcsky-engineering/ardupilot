@@ -101,6 +101,48 @@ struct Reading {
     uint8_t generatorTimeoutError;
     uint16_t generatorTimeoutErrorSendCnt;
     uint8_t generatorTimeoutErrorSet;
+
+    // new EFI data stuff added June 2023
+    uint8_t efiMsgReceived;
+
+    // pulseWidth1
+    uint16_t pulseWidthms;
+    // rpm
+    uint16_t efiRPM;
+    // afrtgt1
+    uint8_t afrtgt;
+    // baro
+    int16_t baro;
+    // mat
+    int16_t mat;
+    // clt
+    int16_t clt;
+    // tps
+    int16_t tps;
+    // bv
+    int16_t bv;
+    // afr1
+    int16_t afr1;
+    // aircor
+    int16_t aircor;
+    // warmcor
+    int16_t warmcor;
+    // accelEnrich
+    int16_t accelEnrich;
+    // tpsfuelcut
+    int16_t tpsfuelcut;
+    // baroCorrection
+    int16_t baroCorrection;
+    // gammaEnrich
+    int16_t gammaEnrich;
+    // ve1
+    int16_t ve1;
+    // TPSdot
+    int16_t TPSdot;
+    // fuelload
+    uint8_t fuelload;    
+
+    uint8_t msgType; // type of message received by system (1 = GENERATOR / 2 = EFI)
 };
 
 // declare some variables to use
@@ -135,6 +177,9 @@ uint8_t fs_fuel = 0;
 uint8_t fs_fuel_pct = 0;
 uint8_t fuel_warn_pct = 0;
 
+uint32_t droneFlightTime = 0;
+uint8_t runtimesent = 0;
+
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
@@ -146,6 +191,7 @@ void Copter::userhook_init()
     fs_fuel = (uint8_t)(g.gen_fuel_fs_action);
     fs_fuel_pct = (uint8_t)(g.gen_fuel_fs_pct);
     fuel_warn_pct = (uint8_t)(g.gen_fuel_warn_pct);
+    droneFlightTime = g2.stats.flttime;
 
 
     last_reading.engineDiedNoticeSent = 0;
@@ -197,532 +243,6 @@ void Copter::userhook_50Hz()
 {
     // put your 50Hz code here
 
-    // check for value on channel 9
-    // channels are 0 index based
-    // only do so if failsafe is not active
-    if (!(failsafe.radio))
-    {
-        genRadioCmd = hal.rcin->read(8);
-    }
-    else
-    {
-        genRadioCmd = 1000; // low is default value - no kill
-    }
-
-    if (!killOverride)
-    {
-        if (genRadioCmd > 1500)
-        {
-            // request kill state
-            killState = 1;
-        }
-        else if (genRadioCmd > 800)
-        {
-            // normal state - no kill
-            killState = 0;
-        }
-        else
-        {
-            // kill if something is weird?
-            // TODO - figure out if this is a good way to handle it
-            killState = 0;
-        }
-    }
-
-    // if we are not in kill state, go ahead and set run/idle commands
-    if (!killState)
-    {
-        // check for vehicle arm state
-        if(AP::arming().is_armed())
-        {
-            if (currentGenMode != RUN)
-            {
-                currentGenMode = RUN;
-                // set pwm output
-                genCmdOut = 2000;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // if armed
-        else
-        {
-            // not armed
-            if (currentGenMode != IDLE)
-            {
-                currentGenMode = IDLE;
-                // set pwm output
-                genCmdOut = 1500;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // else - from if vehicle was armed
-    } // if (!killState)
-    else // kill state is active - keep setting the kill command on PWM output
-    {
-        currentGenMode = OFF;
-        genCmdOut = 1000;
-        SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-    }
-
-
-    // check for UART and process it into data, populate last_reading structure
-
-    //(void)get_reading();
-    if (get_reading())
-    {
-        // temporary
-        //gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
-
-        // update the flag to indicate that we have detected the generator in the system
-        if (!last_reading.generatorDetected)
-        {
-            last_reading.generatorDetected = 1;
-        }
-
-
-        // commented out on Oct 30, 2022 because fuel
-        // percentage will now be transmitted as percentage gauge
-        // on the battery monitor
-        /*
-        if(!fuelPctInitialized)
-        {
-            // wait for a while (e.g. to allow for connection to establish)
-            // before transmitting the first initialized signal
-            if (fuelSendCnt < 50)
-            {
-                fuelSendCnt++;
-            }
-            else
-            {
-                // send fuel percentage warnings every 10 percentage change
-                startingFuelPct = last_reading.fuelPct;
-                // broadcast fuel percent to ground station
-                gcs().send_text(MAV_SEVERITY_INFO, "Initial Fuel: %u%%",last_reading.fuelPct);
-                fuelPctInitialized = 1;
-            }
-        } // if (!fuelPctInitialized)
-        else
-        {
-            if (startingFuelPct >= last_reading.fuelPct)
-            {
-                // if we have changed by more than 10, and we are at an even division of 10,
-                // broadcast the current status
-                if (((startingFuelPct - last_reading.fuelPct) >= 10) && ((last_reading.fuelPct % 10)==0))
-                {
-                    gcs().send_text(MAV_SEVERITY_INFO, "Remaining Fuel: %u%%",last_reading.fuelPct);
-                    // reset starting fuel pct here?
-                    startingFuelPct = last_reading.fuelPct;
-                }
-            }
-            else
-            {
-                // the current fuel reading has exceeded the previous one (i.e. we have gained fuel)
-                if ((last_reading.fuelPct - startingFuelPct) > 10)
-                {
-                    // reset the fuel system
-                    fuelPctInitialized = 0;
-                    fuelSendCnt = 0;
-                }
-            }
-        } // else - from if (!fuelPctInitialized)
-        */
-    } // if (get_reading())
-
-    if (last_reading.engineDied)
-    {
-        if (!last_reading.engineDiedNoticeSent)
-        {
-            // failsafe stuff for engine stoppage
-            gcs().send_text(MAV_SEVERITY_WARNING, "Generator Failsafe");
-            gcs().send_text(MAV_SEVERITY_INFO, "Generator Failsafe %u",fs_engine);
-            // TODO - in the future, add failsafe actions and configurable ways of
-            // managing this, possibly by modifying parameters and using the previous
-            // GEN parameters (e.g. g.gen_fuel_pct) to be g.gen_fs_action.
-
-            FailsafeAction desired_gen_fs_action;
-            desired_gen_fs_action = (FailsafeAction)(fs_engine);
-
-            // call functions (possibly write custom function) in events.cpp file
-            copter.do_failsafe_action(desired_gen_fs_action, ModeReason::FAILSAFE);
-            //do_failsafe_action(Failsafe_Action action, ModeReason reason)
-
-            last_reading.engineDiedNoticeSent = 1;
-        }
-    } // if (last_reading.engineDied)
-    else
-    {
-        // check if we had previously died and need to recover
-        // TODO
-        if (last_reading.engineDiedNoticeSent)
-        {
-            last_reading.engineDiedNoticeSent = 0;
-        }
-    }
-
-
-    if (last_reading.tempError)
-    {
-        // if it's active at all
-        if (last_reading.tempErrorSendCnt < TEMP_ERROR_SEND_INTERVAL)
-        {
-            last_reading.tempErrorSendCnt++;
-        }
-        else
-        {
-            if (!last_reading.tempErrorSet)
-            {
-                last_reading.tempErrorSet = 1;
-            }
-            // send custom message based on the type of error
-            switch(last_reading.tempError)
-            {
-            case 1:
-                gcs().send_text(MAV_SEVERITY_WARNING, "RECTIFIER TEMP WARNING!");
-                break;
-            case 2:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "RECTIFIER TEMP ERROR!");
-                break;
-            case 3:
-                gcs().send_text(MAV_SEVERITY_WARNING, "RECT TEMP SENS FAIL!");
-                break;
-            default:
-                break;
-            }
-
-            // reset counter
-            last_reading.tempErrorSendCnt = 0;
-        }
-    } // if last_reading.tempError
-    else
-    {
-        if(last_reading.tempErrorSet)
-        {
-            // tell GCS that it's cleared
-            gcs().send_text(MAV_SEVERITY_WARNING, "TEMP SENS OK!");
-            last_reading.tempErrorSet = 0;
-        }
-    }
-
-    if (last_reading.currentError)
-    {
-        if (last_reading.currentError == 2)
-        {
-            if (!last_reading.currentErrorFsHandled)
-            {
-                // kill engine should be one of those options
-                    gcs().send_text(MAV_SEVERITY_ERROR, "Generator Batt Failsafe");
-                    gcs().send_text(MAV_SEVERITY_INFO, "Generator Batt Failsafe %u",fs_oc);
-                    // TODO - in the future, add failsafe actions and configurable ways of
-                    // managing this, possibly by modifying parameters and using the previous
-                    // GEN parameters (e.g. g.gen_fuel_pct) to be g.gen_fs_action.
-
-                    if (fs_oc < 6)
-                    {
-                        FailsafeAction desired_gen_fs_oc_action;
-                        desired_gen_fs_oc_action = (FailsafeAction)(fs_oc);
-
-                        // call functions (possibly write custom function) in events.cpp file
-                        copter.do_failsafe_action(desired_gen_fs_oc_action, ModeReason::FAILSAFE);
-                        //do_failsafe_action(Failsafe_Action action, ModeReason reason)
-                    }
-                    else if (fs_oc == 6)
-                    {
-                        // kill engine
-                        killOverride = 1;
-                        killState = 1;
-
-                    }
-                    last_reading.currentErrorFsHandled = 1;
-            }
-        }
-        else
-        {
-            if (killOverride)
-            {
-                killOverride = 0;
-            }
-        }
-        // if it's active at all
-        if (last_reading.currentErrorSendCnt < CURRENT_ERROR_SEND_INTERVAL)
-        {
-            last_reading.currentErrorSendCnt++;
-        }
-        else
-        {
-            if (!last_reading.currentErrorSet)
-            {
-                last_reading.currentErrorSet = 1;
-            }
-            // send custom message based on the type of error
-            switch(last_reading.currentError)
-            {
-            case 1:
-                gcs().send_text(MAV_SEVERITY_WARNING, "BATT CURRENT WARNING!");
-                break;
-            case 2:
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "BATT OVERCHARGE!");
-                break;
-            case 3:
-                gcs().send_text(MAV_SEVERITY_WARNING, "BATT CUR SENS FAIL!");
-                break;
-            default:
-                break;
-            }
-
-            // reset counter
-            last_reading.currentErrorSendCnt = 0;
-        }
-    } // if last_reading.currentError
-    else
-    {
-        if(last_reading.currentErrorSet)
-        {
-            gcs().send_text(MAV_SEVERITY_WARNING, "BATT CURR OK!");
-            last_reading.currentErrorSet = 0;
-        }
-    }
-
-    if(last_reading.generatorDetected)
-    {
-        if (last_reading.fuelPct < fs_fuel_pct)
-        {
-            if (!last_reading.fuelFailsafeTriggered)
-            {
-                // kill engine should be one of those options
-                    gcs().send_text(MAV_SEVERITY_ERROR, "Generator Fuel Failsafe");
-                    gcs().send_text(MAV_SEVERITY_INFO, "Generator Fuel Failsafe %u",fs_fuel);
-                    FailsafeAction desired_gen_fs_fuel_action;
-                    desired_gen_fs_fuel_action = (FailsafeAction)(fs_fuel);
-
-                    // call functions (possibly write custom function) in events.cpp file
-                    copter.do_failsafe_action(desired_gen_fs_fuel_action, ModeReason::FAILSAFE);
-                    //do_failsafe_action(Failsafe_Action action, ModeReason reason)
-
-                    last_reading.fuelFailsafeTriggered = 1;
-            }
-
-
-            if (!last_reading.fuelWarningSet)
-            {
-                last_reading.fuelWarningSet = 1;
-            }
-            if (last_reading.fuelWarningSendCnt < FUEL_WARNING_SEND_INTERVAL)
-            {
-                last_reading.fuelWarningSendCnt++;
-            }
-            else
-            {
-                // send mavlink message
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Low Fuel %u%%",last_reading.fuelPct);
-                last_reading.fuelWarningSendCnt = 0;
-            }
-            // trigger failsafe
-
-        }
-        else if (last_reading.fuelPct < fuel_warn_pct)
-        {
-            if (!last_reading.fuelWarningSet)
-            {
-                last_reading.fuelWarningSet = 1;
-            }
-            if (last_reading.fuelWarningSendCnt < FUEL_WARNING_SEND_INTERVAL)
-            {
-                last_reading.fuelWarningSendCnt++;
-            }
-            else
-            {
-                // send mavlink message
-                gcs().send_text(MAV_SEVERITY_WARNING, "Low Fuel %u%%",last_reading.fuelPct);
-                last_reading.fuelWarningSendCnt = 0;
-            }
-        }
-        else
-        {
-            if (last_reading.fuelWarningSet)
-            {
-                last_reading.fuelWarningSet = 0;
-                last_reading.fuelFailsafeTriggered = 0;
-            }
-        }
-    } // only do this section if the generator is detected
-
-//
-//  // try UART stuff
-//
-//  uint32_t nbytes = uart->read(RxBuf, 36);
-//  if(nbytes>0)
-//  {
-//      gcs().send_text(MAV_SEVERITY_INFO, "Read UART bytes: %d",(uint8_t)nbytes);
-//  }
-//
-//  if (nbytes >= 36)
-//  {
-//      // we have read at least a full packet
-//      //gcs().send_text(MAV_SEVERITY_INFO, "Read UART bytes: %d",tempBuf[1]);
-//
-//      // transmit back
-//      uart->printf("Byte %d\n",RxBuf[0]);
-//      //uart->write(tempBuf, 4);
-//  }
-
-
-    last_reading.mode = currentGenMode;
-
-    // get voltage from battery monitor
-    //last_reading.output_voltage = battery.voltage();
-    // TODO - remove this when rectifier PCB revision is calculating battery current directly
-
-    //  float tempCur;
-//    if(battery.current_amps(tempCur))
-//  {
-//      last_reading.batt_current = tempCur - last_reading.output_current;
-//  }
-//    else
-//    {
-//      last_reading.batt_current = 0;
-//    }
-
-//    // *************************************************************************************************
-//    // *********** ENERGY INTEGRAL CALCULATION *********************************************************
-//    // *************************************************************************************************
-//
-//  float dt;
-//
-//  if (!timeCaptured)
-//  {
-//      timeCaptured = 1;
-//
-//      dt = 0.0;
-//      lastMs = AP_HAL::millis();
-//  }
-//  else
-//  {
-//      // we got the value once already
-//      dt = ((float)(AP_HAL::millis() - lastMs)) * 0.001; // convert to seconds
-//      // update previous time
-//      lastMs = AP_HAL::millis();
-//  }
-//
-//  if (last_reading.pwrIntegral > GEN_ENERGY_MAX_KJ)
-//  {
-//      last_reading.pwrIntegral = GEN_ENERGY_MAX_KJ;
-//  }
-//  else
-//  {
-//      last_reading.pwrIntegral += last_reading.pwrGenerated * dt * 0.001; // converting to kJ
-//  }
-//
-//    // *************************************************************************************************
-//    // *********** END OF ENERGY INTEGRAL CALCULATION **************************************************
-//    // *************************************************************************************************
-//
-//
-//  fuelPctLocal = (float)(startingFuelPct) - last_reading.pwrIntegral / (GEN_ENERGY_THRESH_KJ * energyScaleFact) * 100.0;
-//
-//  fuelPctLocal /= 100.0; // to keep within 0 and 1 bounds that is expected
-//
-//  if (fuelPctLocal > 100.0)
-//  {
-//      fuelPctLocal = 100.0;
-//  }
-//
-//  if (fuelPctLocal < 0.0)
-//  {
-//      fuelPctLocal = 0.0;
-//  }
-
-
-//  static uint8_t counterSend = 0;
-//  static uint8_t counter1 = 25;
-//  counter1++;
-//  if (counter1 > 100) {
-//      counter1 = 0;
-//      //temp
-//      uint8_t fuelPctAdj;
-//      fuelPctAdj = (uint8_t)(g.gen_fuel_pct);
-//      if (fuelPctAdj != startingFuelPct)
-//      {
-//          // re-adjust and reset power integral
-//          startingFuelPct = fuelPctAdj;
-//          last_reading.pwrIntegral = 0;
-//      }
-//
-//      float tempScaleFact;
-//      tempScaleFact = (float)(g.gen_f_scale);
-//      float diffScaleFac;
-//      diffScaleFac = tempScaleFact - energyScaleFact;
-//      if(diffScaleFac < 0.0)
-//      {
-//          diffScaleFac = -diffScaleFac;
-//      }
-//
-//      if(diffScaleFac > 0.0001)
-//      {
-//          energyScaleFact = tempScaleFact;
-//      }
-//
-//      // display output to console
-//
-//      if(counterSend < 30)
-//      {
-//          counterSend++;
-//      }
-//      else
-//      {
-//          counterSend = 0;
-//          gcs().send_text(MAV_SEVERITY_INFO, "GEN: %.1f A, %.2f kW, %.1f %% ",last_reading.output_current,last_reading.pwrGenerated*0.001,fuelPctLocal*100);
-//      }
-//      //gcs().send_text(MAV_SEVERITY_INFO, "PWM: %d",genRadioCmd);
-//  }
-
-    static uint8_t counter2;
-    counter2++;
-    if (counter2 > 10)
-    {
-
-        // temp debug stuff
-        //gcs().send_text(MAV_SEVERITY_INFO, "Engine Died: %d",last_reading.engineDied);
-
-
-        counter2 = 0;
-        // log //    log runtime, current, power, mode
-
-        AP::logger().Write(
-            "GEN",
-            "TimeUS,trn,tma,thr,rpm,V,A,Ab,Tm,Tg,md,pa,om,rm,omt,fp",
-            "s---qvAAOO------",
-            "F---------------",
-            "QIIHHfffhhBHBBBB",
-            AP_HAL::micros64(),
-            last_reading.runtime,
-            last_reading.seconds_until_maintenance,
-            last_reading.servoCmd,
-            last_reading.rpm,
-            last_reading.output_voltage,
-            last_reading.output_current,
-            last_reading.batt_current,
-            last_reading.rectTemp,
-            last_reading.genTemp,
-            last_reading.mode,
-            last_reading.pwm_avg,
-            last_reading.operateMode,
-            last_reading.requestedOperateMode,
-            last_reading.operateModeTransitionActive,
-            last_reading.fuelPct
-            );
-
-//      AP::logger().Write(
-//          "GEN",
-//          "TimeUS,runtime,current,power,mode",
-//          //"ssAW-", // units
-//          //"F----", // scaling
-//          "QQffB",
-//          AP_HAL::micros64(),
-//          last_reading.runtime,
-//          last_reading.output_current,
-//          last_reading.pwrGenerated,
-//          last_reading.mode
-//          );
-
-    } // counter 2
 } // end of 50 hz loop
 #endif
 
@@ -738,6 +258,35 @@ void Copter::userhook_SlowLoop()
 {
     // put your 3.3Hz code here
 
+    static uint8_t counter1;
+    // initialization only - for displaying generator (and UAV) runtime
+    if (!runtimesent)
+    {
+        if (counter1 < 180) // 180 loops of 3.3 Hz (about 60 seconds)
+        {
+            counter1++;
+        }
+        else
+        {
+            if(last_reading.generatorDetected)
+            {
+                // only send the generator runtime message if generator has been detected
+                float genHours;
+                genHours = (float)(last_reading.runtime) / 3600.0; 
+                gcs().send_text(MAV_SEVERITY_INFO,"GEN HOURS: %.1f",genHours);
+            }
+
+            // send the drone runtime message regardless
+            float flightHours;
+            flightHours = (float)(droneFlightTime) / 3600.0;
+            gcs().send_text(MAV_SEVERITY_INFO,"FLIGHT HOURS: %.1f",flightHours);
+
+            runtimesent = 1;
+        }
+    } // if (!runtimeSent)
+
+
+
     // check for value on channel 9
     // channels are 0 index based
     // only do so if failsafe is not active
@@ -808,92 +357,101 @@ void Copter::userhook_SlowLoop()
 
     if (get_reading())
     {
-        if (!last_reading.filtered_voltage_initialized)
+        if (last_reading.msgType == 1) // generator message
         {
-            if (last_reading.output_voltage > 20.0)
+            if (!last_reading.filtered_voltage_initialized)
             {
-                last_reading.filtered_output_voltage = last_reading.output_voltage;
-                last_reading.filtered_voltage_initialized = 1;
-            }
-        } // if !filtered_voltage_initialized
-        else
-        {
-            // it has been initialized - do the filtering here
-            last_reading.filtered_output_voltage = (ALFA_VOLTAGE_FILTER * last_reading.output_voltage) + (ALFA_VOLTAGE_FILTER_INV * last_reading.filtered_output_voltage);
-        }
-
-        // do the low voltage check algorithm here
-        if (last_reading.filtered_output_voltage < GENERATOR_LOW_VOLTAGE_LEVEL)
-        {
-            if (last_reading.low_voltage_wrn_cnt < LOW_VOLTAGE_WARNING_CNT)
-            {
-                last_reading.low_voltage_wrn_cnt++;
-            }
+                if (last_reading.output_voltage > 20.0)
+                {
+                    last_reading.filtered_output_voltage = last_reading.output_voltage;
+                    last_reading.filtered_voltage_initialized = 1;
+                }
+            } // if !filtered_voltage_initialized
             else
             {
-                last_reading.low_voltage_warning = 1;
+                // it has been initialized - do the filtering here
+                last_reading.filtered_output_voltage = (ALFA_VOLTAGE_FILTER * last_reading.output_voltage) + (ALFA_VOLTAGE_FILTER_INV * last_reading.filtered_output_voltage);
             }
-        }
-        else
-        { // voltage is above low warning level
-            if (last_reading.low_voltage_warning)
-            { // if the warning is already active
-                if (last_reading.low_voltage_wrn_cnt)
+
+            // do the low voltage check algorithm here
+            if (last_reading.filtered_output_voltage < GENERATOR_LOW_VOLTAGE_LEVEL)
+            {
+                if (last_reading.low_voltage_wrn_cnt < LOW_VOLTAGE_WARNING_CNT)
                 {
-                    last_reading.low_voltage_wrn_cnt--;
+                    last_reading.low_voltage_wrn_cnt++;
                 }
                 else
                 {
-                    last_reading.low_voltage_warning = 0;
+                    last_reading.low_voltage_warning = 1;
                 }
             }
-        }
-
-        if (last_reading.low_voltage_warning)
-        {
-            // if it's active at all
-            if (last_reading.lowVoltageWrnSendCnt < VOLTAGE_WRN_SEND_INTERVAL)
-            {
-                last_reading.lowVoltageWrnSendCnt++;
+            else
+            { // voltage is above low warning level
+                if (last_reading.low_voltage_warning)
+                { // if the warning is already active
+                    if (last_reading.low_voltage_wrn_cnt)
+                    {
+                        last_reading.low_voltage_wrn_cnt--;
+                    }
+                    else
+                    {
+                        last_reading.low_voltage_warning = 0;
+                    }
+                }
             }
+
+            if (last_reading.low_voltage_warning)
+            {
+                // if it's active at all
+                if (last_reading.lowVoltageWrnSendCnt < VOLTAGE_WRN_SEND_INTERVAL)
+                {
+                    last_reading.lowVoltageWrnSendCnt++;
+                }
+                else
+                {
+
+                    // warn the user
+                    gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE LOW!");
+
+                    // set sent flag
+                    last_reading.lowVoltageWarningSent = 1;
+
+                    // reset counter
+                    last_reading.lowVoltageWrnSendCnt = 0;
+                }
+            } // if last_reading.low_voltage_warning
             else
             {
-
-                // warn the user
-                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE LOW!");
-
-                // set sent flag
-                last_reading.lowVoltageWarningSent = 1;
-
-                // reset counter
-                last_reading.lowVoltageWrnSendCnt = 0;
+                if (last_reading.lowVoltageWarningSent)
+                {
+                    gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE NORMAL");
+                    last_reading.lowVoltageWarningSent = 0;
+                }
             }
-        } // if last_reading.low_voltage_warning
-        else
-        {
-            if (last_reading.lowVoltageWarningSent)
+
+
+            // temporary
+            //gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
+
+            // update the flag to indicate that we have detected the generator in the system
+            if (!last_reading.generatorDetected)
             {
-                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE NORMAL");
-                last_reading.lowVoltageWarningSent = 0;
+                last_reading.generatorDetected = 1;
+            }
+
+            // reset timeout count since we have received data
+            last_reading.generatorTimeoutCnt = 0;
+
+            if (last_reading.generatorTimeoutErrorSet)
+            {
+                last_reading.generatorTimeoutErrorSet = 0;
             }
         }
-
-
-        // temporary
-        //gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
-
-        // update the flag to indicate that we have detected the generator in the system
-        if (!last_reading.generatorDetected)
+        else if (last_reading.msgType == 2)
         {
-            last_reading.generatorDetected = 1;
-        }
+            // EFI message received
 
-        // reset timeout count since we have received data
-        last_reading.generatorTimeoutCnt = 0;
-
-        if (last_reading.generatorTimeoutErrorSet)
-        {
-            last_reading.generatorTimeoutErrorSet = 0;
+            // do any updating here that is necessary
         }
 
     } // if (get_reading())
@@ -1114,6 +672,9 @@ void Copter::userhook_SlowLoop()
 
     last_reading.mode = currentGenMode;
 
+
+    // LOGGING SECTION ****************************************************
+
     static uint8_t counter2;
     counter2++;
     if (counter2 > 1)
@@ -1148,6 +709,34 @@ void Copter::userhook_SlowLoop()
                 last_reading.fuelPct
                 );
         }
+
+        if (last_reading.efiMsgReceived)
+        {
+            // EFI Message logging
+            AP::logger().Write(
+                "EFI",
+                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,af1,ac,wc,ae,tfc,bc,ge,pw",
+                "sq--OO%v-%%%%%%-",
+                "F-AAAAAAAAAAAAAC",
+                "QHBhhhhhhhhhhhhH",
+                AP_HAL::micros64(),
+                last_reading.efiRPM,
+                last_reading.afrtgt,
+                last_reading.baro,
+                last_reading.mat,
+                last_reading.clt,
+                last_reading.tps,
+                last_reading.bv,
+                last_reading.afr1,
+                last_reading.aircor,
+                last_reading.warmcor,
+                last_reading.accelEnrich,
+                last_reading.tpsfuelcut,
+                last_reading.baroCorrection,
+                last_reading.gammaEnrich,
+                last_reading.pulseWidthms
+                );
+        }        
 
     } // counter 2
 
@@ -1205,6 +794,58 @@ void Copter::userhook_auxSwitch3(uint8_t ch_flag)
     // put your aux switch #3 handler here (CHx_OPT = 49)
 }
 #endif
+
+//send mavlink efi status
+void Copter::send_efi_status(const GCS_MAVLINK &channel)
+{
+
+    // only send the MAVLink message if the Hybrid Module is detected in the system
+    if (last_reading.efiMsgReceived)
+    {
+
+        // populate some dummy variables for things we don't have
+        // available
+
+        // if these variables don't work for some reason (following data type of EFI_STATUS message online)
+        // then possibly use the data types found in the AP_EFI.cpp file
+        uint8_t ecu_index = 1;
+        float dummyZero = 0.001;
+        float erpm = ((float)(last_reading.efiRPM));
+        float engineLoad = ((float)(last_reading.fuelload))*0.1;
+        float tps = ((float)(last_reading.tps))*0.1;
+        float baroPress = ((float)(last_reading.baro))*0.1;
+        float mat = ((float)(last_reading.mat))*0.1;
+        float clt = ((float)(last_reading.clt))*0.1;
+        float injtime = ((float)(last_reading.pulseWidthms))*0.001;
+        float ptcomp = ((float)(last_reading.baroCorrection))*0.1;
+        float bv = ((float)(last_reading.bv))*0.1;
+        
+        mavlink_msg_efi_status_send(
+        channel.get_chan(),
+        last_reading.efiMsgReceived,
+        ecu_index,
+        erpm,
+        dummyZero,
+        dummyZero,
+        engineLoad,
+        tps,
+        dummyZero,
+        baroPress,
+        dummyZero,
+        mat,
+        clt,
+        dummyZero,
+        injtime,
+        dummyZero,
+        tps,
+        ptcomp,
+        bv,
+        dummyZero
+        );
+    }
+
+
+} // end of send_efi_status
 
 //send mavlink generator status
 void Copter::send_generator_status(const GCS_MAVLINK &channel)
@@ -1277,11 +918,11 @@ bool Copter::get_reading()
     }
 
     // check for the footer signature:
-    if (RxBuf[38] != FOOTER_MAGIC1) {
+    if ((RxBuf[38] != FOOTER_MAGIC1) && (RxBuf[38] != FOOTER_MAGIC3)) {
         move_header_in_buffer(1);
         return false;
     }
-    if (RxBuf[39] != FOOTER_MAGIC2) {
+    if ((RxBuf[39] != FOOTER_MAGIC2) && (RxBuf[39] != FOOTER_MAGIC4)) {
         move_header_in_buffer(1);
         return false;
     }
@@ -1298,89 +939,166 @@ bool Copter::get_reading()
     // check that it matches
     if ((cs1 == RxBuf[36]) && (cs2 == RxBuf[37]))
     {
-        // process the data
-    // define some temporary variables for unpacking the data
-        uint32_t tempUint32 = 0;
-        int32_t tempInt32 = 0;
-        uint16_t tempUint16 = 0;
-        int16_t tempInt16 = 0;
+        // check which message we have received
+        if (RxBuf[38] == FOOTER_MAGIC1) // this is the normal generator message
+        {
+            last_reading.msgType = 1;
+            // process the data
+        // define some temporary variables for unpacking the data
+            uint32_t tempUint32 = 0;
+            int32_t tempInt32 = 0;
+            uint16_t tempUint16 = 0;
+            int16_t tempInt16 = 0;
 
-        // get the status flags
-        tempUint16 = ((RxBuf[3] << 8) | RxBuf[2]);
-        last_reading.pwm_avg = tempUint16;
-        last_reading.currentPwmInputState = (RxBuf[4] & 0x0F); // Least significant 4 bits
-        last_reading.detectedPwmState = ((RxBuf[4] >> 4) & 0x0F); // Most significant 4 bits
-        last_reading.operateMode = (RxBuf[5] & 0x03); // least significant 2 bits
-        last_reading.requestedOperateMode = ((RxBuf[5] >> 2) & 0x03); // next 2 bits
-        last_reading.operateModeTransitionActive = ((RxBuf[5] >> 4) & 0x03); // next 2 bits
-        last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
-        tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
-        last_reading.errorStatus = tempUint16;
-        last_reading.tempError = (RxBuf[6] & 0x07); // only 3 LSBits
-        last_reading.currentError = ((RxBuf[6]>>3) & 0x07); // next 3 bits
-        last_reading.engineDied = ((RxBuf[8]) & 0x03); // only 2 LSBits
-        last_reading.fuelPct = RxBuf[9];
+            // get the status flags
+            tempUint16 = ((RxBuf[3] << 8) | RxBuf[2]);
+            last_reading.pwm_avg = tempUint16;
+            last_reading.currentPwmInputState = (RxBuf[4] & 0x0F); // Least significant 4 bits
+            last_reading.detectedPwmState = ((RxBuf[4] >> 4) & 0x0F); // Most significant 4 bits
+            last_reading.operateMode = (RxBuf[5] & 0x03); // least significant 2 bits
+            last_reading.requestedOperateMode = ((RxBuf[5] >> 2) & 0x03); // next 2 bits
+            last_reading.operateModeTransitionActive = ((RxBuf[5] >> 4) & 0x03); // next 2 bits
+            last_reading.engineKillState = ((RxBuf[5] >> 6) & 0x03); // next 2 bits
+            tempUint16 = ((RxBuf[7] << 8) | RxBuf[6]);
+            last_reading.errorStatus = tempUint16;
+            last_reading.tempError = (RxBuf[6] & 0x07); // only 3 LSBits
+            last_reading.currentError = ((RxBuf[6]>>3) & 0x07); // next 3 bits
+            last_reading.engineDied = ((RxBuf[8]) & 0x03); // only 2 LSBits
+            last_reading.fuelPct = RxBuf[9];
 
-        // old
-        //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
-        //last_reading.ctrlOutputFilt = tempUint16;
+            // old
+            //tempUint16 = ((RxBuf[9] << 8) | RxBuf[8]);
+            //last_reading.ctrlOutputFilt = tempUint16;
 
 
-        tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
-        last_reading.runtime = tempUint32;
-        tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
-        last_reading.seconds_until_maintenance = tempInt32;
-        last_reading.errors = 0;
-        // get RPM
-        tempUint16 = (RxBuf[29] << 8) | RxBuf[28];
-        last_reading.rpm = tempUint16;
-        // get voltage
-        tempUint16 = (RxBuf[17] << 8) | RxBuf[16];
-        last_reading.output_voltage = ((float)(tempUint16)) * 0.01;
-        // get current
-        tempUint16 = (RxBuf[13] << 8) | RxBuf[12];
-        last_reading.output_current = ((float)(tempUint16)) * 0.01;
-        // get power generated
-        tempUint16 = (RxBuf[15] << 8) | RxBuf[14];
-        last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
-        // get batt current setpoint
-        tempUint16 = (RxBuf[19] << 8) | RxBuf[18];
-        last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
-        // get batt current
-        tempInt16 = (RxBuf[11] << 8) | RxBuf[10];
-        last_reading.batt_current = ((float)(tempInt16)) * 0.01;
-        // get temperatures
-        tempInt16 = (RxBuf[31] << 8) | RxBuf[30];
-        last_reading.rectTemp = tempInt16 * 0.01;
-        tempInt16 = (RxBuf[33] << 8) | RxBuf[32];
-        last_reading.genTemp = tempInt16 * 0.01;
+            tempUint32 = (RxBuf[23] << 24) | (RxBuf[22] << 16) | (RxBuf[21] << 8) | (RxBuf[20]);
+            last_reading.runtime = tempUint32;
+            tempInt32 = (RxBuf[27] << 24) | (RxBuf[26] << 16) | (RxBuf[25] << 8) | (RxBuf[24]);
+            last_reading.seconds_until_maintenance = tempInt32;
+            last_reading.errors = 0;
+            // get RPM
+            tempUint16 = (RxBuf[29] << 8) | RxBuf[28];
+            last_reading.rpm = tempUint16;
+            // get voltage
+            tempUint16 = (RxBuf[17] << 8) | RxBuf[16];
+            last_reading.output_voltage = ((float)(tempUint16)) * 0.01;
+            // get current
+            tempUint16 = (RxBuf[13] << 8) | RxBuf[12];
+            last_reading.output_current = ((float)(tempUint16)) * 0.01;
+            // get power generated
+            tempUint16 = (RxBuf[15] << 8) | RxBuf[14];
+            last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
+            // get batt current setpoint
+            tempUint16 = (RxBuf[19] << 8) | RxBuf[18];
+            last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+            // get batt current
+            tempInt16 = (RxBuf[11] << 8) | RxBuf[10];
+            last_reading.batt_current = ((float)(tempInt16)) * 0.01;
+            // get temperatures
+            tempInt16 = (RxBuf[31] << 8) | RxBuf[30];
+            last_reading.rectTemp = tempInt16 * 0.01;
+            tempInt16 = (RxBuf[33] << 8) | RxBuf[32];
+            last_reading.genTemp = tempInt16 * 0.01;
 
-        // get servo ctrl value
-        tempUint16 = (RxBuf[35] << 8) | RxBuf[34];
-        last_reading.servoCmd = tempUint16;
+            // get servo ctrl value
+            tempUint16 = (RxBuf[35] << 8) | RxBuf[34];
+            last_reading.servoCmd = tempUint16;
 
-        //last_reading_ms = AP_HAL::millis();
+        } // if the generator status message is found
+        else if (RxBuf[38] == FOOTER_MAGIC3) // EFI message        
+        {
+            last_reading.msgType = 2;
+            uint16_t tempUint16 = 0;
+            int16_t tempInt16 = 0;
+
+            if (!last_reading.efiMsgReceived)
+            {
+                last_reading.efiMsgReceived = 1;
+            }
+            
+            // PROCESS EFI DATA into variables
+            // pulseWidth1
+            tempUint16 = (RxBuf[3] << 8) | RxBuf[2];
+            last_reading.pulseWidthms = tempUint16;
+
+            // rpm
+            tempUint16 = (RxBuf[5] << 8) | RxBuf[4];
+            last_reading.efiRPM = tempUint16;
+            
+            // afrtgt1
+            last_reading.afrtgt = RxBuf[6];
+            
+            // baro
+            tempInt16 = (RxBuf[8] << 8) | RxBuf[7];
+            last_reading.baro = tempInt16;
+
+            // mat
+            tempInt16 = (RxBuf[10] << 8) | RxBuf[9];
+            last_reading.mat = tempInt16;            
+            
+            // clt
+            tempInt16 = (RxBuf[12] << 8) | RxBuf[11];
+            last_reading.clt = tempInt16;            
+
+            // tps
+            tempInt16 = (RxBuf[14] << 8) | RxBuf[13];
+            last_reading.tps = tempInt16;
+
+            // bv
+            tempInt16 = (RxBuf[16] << 8) | RxBuf[15];
+            last_reading.bv = tempInt16;
+
+            // afr1
+            tempInt16 = (RxBuf[18] << 8) | RxBuf[17];
+            last_reading.afr1 = tempInt16;
+
+            // aircor
+            tempInt16 = (RxBuf[20] << 8) | RxBuf[19];
+            last_reading.aircor = tempInt16;
+
+            // warmcor
+            tempInt16 = (RxBuf[22] << 8) | RxBuf[21];
+            last_reading.warmcor = tempInt16;            
+
+            // accelEnrich
+            tempInt16 = (RxBuf[24] << 8) | RxBuf[23];
+            last_reading.accelEnrich = tempInt16;
+
+            // tpsfuelcut
+            tempInt16 = (RxBuf[26] << 8) | RxBuf[25];
+            last_reading.tpsfuelcut = tempInt16;
+
+            // baroCorrection
+            tempInt16 = (RxBuf[28] << 8) | RxBuf[27];
+            last_reading.baroCorrection = tempInt16;
+
+            // gammaEnrich
+            tempInt16 = (RxBuf[30] << 8) | RxBuf[29];
+            last_reading.gammaEnrich = tempInt16;
+
+            // ve1
+            tempInt16 = (RxBuf[32] << 8) | RxBuf[31];
+            last_reading.ve1 = tempInt16;
+
+            // TPSdot
+            tempInt16 = (RxBuf[34] << 8) | RxBuf[33];
+            last_reading.TPSdot = tempInt16;
+
+            // fuelload
+            last_reading.fuelload = RxBuf[35];
+
+        }
+
+        // reset body length regardless of message type
         body_length = 0;
-
         return true;
-    }
-    else
+    } // if the checksum is correct
+    else // checksum not correct
     {
         // reject data (possibly in the future increment a counter?)
         body_length = 0;
         return false;
     }
-
-
-    // check the version:
-//    const uint16_t version = be16toh(u.packet.version);
-//    const uint8_t major = version / 100;
-//    const uint8_t minor = (version % 100) / 10;
-//    const uint8_t point = version % 10;
-//    if (!protocol_information_anounced) {
-//        gcs().send_text(MAV_SEVERITY_INFO, "RichenPower: protocol %u.%u.%u", major, minor, point);
-//        protocol_information_anounced = true;
-//    }
 
 } // end of get_reading
 

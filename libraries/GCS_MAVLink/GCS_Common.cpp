@@ -5237,6 +5237,14 @@ void GCS_MAVLINK::send_generator_status() const
 }
 #endif
 
+#if HAL_EFI_ENABLED
+void GCS_MAVLINK::send_efi_status() const
+{
+    copter.send_efi_status(*this);
+}
+#endif
+
+
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 void GCS_MAVLINK::send_water_depth() const
 {
@@ -5675,11 +5683,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_EFI_STATUS: {
 #if HAL_EFI_ENABLED
+        // CHECK_PAYLOAD_SIZE(EFI_STATUS);
+        // AP_EFI *efi = AP::EFI();
+        // if (efi) {
+        //     efi->send_mavlink_status(chan);
+        // }
+        
+
+        // call our custom function here
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
-        AP_EFI *efi = AP::EFI();
-        if (efi) {
-            efi->send_mavlink_status(chan);
-        }
+        send_efi_status();
+
 #endif
         break;
     }
