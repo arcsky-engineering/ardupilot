@@ -21,6 +21,10 @@ void Copter::init_rangefinder(void)
    // upward facing range finder
    rangefinder_up_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
    rangefinder_up_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_90);
+
+   // forward facing range finder
+   rangefinder_forward_state.alt_cm_filt.set_cutoff_frequency(g2.rangefinder_filt);
+   rangefinder_forward_state.enabled = rangefinder.has_orientation(ROTATION_NONE);
 #endif
 }
 
@@ -36,11 +40,11 @@ void Copter::read_rangefinder(void)
     const float tilt_correction = 1.0f;
 #endif
 
-    // iterate through downward and upward facing lidar
+    // iterate through downward, upward, and forward facing lidar
     struct {
         RangeFinderState &state;
         enum Rotation orientation;
-    } rngfnd[2] = {{rangefinder_state, ROTATION_PITCH_270}, {rangefinder_up_state, ROTATION_PITCH_90}};
+    } rngfnd[3] = {{rangefinder_state, ROTATION_PITCH_270}, {rangefinder_up_state, ROTATION_PITCH_90}, {rangefinder_forward_state, ROTATION_NONE}};
 
     for (uint8_t i=0; i < ARRAY_SIZE(rngfnd); i++) {
         // local variables to make accessing simpler
@@ -114,6 +118,11 @@ void Copter::read_rangefinder(void)
     rangefinder_up_state.enabled = false;
     rangefinder_up_state.alt_healthy = false;
     rangefinder_up_state.alt_cm = 0;
+
+    // forward facing rangefinder
+    rangefinder_forward_state.enabled = false;
+    rangefinder_forward_state.alt_healthy = false;
+    rangefinder_forward_state.alt_cm = 0;
 #endif
 }
 

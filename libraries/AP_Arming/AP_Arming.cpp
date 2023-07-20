@@ -906,6 +906,30 @@ bool AP_Arming::board_voltage_checks(bool report)
 {
     // check board voltage
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
+        // check voltage sources
+        uint16_t pwrStatusFlags = 0;
+        pwrStatusFlags = hal.analogin->power_status_flags();
+        if ((pwrStatusFlags & MAV_POWER_STATUS_BRICK_VALID) && (pwrStatusFlags & MAV_POWER_STATUS_SERVO_VALID))
+        {
+            // power is good - no need for alarm
+        }
+        else
+        {
+            uint8_t lostPwrSrc = 0;
+            if (pwrStatusFlags & MAV_POWER_STATUS_BRICK_VALID)
+            {
+                // if this is true, we still have the primary, so the
+                // secondary must have been the cause
+                lostPwrSrc = 2;
+            }
+            else
+            {
+                // the primary must have been the cause
+                lostPwrSrc = 1;
+            }
+            check_failed(ARMING_CHECK_VOLTAGE, report, "FC Supply %u Not Powered", lostPwrSrc);
+            return false;
+        }
 #if HAL_HAVE_BOARD_VOLTAGE
         const float bus_voltage =  hal.analogin->board_voltage();
         const float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
@@ -913,7 +937,10 @@ bool AP_Arming::board_voltage_checks(bool report)
             check_failed(ARMING_CHECK_VOLTAGE, report, "Board (%1.1fv) out of range %1.1f-%1.1fv", (double)bus_voltage, (double)vbus_min, (double)AP_ARMING_BOARD_VOLTAGE_MAX);
             return false;
         }
+
 #endif // HAL_HAVE_BOARD_VOLTAGE
+
+
 
 #if HAL_HAVE_SERVO_VOLTAGE
        const float vservo_min = AP_BoardConfig::get_minimum_servo_voltage();
