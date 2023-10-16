@@ -774,19 +774,19 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: RFND_AVOID_DIST
     // @DisplayName: Rangefinder Avoidance Distance
-    // @Description: Distance in cm for the avoidance algorithm
+    // @Description: Distance in m for the avoidance algorithm
     // @User: Standard
     // @Units: cm
-    // @Range: 40 8000
-    GSCALAR(rfnd_avoid_dist_cm,  "RFND_AVOID_DIST",  2000),
+    // @Range: 2 80
+    GSCALAR(rfnd_avoid_dist_m,  "RFND_AVOID_DIST",  20),
 
     // @Param: RFND_AVOID_HGT
     // @DisplayName: Rangefinder Avoidance Min Altitude
-    // @Description: Vehicle altitude in cm above which the avoidance algorithm starts working
+    // @Description: Vehicle altitude in m above which the avoidance algorithm starts working
     // @User: Standard
     // @Units: cm
-    // @Range: 40 8000
-    GSCALAR(rfnd_avoid_active_alt_cm,  "RFND_AVOID_HGT",  1000),
+    // @Range: 1 80
+    GSCALAR(rfnd_avoid_active_alt_m,  "RFND_AVOID_HGT",  10),
 
     // @Param: RFND_FS_ACTION
     // @DisplayName: Rangefinder Avoidance Failsafe Action
@@ -813,7 +813,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     // @Units: none
     // @Range: 0 254
-    GSCALAR(rfnd_avoid_cnts,  "RFND_AVOID_CNTS",  50),
+    GSCALAR(rfnd_avoid_cnts,  "RFND_AVOID_CNTS",  10),
 
 
 

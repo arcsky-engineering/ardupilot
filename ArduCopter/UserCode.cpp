@@ -24,6 +24,8 @@
 #define FUEL_WARNING_SEND_INTERVAL 42 // cycles at 3.3 Hz (0.303) seconds
 #define GENERATOR_TIMEOUT_SEND_INTERVAL 43 // cycles at 3.3 Hz
 #define VOLTAGE_WRN_SEND_INTERVAL 37 // cycles at 3.3 Hz
+#define AVOID_BAD_SEND_INTERVAL 153 // cycles at 10 Hz
+#define RFND_FS_TRIGGERED_WARN_INTERVAL 167 // cycles at 10 Hz
 
 #define PWR_STATUS_BAD_SEND_INTERVAL 99// cycles at 3.3 Hz (about every 30 seconds)
 
@@ -35,6 +37,14 @@
 #define ALFA_VOLTAGE_FILTER_INV 0.997 // so we don't have to do this math every time
 
 #define GENERATOR_LOW_VOLTAGE_LEVEL 47.0 // low voltage level after which we should be concerned about being able to land
+
+#define _RFND_ 1
+#define _RADAR_ 2
+
+// use one or the other
+#define AVOID_TYPE _RFND_
+//#define AVOID_TYPE _RADAR_
+
 
 // reported mode from the generator:
 enum GenMode {
@@ -162,6 +172,8 @@ uint16_t genRadioCmd;
 //uint16_t lastGenRadioCmd;
 uint16_t genCmdOut;
 
+uint16_t rfnd_radio_cmd;
+
 uint8_t killState = 0;
 uint8_t killOverride = 0;
 
@@ -191,11 +203,18 @@ float rfnd_avoid_thresh = 0;
 float rfnd_active_alt = 0;
 uint8_t rfnd_avoid_active = 0;
 uint8_t rfnd_avoid_cnts = 0;
+uint8_t rfndTriggeredSendCnt = 0;
+
+uint8_t rfnd_feature_active_condition = 0;
+uint8_t last_rfnd_feature_active_condition = 0;
+uint8_t rfnd_feature_terrain_problem = 0;
 
 uint16_t pwrStatusFlags = 0;
 uint8_t pwrStatusFlagsInitialized = 0;
 uint8_t pwrStatusGood = 1; // assume good from the start
 uint8_t pwrStatusBadSendCnt = 0;
+
+uint8_t avoidBadSendCnt = 0;
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
@@ -212,8 +231,8 @@ void Copter::userhook_init()
 
     // rangefinder stuff
     rfnd_fs = (uint8_t)(g.rfnd_fs_action);
-    rfnd_avoid_thresh = (float)(g.rfnd_avoid_dist_cm);
-    rfnd_active_alt = (float)(g.rfnd_avoid_active_alt_cm);
+    rfnd_avoid_thresh = (float)(g.rfnd_avoid_dist_m);
+    rfnd_active_alt = (float)(g.rfnd_avoid_active_alt_m);
     rfnd_avoid_active = (uint8_t)(g.rfnd_avoid_active);
     rfnd_avoid_cnts = (uint8_t)(g.rfnd_avoid_cnts);
 
@@ -253,6 +272,7 @@ void Copter::userhook_init()
     // set output to be "OFF" initially for the generator
     genCmdOut = 1500;
     SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+
 }
 #endif
 
@@ -274,24 +294,277 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
+
+#if AVOID_TYPE == _RFND_
     // put your 10Hz code here
-#if RANGEFINDER_ENABLED == ENABLED
+    #if RANGEFINDER_ENABLED == ENABLED
 
-    rfnd_avoid_active = (uint8_t)(g.rfnd_avoid_active);
+        rfnd_avoid_active = (uint8_t)(g.rfnd_avoid_active);
 
-    if (rfnd_avoid_active)
-    {
-        // check if we are above the active altitude for this feature
-        if (copter.inertial_nav.get_position_z_up_cm() >= rfnd_active_alt)
+        if (rfnd_avoid_active)
         {
-            if (rangefinder_forward_state.enabled)
-            {
-                if (rangefinder_forward_state.alt_healthy)
-                {
-                    // read and display the rangefinder value here
-                    float tempAlt;
 
-                    tempAlt = rangefinder_forward_state.alt_cm_filt.get();
+            // determine condition needed for using the rangefinder avoidance here
+            // 0 = feature not active
+            // 1 = altitude above home/EKF origin
+            // 2 = current terrain altitude (if terrain is available)
+            // 3 = RC channel 10 controlled (> 1600 needed for activation)
+            if (rfnd_avoid_active == 1)
+            {
+                // use altitude above home/EKF origin
+                if ((copter.inertial_nav.get_position_z_up_cm()*0.01f) >= rfnd_active_alt)
+                {
+                    rfnd_feature_active_condition = 1;
+                }
+                else
+                {
+                    rfnd_feature_active_condition = 0;
+                }
+            }
+            else if (rfnd_avoid_active == 2)
+            {
+                // check to make sure terrain is active - if not, we want to trigger an error message to be sent periodically
+                #if AP_TERRAIN_AVAILABLE
+                    //if (&copter.terrain != nullptr && copter.terrain.enabled()) {
+                    if (copter.terrain.enabled()) {
+                        // terrain source is from database
+                        // we have got this far, now check to see if the terrain condition is satisfied
+                        float terr_alt = 0.0f;
+                        if (copter.terrain.height_above_terrain(terr_alt,true))
+                        {
+                            rfnd_feature_terrain_problem = 0;
+                            if (terr_alt >= rfnd_active_alt)
+                            {
+                                rfnd_feature_active_condition = 1;
+                            }
+                            else
+                            {
+                                rfnd_feature_active_condition = 0;
+                            }
+                        }
+                        else
+                        {
+                            // did not get valid terrain
+                            rfnd_feature_active_condition = 0;
+                            rfnd_feature_terrain_problem = 1;
+                        }
+                    } // if terrain is enabled
+                    else
+                    {
+                        // terrain is not enabled
+                        rfnd_feature_active_condition = 0;
+                        rfnd_feature_terrain_problem = 1;
+                    }
+                #else
+                    rfnd_feature_active_condition = 0;
+                    rfnd_feature_terrain_problem = 1;
+                #endif
+            }
+            else if (rfnd_avoid_active == 3)
+            {
+                // check RC channel 10
+                // channels are 0 index based
+                // only do so if failsafe is not active
+
+                if (!(failsafe.radio))
+                {
+                    rfnd_radio_cmd = hal.rcin->read(9);
+                }
+                else
+                {
+                    // keep whatever value was set initially or updated along the way
+                    //rfnd_radio_cmd = 1000; // low is default value
+                }
+
+                if (rfnd_radio_cmd > 1500)
+                {
+                    // check if we had a change for the first time
+                    rfnd_feature_active_condition = 1;
+                }
+                else
+                {
+                    rfnd_feature_active_condition = 0;
+                }
+            } // else if (rfnd_avoid_active == 3)
+
+            // check if the active condition has changed - if so, send a one-time notice to the GCS
+            if (rfnd_feature_active_condition != last_rfnd_feature_active_condition)
+            {
+                if (rfnd_feature_active_condition)
+                {
+                    // send GCS message saying the rangefinder avoidance feature is on
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Range Finder Avoid Active");
+                }
+                else
+                {
+                    // send GCS message saying the rangefinder avoidance feature is off
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Range Finder Avoid Inactive");
+                }
+
+                // set current value to last value
+                last_rfnd_feature_active_condition = rfnd_feature_active_condition;
+            }
+
+            // check if we are able to proceed
+            if (rfnd_feature_active_condition)
+            {
+                if (rangefinder_forward_state.enabled)
+                {
+                    if (rangefinder_forward_state.alt_healthy)
+                    {
+                        // read and display the rangefinder value here
+                        float tempAlt;
+
+                        tempAlt = rangefinder_forward_state.alt_cm_filt.get();
+                        tempAlt *= 0.01f; // convert to meters for this algorithm
+
+                        // keep checking if the rangefinder value is equal to or less than the
+                        // set threshold for taking action
+                        if (tempAlt < rfnd_avoid_thresh)
+                        {
+                            // another reading less than threshold value has processed
+                            if (rfnd_thresh_cnt < rfnd_avoid_cnts)
+                            {
+                                // increment the counter
+                                rfnd_thresh_cnt++;
+                            }
+                            else
+                            {
+                                // we have hit the threshold already and need to decide whether
+                                // to take action, or make sure we have already taken action.
+                                if (!rfnd_fs_triggered)
+                                {
+                                    // trigger failsafe based on user parameter configured
+                                    gcs().send_text(MAV_SEVERITY_WARNING, "Range Finder Avoid Fail Safe");
+                                    gcs().send_text(MAV_SEVERITY_INFO, "Range Finder Avoid Fail Safe %u",rfnd_fs);
+
+                                    FailsafeAction desired_rfnd_fs_action;
+                                    desired_rfnd_fs_action = (FailsafeAction)(rfnd_fs);
+
+                                    // call functions (possibly write custom function) in events.cpp file
+
+                                    // Support the CONTINUE_IF_LANDING feature to prevent return to RTL height
+                                    if (flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING) && desired_rfnd_fs_action != FailsafeAction::NONE)
+                                    {
+                                        desired_rfnd_fs_action = FailsafeAction::LAND;
+                                        announce_failsafe("Range", "Continuing Landing");
+                                    }
+                                    copter.do_failsafe_action(desired_rfnd_fs_action, ModeReason::FAILSAFE);
+                                    //do_failsafe_action(Failsafe_Action action, ModeReason reason)
+
+                                    rfnd_fs_triggered = 1;
+                                }
+                                else
+                                {
+                                    // still warn periodically if we see something again in range?
+                                }
+                                // once failsafe has already been triggered, do not allow it to
+                                // be triggered again, even if we see something that could
+                                // trigger it
+                            } // else - from if counter < threshold
+                        } // if the rangefinder reading was less than the threshold
+                        else
+                        {
+                            // rangefinder reading within proper range
+
+                            // decrement counter if non-zero
+                            if (rfnd_thresh_cnt)
+                            {
+                                rfnd_thresh_cnt--;
+                            }
+                        }
+
+
+    //                    // TEMPORARY FOR DEBUGGING - send every 5 seconds (50 iterations at 10 Hz)
+    //                    static uint8_t counterRF;
+    //
+    //                    if (counterRF < 50)
+    //                    {
+    //                        counterRF++;
+    //                    }
+    //                    else
+    //                    {
+    //                        // send message to GCS to indicate we read the message successfully
+    //                        gcs().send_text(MAV_SEVERITY_INFO,"RF READING: %.1f cm",tempAlt);
+    //                        counterRF = 0;
+    //                    }
+                    } // if forward facing rangefinder is healthy
+                } // if forward facing rangefinder is enabled
+            } // if the feature is active
+            else
+            {
+                // the the feature is not allowed to run, either because we are below the altitude required,
+                // the user has turned it off (via an RC channel), or there is no terrain data available
+
+                // in the event that terrain data is not available, we should probably warn the user every
+                // 10-15 seconds that this feature is set, but not available, so they know the feature won't be
+                // active or protecting them.
+                if (rfnd_avoid_active == 2)
+                {
+                    if (rfnd_feature_terrain_problem)
+                    {
+                        if (avoidBadSendCnt < AVOID_BAD_SEND_INTERVAL)
+                        {
+                            avoidBadSendCnt++;
+                        }
+                        else
+                        {
+                            gcs().send_text(MAV_SEVERITY_WARNING, "Avoidance Inactive - No Terrain Data");
+                            avoidBadSendCnt = 0;
+                        }
+                    } // if terrain problem
+                }
+            }
+
+
+            // check each iteration if the failsafe has already triggered
+            // if so, warn the operator every RFND_FS_TRIGGERED_WARN_INTERVAL iterations of this loop
+            if (rfnd_fs_triggered)
+            {
+                if (rfndTriggeredSendCnt < RFND_FS_TRIGGERED_WARN_INTERVAL)
+                {
+                    rfndTriggeredSendCnt++;
+                }
+                else
+                {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Avoid Failsafe Was Triggered");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Reboot System to Reset");
+                    rfndTriggeredSendCnt = 0;
+                }
+            }
+
+        } // if avoidance is active (set by parameter)
+    #endif // if rangefinder is enabled by firmware
+#elif AVOID_TYPE == _RADAR_
+    #if HAL_PROXIMITY_ENABLED
+        rfnd_avoid_active = (uint8_t)(g.rfnd_avoid_active);
+
+        if (rfnd_avoid_active)
+        {
+            // check if we are above the active altitude for this feature
+            if ((copter.inertial_nav.get_position_z_up_cm()*0.01f) >= rfnd_active_alt)
+            {
+
+//                AP_Proximity *proximity = AP::proximity();
+//                if (proximity == nullptr) {
+//                    return;
+//                }
+//                AP_Proximity &_proximity = *proximity;
+
+                // check if proximity sensor(s) is(are) not present
+                if (copter.g2.proximity.get_status() != AP_Proximity::Status::Good) {
+                    return;
+                }
+                else
+                {
+                    // check for the closest object
+
+                    float tempAlt;
+                    float tempAngle;
+
+                    // get distance (in meters)
+                    copter.g2.proximity.get_closest_object(tempAngle, tempAlt);
+                    //tempAlt = _proximity.get_closest_object(tempAngle,tempAlt);
 
                     // keep checking if the rangefinder value is equal to or less than the
                     // set threshold for taking action
@@ -350,30 +623,41 @@ void Copter::userhook_MediumLoop()
                     }
 
 
-//                    // TEMPORARY FOR DEBUGGING - send every 5 seconds (50 iterations at 10 Hz)
-//                    static uint8_t counterRF;
-//
-//                    if (counterRF < 50)
-//                    {
-//                        counterRF++;
-//                    }
-//                    else
-//                    {
-//                        // send message to GCS to indicate we read the message successfully
-//                        gcs().send_text(MAV_SEVERITY_INFO,"RF READING: %.1f cm",tempAlt);
-//                        counterRF = 0;
-//                    }
-                } // if forward facing rangefinder is healthy
-            } // if forward facing rangefinder is enabled
-        } // if we are above or equal to the active altitude
-        else
-        {
-            // we are below the active altitude
+                    // TEMPORARY FOR DEBUGGING - send every 5 seconds (50 iterations at 10 Hz)
+                    static uint8_t counterRF;
 
-            // don't do any other action
-        }
-    } // if avoidance is active (set by parameter)
-#endif // if rangefinder is enabled by firmware
+                    if (counterRF < 50)
+                    {
+                        counterRF++;
+                    }
+                    else
+                    {
+                        // send message to GCS to indicate we read the message successfully
+                        gcs().send_text(MAV_SEVERITY_INFO,"RF READING: %.2f m",tempAlt);
+                        counterRF = 0;
+                    }
+                } // else - from if status is not good
+            } // if we are above or equal to the active altitude
+            else
+            {
+                // we are below the active altitude
+
+                // don't do any other action
+            }
+        } // if avoidance is active (set by parameter)
+
+
+    #endif
+#endif // rangefinder type
+
+
+
+
+// should we have an error message here
+
+
+
+
 } // Medium loop
 #endif
 

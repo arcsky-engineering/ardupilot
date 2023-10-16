@@ -348,11 +348,11 @@
 #endif
 
 #ifndef RFND_AVOID_DIST_DEFAULT
-#define RFND_AVOID_DIST_DEFAULT 2000
+#define RFND_AVOID_DIST_DEFAULT 20
 #endif
 
 #ifndef RFND_AVOID_HGT_DEFAULT
-#define RFND_AVOID_HGT_DEFAULT 1000
+#define RFND_AVOID_HGT_DEFAULT 10
 #endif
 
 #ifndef RFND_FS_ACTION_DEFAULT
@@ -364,7 +364,7 @@
 #endif
 
 #ifndef RFND_AVOID_CNTS_DEFAULT
-#define RFND_AVOID_CNTS_DEFAULT 50
+#define RFND_AVOID_CNTS_DEFAULT 10
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

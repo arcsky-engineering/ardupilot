@@ -234,8 +234,8 @@ public:
         k_param_gcs6, // 129
 
         // 130 to 134 available here?
-        k_param_rfnd_avoid_dist_cm,
-        k_param_rfnd_avoid_active_alt_cm,
+        k_param_rfnd_avoid_dist_m,
+        k_param_rfnd_avoid_active_alt_m,
         k_param_rfnd_fs_action,
         k_param_rfnd_avoid_active,
         k_param_rfnd_avoid_cnts,
@@ -481,8 +481,8 @@ public:
     AP_Int8         gen_fuel_warn_pct;
 
     AP_Int8         rfnd_fs_action;
-    AP_Float        rfnd_avoid_dist_cm;
-    AP_Float        rfnd_avoid_active_alt_cm;
+    AP_Float        rfnd_avoid_dist_m;
+    AP_Float        rfnd_avoid_active_alt_m;
     AP_Int8         rfnd_avoid_active;
     AP_Int8         rfnd_avoid_cnts;
 
