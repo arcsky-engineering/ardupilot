@@ -527,8 +527,7 @@ void Copter::userhook_MediumLoop()
                 }
                 else
                 {
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Avoid Failsafe Was Triggered");
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Reboot System to Reset");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Avoid Triggered - Reboot to Reset");
                     rfndTriggeredSendCnt = 0;
                 }
             }
