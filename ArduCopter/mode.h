@@ -412,6 +412,10 @@ public:
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
 
+    // temporary offset altitude variable
+    float auto_alt_offset;
+    float last_reported_auto_alt_offset;
+
     // Auto modes
     enum class SubMode : uint8_t {
         TAKEOFF,

@@ -128,6 +128,7 @@ void ModeRTL::climb_start()
     _state = SubMode::INITIAL_CLIMB;
     _state_complete = false;
 
+    // TODO - investigate if the offset is used here
     // set the destination
     if (!wp_nav->set_wp_destination_loc(rtl_path.climb_target) || !wp_nav->set_wp_destination_next_loc(rtl_path.return_target)) {
         // this should not happen because rtl_build_path will have checked terrain data was available

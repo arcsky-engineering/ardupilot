@@ -452,6 +452,10 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (_terrain_alt && !get_terrain_offset(terr_offset)) {
         return false;
     }
+
+    // can we add something more to the terrain offset here?
+    terr_offset += _auto_alt_offset;
+
     const float offset_z_scaler = _pos_control.pos_offset_z_scaler(terr_offset, get_terrain_margin() * 100.0);
 
     // input shape the terrain offset
@@ -575,6 +579,11 @@ float AC_WPNav::get_wp_distance_to_destination() const
 int32_t AC_WPNav::get_wp_bearing_to_destination() const
 {
     return get_bearing_cd(_inav.get_position_xy_cm(), _destination.xy());
+}
+
+void AC_WPNav::set_auto_alt_offset(float auto_alt_offset)
+{
+    _auto_alt_offset = auto_alt_offset;
 }
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher

@@ -57,6 +57,10 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise precland state machine
         copter.precland_statemachine.init();
 #endif
+        // reset the auto alt offset after each new mission begins
+        auto_alt_offset = 0.0;
+        // report the auto_alt_offset
+        //gcs().send_text(MAV_SEVERITY_WARNING, "Auto Alt Offset: %.2f",auto_alt_offset);
 
         return true;
     } else {
@@ -109,6 +113,38 @@ void ModeAuto::run()
 
         mission.update();
     }
+
+    // insert the offset function here:
+    // Get pilot's desired climb rate from throttle stick input (like in AltHold)
+    float pilot_desired_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    // this should be in cm/s (e.g. pilot_speed_dn is 200 by default)
+    float g_pilot_desired_climb_rate = constrain_float(pilot_desired_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    // given that holding full stick for 1 second will produce 2 meters of altitude loss, this may need to be scaled down a bit
+
+    // integrate this to incrementally modify a position offset variable
+    auto_alt_offset += g_pilot_desired_climb_rate * pos_control->get_dt();
+    // constrain it to max/min offsets? - hacky for now
+    if (auto_alt_offset > 1000)
+    {
+        auto_alt_offset = 1000;
+    }
+    else if (auto_alt_offset < -1000)
+    {
+        auto_alt_offset = -1000;
+    }
+
+    // check here if the adjustment has surpassed 0.5m threshold, and if so - report it to GCS
+    if(abs(auto_alt_offset - last_reported_auto_alt_offset) > 50)
+    {
+        // report update to GCS
+        gcs().send_text(MAV_SEVERITY_WARNING, "Auto Alt Offset: %.2f meters",auto_alt_offset*0.01);
+        // reset the last_reported_auto_alt_offset
+        last_reported_auto_alt_offset = auto_alt_offset;
+    }
+
+    // set the auto alt offset for the wpnav version
+    wp_nav->set_auto_alt_offset(auto_alt_offset);
+
 
     // call the correct auto controller
     switch (_mode) {
@@ -978,6 +1014,9 @@ void ModeAuto::wp_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
+    // run the vertical position controller and set output throttle
+    //pos_control->update_z_controller_edited(auto_alt_offset);
+
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
@@ -1304,6 +1343,10 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
             ret.set_alt_cm(default_loc.alt, default_loc.get_alt_frame());
         }
     }
+
+    // add the offset here which takes effect on all auto mode items that need locations
+    //ret.alt += (int32_t)(auto_alt_offset);
+
     return ret;
 }
 
@@ -1333,6 +1376,13 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // get waypoint's location from command and send to wp_nav
     const Location dest_loc = loc_from_cmd(cmd, default_loc);
+    // here is where we could modify the altitude of the waypoint before it's passed into
+    // all of the wp_nav and position controller stuff
+
+    // altitude must be stored in centimeters here and have +/- values possible since it's an int.
+    //dest_loc.alt +=  (int32_t)(auto_alt_offset);
+
+
     if (!wp_nav->set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();

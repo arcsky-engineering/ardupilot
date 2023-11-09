@@ -156,6 +156,8 @@ public:
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     virtual bool update_wpnav();
 
+    void set_auto_alt_offset(float auto_alt_offset);
+
     // returns true if update_wpnav has been run very recently
     bool is_active() const;
 
@@ -212,6 +214,8 @@ public:
     float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    float _auto_alt_offset;
 
 protected:
 
