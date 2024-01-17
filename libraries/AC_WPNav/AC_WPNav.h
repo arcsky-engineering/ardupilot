@@ -156,7 +156,7 @@ public:
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     virtual bool update_wpnav();
 
-    void set_auto_alt_offset(float auto_alt_offset);
+    //void set_auto_alt_offset(float auto_alt_offset);
 
     // returns true if update_wpnav has been run very recently
     bool is_active() const;

@@ -58,7 +58,7 @@ bool ModeAuto::init(bool ignore_checks)
         copter.precland_statemachine.init();
 #endif
         // reset the auto alt offset after each new mission begins
-        auto_alt_offset = 0.0;
+        wp_nav->_auto_alt_offset = 0.0;
         // report the auto_alt_offset
         //gcs().send_text(MAV_SEVERITY_WARNING, "Auto Alt Offset: %.2f",auto_alt_offset);
 
@@ -113,37 +113,6 @@ void ModeAuto::run()
 
         mission.update();
     }
-
-    // insert the offset function here:
-    // Get pilot's desired climb rate from throttle stick input (like in AltHold)
-    float pilot_desired_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    // this should be in cm/s (e.g. pilot_speed_dn is 200 by default)
-    float g_pilot_desired_climb_rate = constrain_float(pilot_desired_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-    // given that holding full stick for 1 second will produce 2 meters of altitude loss, this may need to be scaled down a bit
-
-    // integrate this to incrementally modify a position offset variable
-    auto_alt_offset += g_pilot_desired_climb_rate * pos_control->get_dt();
-    // constrain it to max/min offsets? - hacky for now
-    if (auto_alt_offset > 1000)
-    {
-        auto_alt_offset = 1000;
-    }
-    else if (auto_alt_offset < -1000)
-    {
-        auto_alt_offset = -1000;
-    }
-
-    // check here if the adjustment has surpassed 0.5m threshold, and if so - report it to GCS
-    if(abs(auto_alt_offset - last_reported_auto_alt_offset) > 50)
-    {
-        // report update to GCS
-        gcs().send_text(MAV_SEVERITY_WARNING, "Auto Alt Offset: %.2f meters",auto_alt_offset*0.01);
-        // reset the last_reported_auto_alt_offset
-        last_reported_auto_alt_offset = auto_alt_offset;
-    }
-
-    // set the auto alt offset for the wpnav version
-    wp_nav->set_auto_alt_offset(auto_alt_offset);
 
 
     // call the correct auto controller
@@ -1010,6 +979,52 @@ void ModeAuto::wp_run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // insert the offset function here:
+    // Get pilot's desired climb rate from throttle stick input (like in AltHold)
+    float pilot_desired_climb_rate = 0;
+    if (!copter.failsafe.radio)
+    {
+        pilot_desired_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    }
+    // this should be in cm/s (e.g. pilot_speed_dn is 200 by default)
+    float g_pilot_desired_climb_rate = constrain_float(pilot_desired_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+    // given that holding full stick for 1 second will produce 2 meters of altitude loss, this may need to be scaled down a bit
+
+    // integrate this to incrementally modify a position offset variable
+    wp_nav->_auto_alt_offset += g_pilot_desired_climb_rate * pos_control->get_dt();
+    // constrain it to max/min offsets? - hacky for now
+    if (wp_nav->_auto_alt_offset > 3000)
+    {
+        wp_nav->_auto_alt_offset = 3000;
+    }
+    else if (wp_nav->_auto_alt_offset < -3000)
+    {
+        wp_nav->_auto_alt_offset = -3000;
+    }
+
+    // check here if the adjustment has surpassed 0.5m threshold, and if so - report it to GCS
+    if(abs(wp_nav->_auto_alt_offset - last_reported_auto_alt_offset) > 50)
+    {
+        // report update to GCS
+        float nearest_5 = wp_nav->_auto_alt_offset*0.1;
+        nearest_5 /= 5.0;
+        nearest_5 = roundf(nearest_5);
+        nearest_5 *= 5.0;
+        if (nearest_5 < 0)
+        {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt %.1f",nearest_5*0.1);
+        }
+        else
+        {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt +%.1f",nearest_5*0.1);
+        }
+        // reset the last_reported_auto_alt_offset
+        last_reported_auto_alt_offset = wp_nav->_auto_alt_offset;
+    }
+
+    // set the auto alt offset for the wpnav version
+    //wp_nav->set_auto_alt_offset(auto_alt_offset);
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());

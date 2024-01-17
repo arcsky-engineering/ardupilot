@@ -196,6 +196,8 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     _offset_accel = 0.0;
     _paused = false;
 
+    _auto_alt_offset = 0.0;
+
     // mark as active
     _wp_last_update = AP_HAL::millis();
 }
@@ -581,10 +583,10 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
     return get_bearing_cd(_inav.get_position_xy_cm(), _destination.xy());
 }
 
-void AC_WPNav::set_auto_alt_offset(float auto_alt_offset)
-{
-    _auto_alt_offset = auto_alt_offset;
-}
+//void AC_WPNav::set_auto_alt_offset(float auto_alt_offset)
+//{
+//    _auto_alt_offset = auto_alt_offset;
+//}
 
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
