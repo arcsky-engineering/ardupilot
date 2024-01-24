@@ -33,6 +33,11 @@ public:
     // read the latest battery voltage
     virtual void read() = 0;
 
+    // should these really be virtual?? Because the specific library (Generic_Fuel) does not implement these functions or override them
+    virtual void setGenFound(void);
+
+    virtual void setFuelPct(uint8_t pct);
+
     /// returns true if battery monitor instance provides time remaining info
     virtual bool has_time_remaining() const { return false; }
 
@@ -89,6 +94,9 @@ public:
     bool option_is_set(const AP_BattMonitor_Params::Options option) const {
         return (uint16_t(_params._options.get()) & uint16_t(option)) != 0;
     }
+
+    uint8_t     _genFound;               // indication of whether generator is found in system
+    uint8_t     _fuelPct;                // fuel percentage that is used when Hybrid Module is active - set by user code
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

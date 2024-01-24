@@ -378,6 +378,7 @@ public:
     void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
     void send_generator_status() const;
+    void send_efi_status() const;
     virtual void send_winch_status() const {};
     void send_water_depth() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;

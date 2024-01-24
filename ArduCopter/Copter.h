@@ -228,6 +228,24 @@ public:
 
     Copter(void);
 
+    void send_generator_status(const GCS_MAVLINK &channel);
+    void send_efi_status(const GCS_MAVLINK &channel);
+    bool get_reading();
+    uint8_t get_fuel_pct();
+    uint8_t get_gen_detected();
+    // move the expected header bytes into &buffer[0], adjusting
+    // body_length as appropriate.
+    void move_header_in_buffer(uint8_t initial_offset);
+
+    const uint8_t HEADER_MAGIC1 = 0xFE;
+    const uint8_t HEADER_MAGIC2 = 0xFE;
+
+    const uint8_t FOOTER_MAGIC1 = 0xFD;
+    const uint8_t FOOTER_MAGIC2 = 0xFD;
+
+    const uint8_t FOOTER_MAGIC3 = 0xFC;
+    const uint8_t FOOTER_MAGIC4 = 0xFC;
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -263,7 +281,7 @@ private:
         int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
         uint32_t glitch_cleared_ms; // system time glitch cleared
         float terrain_offset_cm;    // filtered terrain offset (e.g. terrain's height above EKF origin)
-    } rangefinder_state, rangefinder_up_state;
+    } rangefinder_state, rangefinder_up_state, rangefinder_forward_state;;
 
     // return rangefinder height interpolated using inertial altitude
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
@@ -1032,6 +1050,7 @@ public:
     void failsafe_check();      // failsafe.cpp
 };
 
+// TODO - did this cause problems?
 extern Copter copter;
 
 using AP_HAL::millis;

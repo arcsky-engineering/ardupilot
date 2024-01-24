@@ -106,6 +106,16 @@ float AP_BattMonitor_Backend::voltage_resting_estimate() const
     return MAX(_state.voltage, _state.voltage_resting_estimate);
 }
 
+void AP_BattMonitor_Backend::setGenFound()
+{
+    _genFound = 1;
+}
+
+void AP_BattMonitor_Backend::setFuelPct(uint8_t pct)
+{
+    _fuelPct = pct;
+}
+
 AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
 {
     const uint32_t now = AP_HAL::millis();

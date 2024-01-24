@@ -20,6 +20,7 @@
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
 #include "AP_BattMonitor_Synthetic_Current.h"
+#include "AP_BattMonitor_Generic_Fuel.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -343,7 +344,8 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
                 break;
             case Type::GENERATOR_FUEL:
-                drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                //drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                drivers[instance] = new AP_BattMonitor_Generic_Fuel(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_GENERATOR_ENABLED
 #if AP_BATTERY_INA2XX_ENABLED
@@ -777,6 +779,20 @@ void AP_BattMonitor::checkPoweringOff(void)
             // only send this once
             state[i].powerOffNotified = true;
         }
+    }
+}
+
+void AP_BattMonitor::setGenFound(void) const
+{
+    if (drivers[0] != nullptr) {
+    drivers[0]->setGenFound();
+    }
+}
+
+void AP_BattMonitor::setGenFuel(uint8_t pct)
+{
+    if (drivers[0] != nullptr) {
+    drivers[0]->setFuelPct(pct);
     }
 }
 

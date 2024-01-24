@@ -61,6 +61,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
+    friend class AP_BattMonitor_Generic_Fuel;
     friend class AP_BattMonitor_EFI;
     friend class AP_BattMonitor_INA2XX;
     friend class AP_BattMonitor_INA239;
@@ -255,6 +256,11 @@ public:
 
     // sends powering off mavlink broadcasts and sets notify flag
     void checkPoweringOff(void);
+
+    // tells the battery monitor that we have detected that the Hybrid Module is in the system.
+    void setGenFound(void) const;
+    //uint8_t genFound;
+    void setGenFuel(uint8_t pct);
 
     // reset battery remaining percentage
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);

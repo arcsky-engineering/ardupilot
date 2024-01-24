@@ -174,7 +174,8 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
-    const uint32_t max_age_ms = 3000;
+    //const uint32_t max_age_ms = 3000;
+    const uint32_t max_age_ms = 15000;
     const uint32_t now_ms = AP_HAL::millis();
 
     if (last_arm_status_ms == 0 || now_ms - last_arm_status_ms > max_age_ms) {
@@ -232,6 +233,10 @@ void AP_OpenDroneID::update()
 
 void AP_OpenDroneID::send_dynamic_out()
 {
+
+    // should we alternate the order of these in case there is not enough payload space
+    // and the operator location isn't being sent out?
+
     const uint32_t now = AP_HAL::millis();
     if (now - _last_send_location_ms >= _mavlink_dynamic_period_ms &&
         ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_LOCATION)) {
@@ -264,8 +269,9 @@ void AP_OpenDroneID::send_static_out()
     }
 
     // we need to notify user if we lost system msg with operator location
-    if (now_ms - last_system_ms > 5000 && now_ms - last_lost_operator_msg_ms > 5000) {
+    if (now_ms - last_system_ms > 15000 && now_ms - last_lost_operator_msg_ms > 15000) {
         last_lost_operator_msg_ms = now_ms;
+        // comment out for now to suppress the annoying warning
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
     

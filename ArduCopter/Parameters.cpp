@@ -711,6 +711,97 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(custom_control, "CC", AC_CustomControl),
 #endif
 
+    // @Param: GEN_FS
+    // @DisplayName: Generator failsafe setting
+    // @Description: Set failsafe setting for generator dying
+    // @Values: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL_Land,5:Terminate
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 5
+    // @Increment: 1
+    GSCALAR(gen_fs,  "GEN_FS",  0),
+
+    // @Param: GEN_FS_OC
+    // @DisplayName: Generator overcurrent failsafe setting
+    // @Description: Set failsafe setting for battery overcharge
+    // @Values: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL_Land,5:Terminate,6:Kill
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 6
+    // @Increment: 1
+    GSCALAR(gen_fs_oc,  "GEN_FS_OC",  0),
+
+    // @Param: GEN_FUEL_FS_ACT
+    // @DisplayName: Generator low fuel failsafe setting
+    // @Description: Set failsafe setting for low fuel
+    // @Values: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL_Land,5:Terminate
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 5
+    // @Increment: 1
+    GSCALAR(gen_fuel_fs_action,  "GEN_FUEL_FS_ACT",  0),
+
+    // @Param: GEN_FUEL_FS_PCT
+    // @DisplayName: Generator low fuel failsafe percent
+    // @Description: Failsafe setting for low fuel percentage
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 100
+    // @Increment: 1
+    GSCALAR(gen_fuel_fs_pct,  "GEN_FUEL_FS_PCT",  20),
+
+    // @Param: GEN_FUEL_WRN_PCT
+    // @DisplayName: Generator low fuel warn percent
+    // @Description: Percent fuel for warning trigger
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 100
+    // @Increment: 1
+    GSCALAR(gen_fuel_warn_pct,  "GEN_FUEL_WRN_PCT",  20),
+
+    // @Param: RFND_AVOID_DIST
+    // @DisplayName: Rangefinder Avoidance Distance
+    // @Description: Distance in m for the avoidance algorithm
+    // @User: Standard
+    // @Units: m
+    // @Range: 2 80
+     GSCALAR(rfnd_avoid_dist_m,  "RFND_AVOID_DIST",  20),
+
+    // @Param: RFND_AVOID_HGT
+    // @DisplayName: Rangefinder Avoidance Min Altitude
+    // @Description: Vehicle altitude in m above which the avoidance algorithm starts working
+    // @User: Standard
+    // @Units: m
+     // @Range: 1 80
+       GSCALAR(rfnd_avoid_active_alt_m,  "RFND_AVOID_HGT",  10),
+
+    // @Param: RFND_FS_ACTION
+    // @DisplayName: Rangefinder Avoidance Failsafe Action
+    // @Description: Set failsafe setting for rangefinder avoidance
+    // @Values: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL_Land,5:Terminate
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 5
+    // @Increment: 1
+    GSCALAR(rfnd_fs_action,  "RFND_FS_ACTION",  0),
+
+    // @Param: RFND_AVD_ACTIVE
+    // @DisplayName: Rangefinder Avoidance Feature Active
+    // @Description: Flag for whether or not avoidance is active
+    // @Values: 0: OFF, 1: ON
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 1
+    GSCALAR(rfnd_avoid_active,  "RFND_AVD_ACTIVE",  0),
+
+    // @Param: RFND_AVOID_CNTS
+    // @DisplayName: Rangefinder Avoidance Detection Counts
+    // @Description: Counts of avoidance detected before action is triggered
+    // @User: Standard
+    // @Units: none
+    // @Range: 0 254
+    GSCALAR(rfnd_avoid_cnts,  "RFND_AVOID_CNTS",  10),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
