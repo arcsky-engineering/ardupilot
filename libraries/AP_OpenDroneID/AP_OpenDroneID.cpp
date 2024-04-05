@@ -110,17 +110,22 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
+    /*
     if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
         strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
         return false;
     }
+    */
 
+    /*
     if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
         strncpy(failmsg, "operator location must be set", failmsg_len);
         return false;
     }
+    */
 
-    const uint32_t max_age_ms = 3000;
+    //const uint32_t max_age_ms = 3000;
+    const uint32_t max_age_ms = 15000;
     const uint32_t now_ms = AP_HAL::millis();
 
     if (last_arm_status_ms == 0 || now_ms - last_arm_status_ms > max_age_ms) {
@@ -128,12 +133,14 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
+    /*
     if (last_system_ms == 0 ||
         (now_ms - last_system_ms > max_age_ms &&
          (now_ms - last_system_update_ms > max_age_ms))) {
         strncpy(failmsg, "SYSTEM not available", failmsg_len);
         return false;
     }
+    */
     
     if (arm_status.status != MAV_ODID_GOOD_TO_ARM) {
         strncpy(failmsg, arm_status.error, failmsg_len);
@@ -186,8 +193,8 @@ void AP_OpenDroneID::send_static_out()
     const uint32_t now_ms = AP_HAL::millis();
 
     // we need to notify user if we lost the transmitter
-    if (now_ms - last_arm_status_ms > 5000) {
-        if (now_ms - last_lost_tx_ms > 5000) {
+    if (now_ms - last_arm_status_ms > 15000) {
+        if (now_ms - last_lost_tx_ms > 15000) {
             last_lost_tx_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost transmitter");
         }
@@ -198,9 +205,9 @@ void AP_OpenDroneID::send_static_out()
     }
 
     // we need to notify user if we lost system msg with operator location
-    if (now_ms - last_system_ms > 5000 && now_ms - last_lost_operator_msg_ms > 5000) {
+    if (now_ms - last_system_ms > 15000 && now_ms - last_lost_operator_msg_ms > 15000) {
         last_lost_operator_msg_ms = now_ms;
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
+        //GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
     
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
