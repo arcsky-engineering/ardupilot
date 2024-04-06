@@ -164,15 +164,21 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
+    /*
     if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
         strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
         return false;
     }
+    */
 
+    /*
     if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
         strncpy(failmsg, "operator location must be set", failmsg_len);
         return false;
     }
+    */
+
+
 
     //const uint32_t max_age_ms = 3000;
     const uint32_t max_age_ms = 15000;
@@ -183,12 +189,16 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
+
+    // should we bypass this one for test?
+    /*
     if (last_system_ms == 0 ||
         (now_ms - last_system_ms > max_age_ms &&
          (now_ms - last_system_update_ms > max_age_ms))) {
         strncpy(failmsg, "SYSTEM not available", failmsg_len);
         return false;
     }
+    */
     
     if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
         strncpy(failmsg, arm_status.error, failmsg_len);
@@ -272,7 +282,7 @@ void AP_OpenDroneID::send_static_out()
     if (now_ms - last_system_ms > 15000 && now_ms - last_lost_operator_msg_ms > 15000) {
         last_lost_operator_msg_ms = now_ms;
         // comment out for now to suppress the annoying warning
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
+        //GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
     
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
@@ -737,7 +747,9 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
     switch (msg.msgid) {
     // only accept ARM_STATUS from the transmitter
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_ARM_STATUS: {
+
         if (chan == _chan) {
+            //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS ARM STATUS");
             mavlink_msg_open_drone_id_arm_status_decode(&msg, &arm_status);
             last_arm_status_ms = AP_HAL::millis();
         }
@@ -746,9 +758,11 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
     // accept other messages from the GCS
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_OPERATOR_ID:
         mavlink_msg_open_drone_id_operator_id_decode(&msg, &pkt_operator_id);
+        //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS OP ID");
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
+        //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS SELF ID");
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
         if (id_len == 0) {
@@ -757,9 +771,11 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);
+        //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS SYSTEM");
         last_system_ms = AP_HAL::millis();
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM_UPDATE: {
+        //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS SYS UPDATE");
         mavlink_open_drone_id_system_update_t pkt_system_update;
         mavlink_msg_open_drone_id_system_update_decode(&msg, &pkt_system_update);
         pkt_system.operator_latitude = pkt_system_update.operator_latitude;
