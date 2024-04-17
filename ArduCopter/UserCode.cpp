@@ -216,6 +216,8 @@ uint8_t pwrStatusBadSendCnt = 0;
 
 uint8_t avoidBadSendCnt = 0;
 
+uint8_t UART_FOUND = 0;
+
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
@@ -263,6 +265,7 @@ void Copter::userhook_init()
         //uart->begin(baud, 256, 256);
         // try 57600 directly
         uart->begin(57600,256,256);
+        UART_FOUND = 1;
     }
 
     fuelPctInitialized = 0;
@@ -1366,10 +1369,19 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
 // read - read serial port, return true if a new reading has been found
 bool Copter::get_reading()
 {
+    uint32_t nbytes = 0;
 
-    // fill our buffer some more:
-    uint32_t nbytes = uart->read(&RxBuf[body_length],
+    if (UART_FOUND)
+    {
+        // fill our buffer some more:
+        nbytes = uart->read(&RxBuf[body_length],
                                  ARRAY_SIZE(RxBuf)-body_length);
+    }
+    else
+    {
+        return false;
+    }
+
     if (nbytes == 0) {
         return false;
     }
