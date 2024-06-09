@@ -1216,11 +1216,11 @@ void Copter::userhook_SlowLoop()
                 last_reading.clt,
                 last_reading.tps,
                 last_reading.bv,
-                last_reading.afr1,
+                last_reading.afr1, // need to swap with another field
                 last_reading.aircor,
                 last_reading.warmcor,
                 last_reading.accelEnrich,
-                last_reading.tpsfuelcut,
+                last_reading.tpsfuelcut, // need to swap with another field
                 last_reading.baroCorrection,
                 last_reading.gammaEnrich,
                 last_reading.pulseWidthms
@@ -1300,13 +1300,13 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         float ecu_index = 1;
         float dummyZero = 0.001;
         float erpm = ((float)(last_reading.efiRPM));
-        float engineLoad = ((float)(last_reading.fuelload))*0.1;
+        //float engineLoad = ((float)(last_reading.fuelload))*0.1;
         float tps = ((float)(last_reading.tps))*0.1;
         float baroPress = ((float)(last_reading.baro))*0.1;
         float mat = ((float)(last_reading.mat))*0.1;
         float clt = ((float)(last_reading.clt))*0.1;
         float injtime = ((float)(last_reading.pulseWidthms))*0.001;
-        float ptcomp = ((float)(last_reading.baroCorrection))*0.1;
+        float ptcomp = ((float)(last_reading.gammaEnrich))*0.1;
         float bv = ((float)(last_reading.bv))*0.1;
 
         mavlink_msg_efi_status_send(
@@ -1316,7 +1316,7 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         erpm,
         dummyZero,
         dummyZero,
-        engineLoad,
+        tps,
         tps,
         dummyZero,
         baroPress,
