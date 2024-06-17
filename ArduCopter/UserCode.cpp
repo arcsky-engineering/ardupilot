@@ -188,8 +188,8 @@ uint16_t genCmdOut;
 
 uint16_t rfnd_radio_cmd;
 
-uint8_t killState = 0;
-uint8_t killOverride = 0;
+//uint8_t killState = 0;
+//uint8_t killOverride = 0;
 
 uint64_t status;
 
@@ -286,7 +286,7 @@ void Copter::userhook_init()
 
     status = 0;
 
-    // set output to be "OFF" initially for the generator
+    // set output to be "IDLE" initially for the generator
     genCmdOut = 1500;
     SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
 
@@ -772,67 +772,70 @@ void Copter::userhook_SlowLoop()
     // check for value on channel 9
     // channels are 0 index based
     // only do so if failsafe is not active
-    if (!(failsafe.radio))
-    {
-        genRadioCmd = hal.rcin->read(8);
-    }
-    else
-    {
-        genRadioCmd = 1000; // low is default value - no kill
-    }
 
-    if (!killOverride)
-    {
-        if (genRadioCmd > 1500)
-        {
-            // request kill state
-            killState = 1;
-        }
-        else if (genRadioCmd > 800)
-        {
-            // normal state - no kill
-            killState = 0;
-        }
-        else
-        {
-            // kill if something is weird?
-            // TODO - figure out if this is a good way to handle it
-            killState = 0;
-        }
-    }
+    // 2024 06 17 removed this kill stuff from the code
+
+//    if (!(failsafe.radio))
+//    {
+//        genRadioCmd = hal.rcin->read(8);
+//    }
+//    else
+//    {
+//        genRadioCmd = 1000; // low is default value - no kill
+//    }
+
+//    if (!killOverride)
+//    {
+//        if (genRadioCmd > 1500)
+//        {
+//            // request kill state
+//            killState = 1;
+//        }
+//        else if (genRadioCmd > 800)
+//        {
+//            // normal state - no kill
+//            killState = 0;
+//        }
+//        else
+//        {
+//            // kill if something is weird?
+//            // TODO - figure out if this is a good way to handle it
+//            killState = 0;
+//        }
+//    }
 
     // if we are not in kill state, go ahead and set run/idle commands
-    if (!killState)
+//    if (!killState)
+//    {
+    // check for vehicle arm state
+    if(AP::arming().is_armed())
     {
-        // check for vehicle arm state
-        if(AP::arming().is_armed())
+        if (currentGenMode != RUN)
         {
-            if (currentGenMode != RUN)
-            {
-                currentGenMode = RUN;
-                // set pwm output
-                genCmdOut = 2000;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // if armed
-        else
-        {
-            // not armed
-            if (currentGenMode != IDLE)
-            {
-                currentGenMode = IDLE;
-                // set pwm output
-                genCmdOut = 1500;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // else - from if vehicle was armed
-    } // if (!killState)
-    else // kill state is active - keep setting the kill command on PWM output
+            currentGenMode = RUN;
+            // set pwm output
+            genCmdOut = 2000;
+            SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+        }
+    } // if armed
+    else
     {
-        currentGenMode = OFF;
-        genCmdOut = 1000;
-        SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-    }
+        // not armed
+        if (currentGenMode != IDLE)
+        {
+            currentGenMode = IDLE;
+            // set pwm output
+            genCmdOut = 1500;
+            SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+        }
+    } // else - from if vehicle was armed
+//    } // if (!killState)
+//    else // kill state is active - keep setting the kill command on PWM output
+//    {
+//        currentGenMode = OFF;
+//        genCmdOut = 1000;
+//        SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+//    }
 
 
     // check for UART and process it into data, populate last_reading structure
@@ -1033,23 +1036,23 @@ void Copter::userhook_SlowLoop()
                         copter.do_failsafe_action(desired_gen_fs_oc_action, ModeReason::FAILSAFE);
                         //do_failsafe_action(Failsafe_Action action, ModeReason reason)
                     }
-                    else if (fs_oc == 6)
-                    {
-                        // kill engine
-                        killOverride = 1;
-                        killState = 1;
-
-                    }
+//                    else if (fs_oc == 6)
+//                    {
+//                        // kill engine
+//                        killOverride = 1;
+//                        killState = 1;
+//
+//                    }
                     last_reading.currentErrorFsHandled = 1;
             }
         }
-        else
-        {
-            if (killOverride)
-            {
-                killOverride = 0;
-            }
-        }
+//        else
+//        {
+//            if (killOverride)
+//            {
+//                killOverride = 0;
+//            }
+//        }
         // if it's active at all
         if (last_reading.currentErrorSendCnt < CURRENT_ERROR_SEND_INTERVAL)
         {
@@ -1204,10 +1207,10 @@ void Copter::userhook_SlowLoop()
             // EFI Message logging
             AP::logger().Write(
                 "EFI",
-                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,af1,ac,wc,ae,tfc,bc,ge,pw",
+                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,et,ac,wc,ae,spd,bc,ge,pw",
                 "sq--OO%v-%%%%%%-",
-                "F-AAAAAAAAAAAAAC",
-                "QHBhhhhhhhhhhhhH",
+                "F-AAAAAAAAAA0AAC",
+                "QHBhhhhhhhhhHhhH",
                 AP_HAL::micros64(),
                 last_reading.efiRPM,
                 last_reading.afrtgt,
@@ -1216,11 +1219,11 @@ void Copter::userhook_SlowLoop()
                 last_reading.clt,
                 last_reading.tps,
                 last_reading.bv,
-                last_reading.afr1, // need to swap with another field
+                last_reading.ECUtemp,
                 last_reading.aircor,
                 last_reading.warmcor,
                 last_reading.accelEnrich,
-                last_reading.tpsfuelcut, // need to swap with another field
+                last_reading.loopSpd, // need to swap with another field
                 last_reading.baroCorrection,
                 last_reading.gammaEnrich,
                 last_reading.pulseWidthms
