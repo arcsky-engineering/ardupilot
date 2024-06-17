@@ -175,8 +175,8 @@ uint16_t genCmdOut;
 
 uint16_t rfnd_radio_cmd;
 
-uint8_t killState = 0;
-uint8_t killOverride = 0;
+//uint8_t killState = 0;
+//uint8_t killOverride = 0;
 
 uint64_t status;
 
@@ -216,6 +216,8 @@ uint8_t pwrStatusGood = 1; // assume good from the start
 uint8_t pwrStatusBadSendCnt = 0;
 
 uint8_t avoidBadSendCnt = 0;
+
+uint8_t UART_FOUND = 0;
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
@@ -264,13 +266,14 @@ void Copter::userhook_init()
         //uart->begin(baud, 256, 256);
         // try 57600 directly
         uart->begin(57600,256,256);
+        UART_FOUND = 1;
     }
 
     fuelPctInitialized = 0;
 
     status = 0;
 
-    // set output to be "OFF" initially for the generator
+    // set output to be "IDLE" initially for the generator
     genCmdOut = 1500;
     SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
 
@@ -756,67 +759,73 @@ void Copter::userhook_SlowLoop()
     // check for value on channel 9
     // channels are 0 index based
     // only do so if failsafe is not active
-    if (!(failsafe.radio))
-    {
-        genRadioCmd = hal.rcin->read(8);
-    }
-    else
-    {
-        genRadioCmd = 1000; // low is default value - no kill
-    }
 
-    if (!killOverride)
-    {
-        if (genRadioCmd > 1500)
-        {
-            // request kill state
-            killState = 1;
-        }
-        else if (genRadioCmd > 800)
-        {
-            // normal state - no kill
-            killState = 0;
-        }
-        else
-        {
-            // kill if something is weird?
-            // TODO - figure out if this is a good way to handle it
-            killState = 0;
-        }
-    }
+    // 2024 06 17 - Removed RC input for generator kill function
+
+//    if (!(failsafe.radio))
+//    {
+//        genRadioCmd = hal.rcin->read(8);
+//    }
+//    else
+//    {
+//        genRadioCmd = 1000; // low is default value - no kill
+//    }
+//
+//    if (!killOverride)
+//    {
+//        if (genRadioCmd > 1500)
+//        {
+//            // request kill state
+//            killState = 1;
+//        }
+//        else if (genRadioCmd > 800)
+//        {
+//            // normal state - no kill
+//            killState = 0;
+//        }
+//        else
+//        {
+//            // kill if something is weird?
+//            // TODO - figure out if this is a good way to handle it
+//            killState = 0;
+//        }
+//    }
+
+    // 2024 06 17 - Removed the kill state logic so that it's only doing IDLE and RUN depending on whether
+    // the drone is armed or not
 
     // if we are not in kill state, go ahead and set run/idle commands
-    if (!killState)
+//    if (!killState)
+//    {
+    // check for vehicle arm state
+    if(AP::arming().is_armed())
     {
-        // check for vehicle arm state
-        if(AP::arming().is_armed())
+        if (currentGenMode != RUN)
         {
-            if (currentGenMode != RUN)
-            {
-                currentGenMode = RUN;
-                // set pwm output
-                genCmdOut = 2000;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // if armed
-        else
-        {
-            // not armed
-            if (currentGenMode != IDLE)
-            {
-                currentGenMode = IDLE;
-                // set pwm output
-                genCmdOut = 1500;
-                SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-            }
-        } // else - from if vehicle was armed
-    } // if (!killState)
-    else // kill state is active - keep setting the kill command on PWM output
+            currentGenMode = RUN;
+            // set pwm output
+            genCmdOut = 2000;
+            SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+        }
+    } // if armed
+    else
     {
-        currentGenMode = OFF;
-        genCmdOut = 1000;
-        SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
-    }
+        // not armed
+        if (currentGenMode != IDLE)
+        {
+            currentGenMode = IDLE;
+            // set pwm output
+            genCmdOut = 1500;
+            SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+        }
+    } // else - from if vehicle was armed
+//    } // if (!killState)
+//    else // kill state is active - keep setting the kill command on PWM output
+//    {
+//        currentGenMode = OFF;
+//        genCmdOut = 1000;
+//        SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
+//    }
 
 
     // check for UART and process it into data, populate last_reading structure
@@ -1022,23 +1031,24 @@ void Copter::userhook_SlowLoop()
                         copter.do_failsafe_action(desired_gen_fs_oc_action, ModeReason::FAILSAFE);
                         //do_failsafe_action(Failsafe_Action action, ModeReason reason)
                     }
-                    else if (fs_oc == 6)
-                    {
-                        // kill engine
-                        killOverride = 1;
-                        killState = 1;
-
-                    }
+                    // 2024 06 17 - Removed this so that there is no kill available from FC to generator
+//                    else if (fs_oc == 6)
+//                    {
+//                        // kill engine
+//                        killOverride = 1;
+//                        killState = 1;
+//
+//                    }
                     last_reading.currentErrorFsHandled = 1;
             }
         }
-        else
-        {
-            if (killOverride)
-            {
-                killOverride = 0;
-            }
-        }
+//        else
+//        {
+//            if (killOverride)
+//            {
+//                killOverride = 0;
+//            }
+//        }
         // if it's active at all
         if (last_reading.currentErrorSendCnt < CURRENT_ERROR_SEND_INTERVAL)
         {
@@ -1375,9 +1385,19 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
 bool Copter::get_reading()
 {
 
+    uint32_t nbytes = 0;
+
     // fill our buffer some more:
-    uint32_t nbytes = uart->read(&RxBuf[body_length],
-                                 ARRAY_SIZE(RxBuf)-body_length);
+    if (UART_FOUND)
+    {
+        nbytes = uart->read(&RxBuf[body_length],
+                ARRAY_SIZE(RxBuf)-body_length);
+    }
+    else
+    {
+        return false;
+    }
+
     if (nbytes == 0) {
         return false;
     }
