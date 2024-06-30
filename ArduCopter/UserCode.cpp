@@ -120,42 +120,56 @@ struct Reading {
     // new EFI data stuff added June 2023
     uint8_t efiMsgReceived;
 
-    // pulseWidth1
-    uint16_t pulseWidthms;
-    // rpm
-    uint16_t efiRPM;
-    // afrtgt1
-    uint8_t afrtgt;
-    // baro
-    int16_t baro;
-    // mat
-    int16_t mat;
-    // clt
-    int16_t clt;
-    // tps
-    int16_t tps;
-    // bv
-    int16_t bv;
-    // afr1
-    int16_t afr1;
-    // aircor
-    int16_t aircor;
-    // warmcor
-    int16_t warmcor;
-    // accelEnrich
-    int16_t accelEnrich;
-    // tpsfuelcut
-    int16_t tpsfuelcut;
-    // baroCorrection
-    int16_t baroCorrection;
-    // gammaEnrich
-    int16_t gammaEnrich;
-    // ve1
-    int16_t ve1;
-    // TPSdot
-    int16_t TPSdot;
-    // fuelload
-    uint8_t fuelload;    
+      // run timer 
+      uint32_t runTimerEfi;
+      // pulseWidth1
+      uint16_t pulseWidthms;
+      // rpm
+      uint16_t efiRPM;
+      // engine state
+      uint8_t engineState;      
+      // afrtgt1
+      uint8_t afrtgt;
+      // baro
+      int16_t baro;
+      // mat
+      int16_t mat;
+      // clt
+      int16_t clt;
+      // tps
+      int16_t tps;
+      // bv
+      int16_t bv;
+      // afr1
+      //int16_t afr1;
+      // aircor
+      int16_t aircor;
+      // warmcor
+      int16_t warmcor;
+      // accelEnrich
+      int16_t accelEnrich;
+      // tpsfuelcut
+      //int16_t tpsfuelcut;
+      // baroCorrection
+      int16_t baroCorrection;
+      // gammaEnrich
+      int16_t gammaEnrich;
+      // ve1
+      int16_t ve1;
+      // TPSdot
+      int16_t TPSdot;
+      // RPMdot
+      int16_t RPMdot;
+      // ECU temp
+      int16_t ECUtemp;
+      // loop speed
+      uint16_t loopSpd;
+      // error vector
+      uint16_t errorVector;
+      // misc 1
+      int16_t misc1;
+      // misc 2
+      int16_t misc2;    
 
     uint8_t msgType; // type of message received by system (1 = GENERATOR / 2 = EFI)
 };
@@ -1203,10 +1217,10 @@ void Copter::userhook_SlowLoop()
             // EFI Message logging
             AP::logger().Write(
                 "EFI",
-                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,af1,ac,wc,ae,tfc,bc,ge,pw",
+                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,et,ac,wc,ae,spd,bc,ge,pw",
                 "sq--OO%v-%%%%%%-",
-                "F-AAAAAAAAAAAAAC",
-                "QHBhhhhhhhhhhhhH",
+                "F-AAAAAAAAAA0AAC",
+                "QHBhhhhhhhhhHhhH",
                 AP_HAL::micros64(),
                 last_reading.efiRPM,
                 last_reading.afrtgt,
@@ -1215,11 +1229,11 @@ void Copter::userhook_SlowLoop()
                 last_reading.clt,
                 last_reading.tps,
                 last_reading.bv,
-                last_reading.afr1,
+                last_reading.ECUtemp,
                 last_reading.aircor,
                 last_reading.warmcor,
                 last_reading.accelEnrich,
-                last_reading.tpsfuelcut,
+                last_reading.loopSpd,
                 last_reading.baroCorrection,
                 last_reading.gammaEnrich,
                 last_reading.pulseWidthms
@@ -1299,25 +1313,23 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         float ecu_index = 1;
         float dummyZero = 0.001;
         float erpm = ((float)(last_reading.efiRPM));
-        float engineLoad = ((float)(last_reading.fuelload))*0.1;
+        //float engineLoad = ((float)(last_reading.fuelload))*0.1;
         float tps = ((float)(last_reading.tps))*0.1;
         float baroPress = ((float)(last_reading.baro))*0.1;
         float mat = ((float)(last_reading.mat))*0.1;
         float clt = ((float)(last_reading.clt))*0.1;
         float injtime = ((float)(last_reading.pulseWidthms))*0.001;
-        float ptcomp = ((float)(last_reading.baroCorrection))*0.1;
+        float ptcomp = ((float)(last_reading.gammaEnrich))*0.1;
         float bv = ((float)(last_reading.bv))*0.1;
 
-        // TODO  - figure out if this is still valid.
         mavlink_msg_efi_status_send(
         channel.get_chan(),
-        last_reading.efiMsgReceived,
         (float)(last_reading.efiMsgReceived),
         ecu_index,
         erpm,
         dummyZero,
         dummyZero,
-        engineLoad,
+        tps,
         tps,
         dummyZero,
         baroPress,
@@ -1384,14 +1396,13 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
 // read - read serial port, return true if a new reading has been found
 bool Copter::get_reading()
 {
-
     uint32_t nbytes = 0;
 
-    // fill our buffer some more:
     if (UART_FOUND)
     {
+        // fill our buffer some more:
         nbytes = uart->read(&RxBuf[body_length],
-                ARRAY_SIZE(RxBuf)-body_length);
+                                 ARRAY_SIZE(RxBuf)-body_length);
     }
     else
     {
@@ -1547,9 +1558,9 @@ bool Copter::get_reading()
             tempInt16 = (RxBuf[16] << 8) | RxBuf[15];
             last_reading.bv = tempInt16;
 
-            // afr1
+            // ECU temp
             tempInt16 = (RxBuf[18] << 8) | RxBuf[17];
-            last_reading.afr1 = tempInt16;
+            last_reading.ECUtemp = tempInt16;
 
             // aircor
             tempInt16 = (RxBuf[20] << 8) | RxBuf[19];
@@ -1563,9 +1574,9 @@ bool Copter::get_reading()
             tempInt16 = (RxBuf[24] << 8) | RxBuf[23];
             last_reading.accelEnrich = tempInt16;
 
-            // tpsfuelcut
-            tempInt16 = (RxBuf[26] << 8) | RxBuf[25];
-            last_reading.tpsfuelcut = tempInt16;
+            // loop speed
+            tempUint16 = (RxBuf[26] << 8) | RxBuf[25];
+            last_reading.loopSpd = tempUint16;
 
             // baroCorrection
             tempInt16 = (RxBuf[28] << 8) | RxBuf[27];
@@ -1579,12 +1590,12 @@ bool Copter::get_reading()
             tempInt16 = (RxBuf[32] << 8) | RxBuf[31];
             last_reading.ve1 = tempInt16;
 
-            // TPSdot
-            tempInt16 = (RxBuf[34] << 8) | RxBuf[33];
-            last_reading.TPSdot = tempInt16;
+            // error vector
+            tempUint16 = (RxBuf[34] << 8) | RxBuf[33];
+            last_reading.errorVector = tempUint16;
 
-            // fuelload
-            last_reading.fuelload = RxBuf[35];
+            // LSB of misc1
+            last_reading.misc1 = RxBuf[35];
 
         }
 
