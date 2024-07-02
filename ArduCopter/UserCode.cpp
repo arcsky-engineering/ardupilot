@@ -1321,10 +1321,34 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         float injtime = ((float)(last_reading.pulseWidthms))*0.001;
         float ptcomp = ((float)(last_reading.gammaEnrich))*0.1;
         float bv = ((float)(last_reading.bv))*0.1;
+        uint8_t health = 1; // hard coded for now
 
+/*
+ mavlink_msg_efi_status_send(
+ mavlink_channel_t chan,
+ uint8_t health,
+ float ecu_index,
+ float rpm,
+ float fuel_consumed,
+ float fuel_flow,
+ float engine_load,
+ float throttle_position,
+ float spark_dwell_time,
+ float barometric_pressure,
+ float intake_manifold_pressure,
+ float intake_manifold_temperature,
+ float cylinder_head_temperature,
+ float ignition_timing,
+ float injection_time,
+ float exhaust_gas_temperature,
+ float throttle_out,
+ float pt_compensation,
+ float ignition_voltage,
+ float fuel_pressure)
+ */
         mavlink_msg_efi_status_send(
         channel.get_chan(),
-        (float)(last_reading.efiMsgReceived),
+        health,
         ecu_index,
         erpm,
         dummyZero,
@@ -1341,7 +1365,8 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         dummyZero,
         tps,
         ptcomp,
-        bv
+        bv,
+        dummyZero
         );
     }
 
