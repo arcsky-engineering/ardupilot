@@ -1179,10 +1179,8 @@ void Copter::userhook_SlowLoop()
 
     static uint8_t counter2;
     counter2++;
-    if (counter2 > 1)
+    if (counter2 == 1)
     {
-
-        counter2 = 0;
         // log //    log runtime, current, power, mode, etc.
         if (last_reading.generatorDetected)
         {
@@ -1211,6 +1209,9 @@ void Copter::userhook_SlowLoop()
                 last_reading.fuelPct
                 );
         }
+    }
+    else if (counter2 == 2)
+    {
 
         if (last_reading.efiMsgReceived)
         {
@@ -1218,8 +1219,8 @@ void Copter::userhook_SlowLoop()
             AP::logger().Write(
                 "EFI",
                 "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,et,ac,wc,ae,spd,bc,ge,pw",
-                "sq--OO%v-%%%%%%-",
-                "F-AAAAAAAAAA0AAC",
+                "sq-POO-vO---z---",
+                "F-AAAAAAAAAA-AAC",
                 "QHBhhhhhhhhhHhhH",
                 AP_HAL::micros64(),
                 last_reading.efiRPM,
@@ -1238,9 +1239,14 @@ void Copter::userhook_SlowLoop()
                 last_reading.gammaEnrich,
                 last_reading.pulseWidthms
                 );
-        }        
+        }
 
-    } // counter 2
+        counter2 = 0;
+    } /// else if (counter2 == 2)
+    else if (counter2 > 2)
+    {
+        counter2 = 0;
+    }
 
     // only do this if we have detected the generator at least once
     if (last_reading.generatorDetected)
@@ -1270,7 +1276,7 @@ void Copter::userhook_SlowLoop()
             }
         }
     }
-}
+} // end of slow loop
 #endif
 
 #ifdef USERHOOK_SUPERSLOWLOOP
