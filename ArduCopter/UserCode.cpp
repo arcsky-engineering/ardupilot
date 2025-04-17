@@ -739,7 +739,39 @@ void Copter::userhook_SlowLoop()
     {
         // reset any counters
         pwrStatusBadSendCnt = 0;
-    }
+    } // end of else - from if (!pwrStatusGood)
+
+
+    // --------------------------------------------------------------------------------------------------------
+    //      LOGIC FOR LOW VOLTAGE CHECKING
+    // --------------------------------------------------------------------------------------------------------
+
+    // --- Board Voltage Monitor ---
+    static bool board_voltage_warn_triggered = false;
+    static uint8_t board_voltage_warn_counter = 0;
+    //static uint16_t test_trigger_counter = 0;
+
+    float board_voltage = hal.analogin->board_voltage();
+
+//    if (test_trigger_counter < 300) {
+//        test_trigger_counter++;
+//    }
+//    else
+//    {
+//        board_voltage -= 0.8f;
+//    }
+
+    if (!board_voltage_warn_triggered && board_voltage < 4.9f) {
+        // One-time trigger
+        board_voltage_warn_triggered = true;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Power Issue! Land Immediately!");
+    } else if (board_voltage_warn_triggered) {
+        // Already triggered, send periodic warnings every ~30s (3.3 Hz * 30 = ~100 loops)
+        if (++board_voltage_warn_counter >= 100) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Power Issue! Land Immediately!");
+            board_voltage_warn_counter = 0;
+        }
+    } // end of else if
 
     static uint8_t counter1;
     // initialization only - for displaying generator (and UAV) runtime
@@ -955,7 +987,7 @@ void Copter::userhook_SlowLoop()
         if (!last_reading.engineDiedNoticeSent)
         {
             // failsafe stuff for engine stoppage
-            gcs().send_text(MAV_SEVERITY_WARNING, "Generator Failsafe");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Generator Failsafe");
             gcs().send_text(MAV_SEVERITY_INFO, "Generator Failsafe %u",fs_engine);
             // TODO - in the future, add failsafe actions and configurable ways of
             // managing this, possibly by modifying parameters and using the previous
@@ -1110,7 +1142,7 @@ void Copter::userhook_SlowLoop()
             if (!last_reading.fuelFailsafeTriggered)
             {
                 // kill engine should be one of those options
-                    gcs().send_text(MAV_SEVERITY_ERROR, "Generator Fuel Failsafe");
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Generator Fuel Failsafe");
                     gcs().send_text(MAV_SEVERITY_INFO, "Generator Fuel Failsafe %u",fs_fuel);
                     FailsafeAction desired_gen_fs_fuel_action;
                     desired_gen_fs_fuel_action = (FailsafeAction)(fs_fuel);
@@ -1141,7 +1173,7 @@ void Copter::userhook_SlowLoop()
             else
             {
                 // send mavlink message
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Low Fuel %u%%",last_reading.fuelPct);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Low Fuel %u%%",last_reading.fuelPct);
                 last_reading.fuelWarningSendCnt = 0;
             }
         } // if fuel level is less than failsafe level
