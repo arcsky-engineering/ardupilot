@@ -35,6 +35,11 @@ void ModeAltHold::run()
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
+    // limit max angle in alt hold mode to 20 degrees (fixed here in code, for now)
+     // With this math, it should always be 20 degrees, regardless of ANGLE_MAX setting
+     target_roll = target_roll * 15.0 / (copter.aparm.angle_max * 0.01);
+     target_pitch = target_pitch * 15.0 / (copter.aparm.angle_max * 0.01);
+
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
