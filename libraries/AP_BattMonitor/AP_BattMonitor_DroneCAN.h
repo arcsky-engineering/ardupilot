@@ -58,6 +58,12 @@ public:
     // reset remaining percentage to given value
     bool reset_remaining(float percentage) override;
 
+    // return true if this DroneCAN battery backend has the RESERVED_A "ready for arm" flag set
+    bool is_ready_for_arm() const;
+
+    // return true if at least two UAVCAN BatteryInfo backends are present and both are ready for arm
+    static bool all_batteries_ready_for_arm();
+
 private:
     void handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg);
     void handle_battery_info_aux(const ardupilot_equipment_power_BatteryInfoAux &msg);
@@ -99,6 +105,9 @@ private:
     bool _has_time_remaining;
     bool _has_battery_info_aux;
     uint8_t _instance;                  // instance of this battery monitor
+
+ // set when incoming UAVCAN BatteryInfo.status_flags has RESERVED_A bit set
+    bool _ready_for_arm = false;
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables

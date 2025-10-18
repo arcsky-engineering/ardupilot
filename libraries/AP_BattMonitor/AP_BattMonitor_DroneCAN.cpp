@@ -125,6 +125,12 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
         _interim_state.state_of_health_pct = msg.state_of_health_pct;
         _interim_state.has_state_of_health_pct = true;
     }
+
+    // --- NEW: update per-backend "ready for arm" flag from status_flags RESERVED_A ---
+    // The generated UAVCAN header provides UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A
+    _ready_for_arm = ( (msg.status_flags & UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A) != 0 );
+
+    // ...existing code...
 }
 
 void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc, uint8_t soh_pct)
@@ -485,6 +491,37 @@ uint32_t AP_BattMonitor_DroneCAN::get_mavlink_fault_bitmask() const
         mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
     }
     return mav_fault_bitmask;
+}
+
+bool AP_BattMonitor_DroneCAN::is_ready_for_arm() const
+{
+    return _ready_for_arm;
+}
+
+bool AP_BattMonitor_DroneCAN::all_batteries_ready_for_arm()
+{
+    const auto &batt = AP::battery();
+
+    uint8_t found_uavcan = 0;
+    for (uint8_t i = 0; i < batt._num_instances; i++) {
+        const auto *drv = batt.drivers[i];
+        if (drv == nullptr) {
+            continue;
+        }
+        // only consider UAVCAN BatteryInfo backends
+        if (batt.allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        found_uavcan++;
+        const AP_BattMonitor_DroneCAN *dc = (const AP_BattMonitor_DroneCAN*)drv;
+        if (!dc->is_ready_for_arm()) {
+            // one UAVCAN battery reported not ready -> fail
+            return false;
+        }
+    }
+
+    // require two UAVCAN battery backends present and both ready
+    return (found_uavcan >= 2);
 }
 
 #endif  // AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED

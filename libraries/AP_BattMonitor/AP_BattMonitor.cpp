@@ -1120,7 +1120,7 @@ MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t 
 
     case Failsafe::None:
     case Failsafe::Unhealthy:
-        if (get_mavlink_fault_bitmask(instance) != 0 || !healthy()) {
+        if (get_mavlink_fault_bitmask(instance) != 0 || !healthy(instance)) {
             return MAV_BATTERY_CHARGE_STATE_UNHEALTHY;
         }
         return MAV_BATTERY_CHARGE_STATE_OK;
@@ -1190,6 +1190,38 @@ bool AP_BattMonitor::healthy() const
         }
     }
     return true;
+}
+
+bool AP_BattMonitor::dronecan_all_batteries_ready_for_arm() const
+{
+    // If the DroneCAN UAVCAN batteryinfo backend is not compiled in, treat as OK.
+#if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+    uint8_t found_uavcan = 0;
+
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        const auto *drv = drivers[i];
+        if (drv == nullptr) {
+            continue;
+        }
+        if (allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        found_uavcan++;
+
+        // safe cast to DroneCAN backend type
+        const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
+        if (!dc->is_ready_for_arm()) {
+            // any UAVCAN battery that is present and not ready prevents arming
+            return false;
+        }
+    }
+
+    // If none present, skip check (return true). Otherwise require at least 2 UAVCAN batteries present and ready.
+    return (found_uavcan >= 2);
+ #else
+     (void)_num_instances; // silence unused warnings
+     return true;
+ #endif
 }
 
 #if AP_BATTERY_SCRIPTING_ENABLED
