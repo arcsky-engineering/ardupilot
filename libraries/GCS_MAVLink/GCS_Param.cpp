@@ -288,6 +288,16 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         return;
     }
 
+    // === INSERT CLAMP HERE: prevent LOIT_SPEED > 20 m/s ===
+    if (strncmp(key, "LOIT_SPEED", AP_MAX_NAME_SIZE) == 0) {
+        const float MAX_LOIT_SPEED = 2000.0f;
+        if (packet.param_value > MAX_LOIT_SPEED) {
+            packet.param_value = MAX_LOIT_SPEED;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "LOIT_SPEED limited to 20 m/s");
+        }
+    }
+    // === end clamp ===    
+
     // set the value
     vp->set_float(packet.param_value, var_type);
 

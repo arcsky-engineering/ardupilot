@@ -35,6 +35,10 @@ void ModeAltHold::run()
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
+// modify target roll and pitch based on max angle limits
+    target_roll = target_roll * 20.0 / (copter.aparm.angle_max * 0.01f);
+    target_roll = target_pitch * 20.0 / (copter.aparm.angle_max * 0.01f);
+
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate();
 

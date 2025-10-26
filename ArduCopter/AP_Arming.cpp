@@ -166,6 +166,41 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 
     // check battery voltage
     if (check_enabled(ARMING_CHECK_VOLTAGE)) {
+        // check voltage sources
+        uint16_t pwrStatusFlags = 0;
+        pwrStatusFlags = hal.analogin->power_status_flags();
+        if ((pwrStatusFlags & MAV_POWER_STATUS_BRICK_VALID) && (pwrStatusFlags & MAV_POWER_STATUS_SERVO_VALID))
+        {
+            // power is good - no need for alarm
+        }
+        else
+        {
+            uint8_t lostPwrSrc = 0;
+            if (pwrStatusFlags & MAV_POWER_STATUS_BRICK_VALID)
+            {
+                // if this is true, we still have the primary, so the
+                // secondary must have been the cause
+                lostPwrSrc = 2;
+            }
+            else
+            {
+                // the primary must have been the cause
+                lostPwrSrc = 1;
+            }
+            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "FC Supply %u Not Powered", lostPwrSrc);
+            return false;
+        }        
+
+        // NEW: require board voltage reading (single measurement) to be >= 5.0V
+        const float MIN_FC_VOLT = 5.0f;
+        float board_v = hal.analogin->board_voltage(); // single board voltage reading
+        // if board_v <= 0 it's likely unsupported/unavailable; treat unavailable as fail-safe elsewhere.
+        if (board_v > 0.0f && board_v < MIN_FC_VOLT) {
+            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "FC board voltage low: %.2fV", (double)board_v);
+            return false;
+        }    
+
+
         if (copter.battery.has_failsafed()) {
             check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
             return false;
