@@ -108,6 +108,7 @@ private:
 
  // set when incoming UAVCAN BatteryInfo.status_flags has RESERVED_A bit set
     bool _ready_for_arm = false;
+    uint32_t _errorFlags = 0;
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables

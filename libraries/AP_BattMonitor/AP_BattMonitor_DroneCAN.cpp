@@ -116,6 +116,12 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
 {
     update_interim_state(msg.voltage, msg.current, msg.temperature, msg.state_of_charge_pct, msg.state_of_health_pct); 
 
+    // fields that can be used to send other data or flags
+    // - average_power_10sec (float)
+    // - hours_to_full_charge (float)
+    // - state_of_charge_pct_stdev (uint8_t)
+    // - model_instance_id (uint32_t) - probably can be used
+
     WITH_SEMAPHORE(_sem_battmon);
     _remaining_capacity_wh = msg.remaining_capacity_wh;
     _full_charge_capacity_wh = msg.full_charge_capacity_wh;
@@ -130,7 +136,39 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     // The generated UAVCAN header provides UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A
     _ready_for_arm = ( (msg.status_flags & UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A) != 0 );
 
-    // ...existing code...
+    _errorFlags = msg.model_instance_id;
+
+    // force unhealthy if error flags are set
+    if (_errorFlags != 0){
+        _interim_state.healthy = false;
+        //_state.healthy = false;
+    }    
+
+    static uint16_t sendCnt = 0;
+
+    if (_errorFlags)
+    {
+        
+        if (sendCnt < 20)
+        {
+            sendCnt++;
+        }
+        else
+        {
+            // send out the periodic warning to the GCS
+            if (_errorFlags & 0x80000000)
+            {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Overtemp", (unsigned)_instance+1);
+            }
+            else
+            {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Error 0x%X", (unsigned)_instance+1, (unsigned)_errorFlags);
+            }
+            sendCnt = 0;
+        }
+
+    }
+
 }
 
 void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc, uint8_t soh_pct)
@@ -172,6 +210,10 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
 {
     WITH_SEMAPHORE(_sem_battmon);
     uint8_t cell_count = MIN(ARRAY_SIZE(_interim_state.cell_voltages.cells), msg.voltage_cell.len);
+
+    // fields that can possibly be used to send other data or flags
+    // - over_discharge_count (uint16_t)
+    // - max_current (float)
 
     _cycle_count = msg.cycle_count;
     for (uint8_t i = 0; i < cell_count; i++) {
