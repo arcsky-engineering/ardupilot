@@ -22,6 +22,7 @@
 // @Field: SH: state of health percentage.  0 if unknown
 // @Field: OpM: battery operating mode (DroneCAN smart batteries)
 // @Field: Err: battery error flags (DroneCAN smart batteries)
+// @Field: Cyc: battery cycle count. 0 if unknown
 struct PACKED log_BAT {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -38,6 +39,7 @@ struct PACKED log_BAT {
     uint8_t  state_of_health_pct;
     uint8_t  operating_mode;
     uint32_t error_flags;
+    uint16_t cycle_count;
 };
 
 // @LoggerMessage: BCL
@@ -67,6 +69,6 @@ struct PACKED log_BCL {
 
 #define LOG_STRUCTURE_FROM_BATTMONITOR        \
     { LOG_BAT_MSG, sizeof(log_BAT), \
-        "BAT", "QBfffffcfBBBBI", "TimeUS,Inst,V,VR,A,Ah,Wh,Temp,Res,Pct,H,SH,OpM,Err", "s#vvAaXOw%----", "F-000C0?000000" , true },  \
+        "BAT", "QBfffffcfBBBBIH", "TimeUS,Inst,V,VR,A,Ah,Wh,Temp,Res,Pct,H,SH,OpM,Err,Cyc", "s#vvAaXOw%-----", "F-000C0?0000000" , true },  \
     { LOG_BCL_MSG, sizeof(log_BCL), \
         "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" , true },

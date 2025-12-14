@@ -24,6 +24,9 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
     uint8_t soh_pct = 0;
     IGNORE_RETURN(get_state_of_health_pct(soh_pct));
 
+    uint16_t cycles = 0;
+    IGNORE_RETURN(get_cycle_count(cycles));
+
     const struct log_BAT pkt{
         LOG_PACKET_HEADER_INIT(LOG_BAT_MSG),
         time_us             : time_us,
@@ -39,7 +42,8 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         health              : _state.healthy,
         state_of_health_pct : soh_pct,
         operating_mode      : get_operating_mode(),
-        error_flags         : get_error_flags()
+        error_flags         : get_error_flags(),
+        cycle_count         : cycles
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
