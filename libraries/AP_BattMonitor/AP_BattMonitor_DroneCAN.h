@@ -47,6 +47,12 @@ public:
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     uint32_t get_mavlink_fault_bitmask() const override;
 
+    // return battery operating mode
+    uint8_t get_operating_mode() const override { return _operating_mode; }
+
+    // return battery error flags
+    uint32_t get_error_flags() const override { return _errorFlags; }
+
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_BattMonitor_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id);
     static void handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg);
@@ -109,6 +115,7 @@ private:
  // set when incoming UAVCAN BatteryInfo.status_flags has RESERVED_A bit set
     bool _ready_for_arm = false;
     uint32_t _errorFlags = 0;
+    uint8_t _operating_mode = 0;  // battery operating mode from state_of_charge_pct_stdev field
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables

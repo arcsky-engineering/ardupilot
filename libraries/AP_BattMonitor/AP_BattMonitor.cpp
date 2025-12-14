@@ -850,63 +850,87 @@ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
 
 void AP_BattMonitor::check_failsafes(void)
 {
-    if (hal.util->get_soft_armed()) {
-        for (uint8_t i = 0; i < _num_instances; i++) {
-            if (drivers[i] == nullptr) {
-                continue;
-            }
+    const bool dominated = hal.util->get_soft_armed();
 
-            const Failsafe type = drivers[i]->update_failsafes();
-            if (type <= state[i].failsafe) {
-                continue;
-            }
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (drivers[i] == nullptr) {
+            continue;
+        }
 
-            int8_t action = 0;
-            const char *type_str = nullptr;
-            switch (type) {
-                case Failsafe::None:
-                    continue; // should not have been called in this case
-                case Failsafe::Unhealthy:
-                    // Report only for unhealthy, could add action param in the future
-                    action = 0;
-                    type_str = "missing, last:";
-                    break;
-                case Failsafe::Low:
-                    action = _params[i]._failsafe_low_action;
-                    type_str = "low";
-                    break;
-                case Failsafe::Critical:
-                    action = _params[i]._failsafe_critical_action;
-                    type_str = "critical";
-                    break;
-            }
+        const Failsafe type = drivers[i]->update_failsafes();
 
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
-                            (double)voltage(i), (double)state[i].consumed_mah);
-            _has_triggered_failsafe = true;
-#ifndef HAL_BUILD_AP_PERIPH
-            AP_Notify::flags.failsafe_battery = true;
-#endif
-            state[i].failsafe = type;
-
-            // map the desired failsafe action to a priority level
-            int8_t priority = 0;
-            if (_failsafe_priorities != nullptr) {
-                while (_failsafe_priorities[priority] != -1) {
-                    if (_failsafe_priorities[priority] == action) {
-                        break;
+        // when disarmed, allow failsafe state to recover (e.g., after battery swap)
+        if (!dominated) {
+            if (type < state[i].failsafe) {
+                state[i].failsafe = type;
+                // check if all batteries have recovered
+                Failsafe highest = Failsafe::None;
+                for (uint8_t j = 0; j < _num_instances; j++) {
+                    if (state[j].failsafe > highest) {
+                        highest = state[j].failsafe;
                     }
-                    priority++;
                 }
+                if (highest == Failsafe::None) {
+                    _has_triggered_failsafe = false;
+                    _highest_failsafe_priority = INT8_MAX;
+#ifndef HAL_BUILD_AP_PERIPH
+                    AP_Notify::flags.failsafe_battery = false;
+#endif
+                }
+            }
+            continue;
+        }
 
+        // armed: only escalate failsafe, never recover
+        if (type <= state[i].failsafe) {
+            continue;
+        }
+
+        int8_t action = 0;
+        const char *type_str = nullptr;
+        switch (type) {
+            case Failsafe::None:
+                continue; // should not have been called in this case
+            case Failsafe::Unhealthy:
+                // Report only for unhealthy, could add action param in the future
+                action = 0;
+                type_str = "missing, last:";
+                break;
+            case Failsafe::Low:
+                action = _params[i]._failsafe_low_action;
+                type_str = "low";
+                break;
+            case Failsafe::Critical:
+                action = _params[i]._failsafe_critical_action;
+                type_str = "critical";
+                break;
+        }
+
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
+                        (double)voltage(i), (double)state[i].consumed_mah);
+        _has_triggered_failsafe = true;
+#ifndef HAL_BUILD_AP_PERIPH
+        AP_Notify::flags.failsafe_battery = true;
+#endif
+        state[i].failsafe = type;
+
+        // map the desired failsafe action to a priority level
+        int8_t priority = 0;
+        if (_failsafe_priorities != nullptr) {
+            while (_failsafe_priorities[priority] != -1) {
+                if (_failsafe_priorities[priority] == action) {
+                    break;
+                }
+                priority++;
             }
 
-            // trigger failsafe if the action was equal or higher priority
-            // It's valid to retrigger the same action if a different battery provoked the event
-            if (priority <= _highest_failsafe_priority) {
-                _battery_failsafe_handler_fn(type_str, action);
-                _highest_failsafe_priority = priority;
-            }
+        }
+
+        // trigger failsafe if the action was equal or higher priority
+        // It's valid to retrigger the same action if a different battery provoked the event
+        if (priority <= _highest_failsafe_priority) {
+            _battery_failsafe_handler_fn(type_str, action);
+            _highest_failsafe_priority = priority;
         }
     }
 }

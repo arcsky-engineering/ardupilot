@@ -85,6 +85,12 @@ public:
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     virtual uint32_t get_mavlink_fault_bitmask() const { return 0; }
 
+    // return battery operating mode (for DroneCAN smart batteries)
+    virtual uint8_t get_operating_mode() const { return 0; }
+
+    // return battery error flags (for DroneCAN smart batteries)
+    virtual uint32_t get_error_flags() const { return 0; }
+
     // logging functions 
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;

@@ -137,6 +137,7 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     _ready_for_arm = ( (msg.status_flags & UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A) != 0 );
 
     _errorFlags = msg.model_instance_id;
+    _operating_mode = msg.state_of_charge_pct_stdev;
 
     // force unhealthy if error flags are set
     if (_errorFlags != 0){
@@ -144,32 +145,32 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
         //_state.healthy = false;
     }    
 
-    static uint16_t sendCnt = 0;
+    // static uint16_t sendCnt = 0;
 
-    if (_errorFlags)
-    {
+    // if (_errorFlags)
+    // {
         
-        if (sendCnt < 20)
-        {
-            sendCnt++;
-        }
-        else
-        {
-            // send out the periodic warning to the GCS
-            if (_errorFlags & 0x80000000)
-            {
-                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Overtemp", (unsigned)_instance+1);
-            }
-            else
-            {
-                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Error 0x%X", (unsigned)_instance+1, (unsigned)_errorFlags);
-            }
-            sendCnt = 0;
-        }
+    //     if (sendCnt < 20)
+    //     {
+    //         sendCnt++;
+    //     }
+    //     else
+    //     {
+    //         // send out the periodic warning to the GCS
+    //         if (_errorFlags & 0x80000000)
+    //         {
+    //             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Overtemp", (unsigned)_instance+1);
+    //         }
+    //         else
+    //         {
+    //             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Error 0x%X", (unsigned)_instance+1, (unsigned)_errorFlags);
+    //         }
+    //         sendCnt = 0;
+    //     }
 
-    }
+    // }
 
-}
+} // end of handle_battery_info
 
 void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc, uint8_t soh_pct)
 {
@@ -218,6 +219,10 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
     _cycle_count = msg.cycle_count;
     for (uint8_t i = 0; i < cell_count; i++) {
         _interim_state.cell_voltages.cells[i] = msg.voltage_cell.data[i] * 1000;
+    }
+    // mark remaining cells as invalid to prevent spurious BCL2 logging
+    for (uint8_t i = cell_count; i < ARRAY_SIZE(_interim_state.cell_voltages.cells); i++) {
+        _interim_state.cell_voltages.cells[i] = UINT16_MAX;
     }
     _interim_state.is_powering_off = msg.is_powering_off;
     if (!isnan(msg.nominal_voltage) && msg.nominal_voltage > 0) {

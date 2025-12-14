@@ -37,7 +37,9 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         resistance          : _state.resistance,
         rem_percent         : percent,
         health              : _state.healthy,
-        state_of_health_pct : soh_pct
+        state_of_health_pct : soh_pct,
+        operating_mode      : get_operating_mode(),
+        error_flags         : get_error_flags()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

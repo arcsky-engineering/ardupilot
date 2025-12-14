@@ -37,7 +37,7 @@ void ModeAltHold::run()
 
 // modify target roll and pitch based on max angle limits
     target_roll = target_roll * 20.0 / (copter.aparm.angle_max * 0.01f);
-    target_roll = target_pitch * 20.0 / (copter.aparm.angle_max * 0.01f);
+    target_pitch = target_pitch * 20.0 / (copter.aparm.angle_max * 0.01f);
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate();
