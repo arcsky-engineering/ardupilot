@@ -220,10 +220,6 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
     for (uint8_t i = 0; i < cell_count; i++) {
         _interim_state.cell_voltages.cells[i] = msg.voltage_cell.data[i] * 1000;
     }
-    // mark remaining cells as invalid to prevent spurious BCL2 logging
-    for (uint8_t i = cell_count; i < ARRAY_SIZE(_interim_state.cell_voltages.cells); i++) {
-        _interim_state.cell_voltages.cells[i] = UINT16_MAX;
-    }
     _interim_state.is_powering_off = msg.is_powering_off;
     if (!isnan(msg.nominal_voltage) && msg.nominal_voltage > 0) {
         float remaining_capacity_ah = _remaining_capacity_wh / msg.nominal_voltage;

@@ -72,7 +72,9 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
     AP::logger().WriteBlock(&cell_pkt, sizeof(cell_pkt));
 
 #if AP_BATT_MONITOR_CELLS_MAX > 12
-    if (_state.cell_voltages.cells[12] != UINT16_MAX || _state.cell_voltages.cells[13] != UINT16_MAX)
+    // only log BCL2 if cells 12 or 13 have valid non-zero voltages
+    if ((_state.cell_voltages.cells[12] > 0 && _state.cell_voltages.cells[12] < UINT16_MAX) ||
+        (_state.cell_voltages.cells[13] > 0 && _state.cell_voltages.cells[13] < UINT16_MAX))
     {
 // @LoggerMessage: BCL2
 // @Description: Battery cell voltage information
