@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "GCS.h"
+#include "GCS_Param_Whitelist.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
@@ -75,9 +76,16 @@ GCS_MAVLINK::queued_param_send()
     }
     count -= async_replies_sent_count;
 
+
     while (count && _queued_parameter != nullptr && last_txbuf_is_greater(33)) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
+
+        // Filter: skip parameters not in user whitelist
+        if (!is_user_allowed_param(param_name)) {
+            _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
+            continue;  // Skip to next param without sending or incrementing index
+        }
 
         mavlink_msg_param_value_send(
             chan,
@@ -212,14 +220,14 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(&msg, &packet);
 
-    // requesting parameters is a convenient way to get extra information
-    send_banner();
-
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
-    _queued_parameter_count = AP_Param::count_parameters();
+    _queued_parameter_count = count_user_parameters();  // Use filtered count for whitelist
     _queued_parameter_send_time_ms = AP_HAL::millis(); // avoid initial flooding
+
+    // requesting parameters is a convenient way to get extra information
+    send_banner();
 }
 
 void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
@@ -271,6 +279,21 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     char key[AP_MAX_NAME_SIZE+1];
     strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
     key[AP_MAX_NAME_SIZE] = 0;
+
+    // Filter: block setting parameters not in user whitelist
+    if (!is_user_allowed_param(key)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param access denied (%s)", key);
+        // Send back a "not found" response to stop GCS retries
+        // param_index = UINT16_MAX signals parameter not found
+        mavlink_msg_param_value_send(
+            chan,
+            key,
+            0,  // value doesn't matter for not-found
+            MAV_PARAM_TYPE_REAL32,
+            count_user_parameters(),
+            UINT16_MAX);  // UINT16_MAX = parameter not found
+        return;
+    }
 
     // find existing param so we can get the old value
     uint16_t parameter_flags = 0;
@@ -335,7 +358,7 @@ void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param
         param_name,
         param_value,
         mav_param_type(param_type),
-        AP_Param::count_parameters(),
+        count_user_parameters(),  // Use filtered count for whitelist
         -1);
 }
 
@@ -349,7 +372,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     memcpy(packet.param_id, param_name, to_copy);
     packet.param_value = param_value;
     packet.param_type = GCS_MAVLINK::mav_param_type(param_type);
-    packet.param_count = AP_Param::count_parameters();
+    packet.param_count = count_user_parameters();  // Use filtered count for whitelist
     packet.param_index = -1;
 
     gcs().send_to_active_channels(MAVLINK_MSG_ID_PARAM_VALUE,
@@ -380,7 +403,7 @@ void GCS_MAVLINK::param_io_timer(void)
         // no room
         return;
     }
-    
+
     if (!param_requests.pop(req)) {
         // nothing to do
         return;
@@ -404,11 +427,22 @@ void GCS_MAVLINK::param_io_timer(void)
         }
     }
 
-    reply.chan = req.chan;
+    // Filter: don't reply for non-whitelisted parameters
     reply.param_name[AP_MAX_NAME_SIZE] = 0;
+    if (!is_user_allowed_param(reply.param_name)) {
+        // Send a "not found" response with index UINT16_MAX to stop GCS retries
+        reply.chan = req.chan;
+        reply.value = 0;
+        reply.param_index = UINT16_MAX;  // Signals "parameter not found"
+        reply.count = count_user_parameters();
+        param_replies.push(reply);
+        return;
+    }
+
+    reply.chan = req.chan;
     reply.value = vp->cast_to_float(reply.p_type);
     reply.param_index = req.param_index;
-    reply.count = AP_Param::count_parameters();
+    reply.count = count_user_parameters();  // Use filtered count
 
     // queue for transmission
     param_replies.push(reply);

@@ -1,0 +1,14 @@
+include ../CubeOrangePlus/hwdef.dat
+
+# use a different board ID so vehicles with this installed are prevented from
+# loading firmware without OpenDroneID enabled
+APJ_BOARD_ID 10163
+
+# enable OpenDroneID
+define AP_OPENDRONEID_ENABLED 1
+
+# embed default parameters directly in firmware binary
+# this allows defaults.parm values to be applied even without SD card
+# IMPORTANT: need BOTH the define (for C code) AND env (for build system)
+# define FORCE_APJ_DEFAULT_PARAMETERS 1
+# env FORCE_APJ_DEFAULT_PARAMETERS 1

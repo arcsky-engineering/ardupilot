@@ -102,6 +102,18 @@ AP_OpenDroneID::AP_OpenDroneID()
 
 void AP_OpenDroneID::init()
 {
+#if AP_OPENDRONEID_ENABLED
+    // Force Remote ID to be enabled - required for regulatory compliance
+    // This overrides any EEPROM value to ensure DID_ENABLE is always 1
+    if (_enable == 0) {
+        _enable.set_and_save(1);
+    }
+    // Force EnforceArming option - prevents arming without valid Remote ID
+    if ((_options.get() & uint8_t(Options::EnforceArming)) == 0) {
+        _options.set_and_save(_options.get() | uint8_t(Options::EnforceArming));
+    }
+#endif
+
     if (_enable == 0) {
         return;
     }
@@ -171,7 +183,9 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
-    if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
+    // Skip local BasicID check if RID module reports GOOD_TO_ARM (module has valid BasicID)
+    if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE &&
+        arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
         strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
         return false;
     }
