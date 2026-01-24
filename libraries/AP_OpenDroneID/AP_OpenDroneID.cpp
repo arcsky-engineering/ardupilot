@@ -39,6 +39,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <stdio.h>
+#include <string.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
@@ -106,6 +107,7 @@ void AP_OpenDroneID::init()
 
     load_UAS_ID_from_persistent_memory();
     _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
+    _init_time_ms = AP_HAL::millis();
     _initialised = true;
 }
 
@@ -154,6 +156,28 @@ void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
     }
 }
 
+// Translate DB201 error codes into user-friendly messages
+// DB201 sends codes like "LOC ID SYS OP_LOC" which are cryptic
+static void translate_arm_status_error(const char* error, char* failmsg, uint8_t failmsg_len)
+{
+    // Check for specific error codes from DB201 and translate them
+    if (strstr(error, "OP_LOC") != nullptr) {
+        strncpy(failmsg, "operator location not set in GCS", failmsg_len);
+    } else if (strstr(error, "LOC") != nullptr) {
+        strncpy(failmsg, "vehicle location not available", failmsg_len);
+    } else if (strstr(error, "SYS") != nullptr) {
+        strncpy(failmsg, "system data not received by Remote ID module", failmsg_len);
+    } else if (strstr(error, "ID") != nullptr) {
+        strncpy(failmsg, "BasicID not configured in Remote ID module", failmsg_len);
+    } else if (strlen(error) > 0) {
+        // Unknown error, pass through as-is
+        strncpy(failmsg, error, failmsg_len);
+    } else {
+        strncpy(failmsg, "Remote ID module not ready", failmsg_len);
+    }
+    failmsg[failmsg_len - 1] = '\0';
+}
+
 // Perform the pre-arm checks and prevent arming if they are not satisifed
 // Except in the case of an in-flight reboot
 bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
@@ -164,47 +188,27 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
-    /*
-    if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
-        strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
+    if (_enable == 0) {
+        strncpy(failmsg, "DID_ENABLE must be 1", failmsg_len);
         return false;
     }
-    */
 
-    /*
-    if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
-        strncpy(failmsg, "operator location must be set", failmsg_len);
-        return false;
-    }
-    */
-
-
-
-    //const uint32_t max_age_ms = 3000;
-    const uint32_t max_age_ms = 15000;
+    // Check if we're receiving ARM_STATUS from the Remote ID module (DB201)
+    const uint32_t max_age_ms = 3000;
     const uint32_t now_ms = AP_HAL::millis();
 
     if (last_arm_status_ms == 0 || now_ms - last_arm_status_ms > max_age_ms) {
-        strncpy(failmsg, "ARM_STATUS not available", failmsg_len);
+        strncpy(failmsg, "no response from Remote ID module", failmsg_len);
         return false;
     }
 
-
-    // should we bypass this one for test?
-    /*
-    if (last_system_ms == 0 ||
-        (now_ms - last_system_ms > max_age_ms &&
-         (now_ms - last_system_update_ms > max_age_ms))) {
-        strncpy(failmsg, "SYSTEM not available", failmsg_len);
-        return false;
-    }
-    */
-    
+    // Trust the DB201's arm status - it checks everything internally
+    // (BasicID, Location, System, Operator Location)
     if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
-        strncpy(failmsg, arm_status.error, failmsg_len);
+        translate_arm_status_error(arm_status.error, failmsg, failmsg_len);
         return false;
     }
-    
+
     return true;
 }
 
@@ -266,25 +270,27 @@ void AP_OpenDroneID::send_static_out()
 {
     const uint32_t now_ms = AP_HAL::millis();
 
-    // we need to notify user if we lost the transmitter
-    if (now_ms - last_arm_status_ms > 5000) {
+    // Suppress warnings during boot grace period (30 seconds) to allow
+    // GCS and transmitter time to establish communication
+    const uint32_t boot_grace_period_ms = 30000;
+    const bool in_grace_period = (now_ms - _init_time_ms) < boot_grace_period_ms;
+
+    // we need to notify user if we lost the transmitter (but not during boot)
+    if (!in_grace_period && now_ms - last_arm_status_ms > 5000) {
         if (now_ms - last_lost_tx_ms > 5000) {
             last_lost_tx_ms = now_ms;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost transmitter");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Remote ID: lost connection");
         }
     } else if (last_lost_tx_ms != 0) {
         // we're OK again
         last_lost_tx_ms = 0;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ODID: transmitter OK");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Remote ID: regained connection");
     }
 
-    // we need to notify user if we lost system msg with operator location
-    if (now_ms - last_system_ms > 15000 && now_ms - last_lost_operator_msg_ms > 15000) {
-        last_lost_operator_msg_ms = now_ms;
-        // comment out for now to suppress the annoying warning
-        //GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
-    }
-    
+    // Note: "lost operator location" warning removed - DB201 handles this check
+    // and reports via ARM_STATUS. Pre-arm will fail with user-friendly message
+    // "operator location not set in GCS" if operator location is missing.
+
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS
@@ -292,10 +298,8 @@ void AP_OpenDroneID::send_static_out()
         bool sent_ok = false;
         switch (next_msg_to_send) {
         case NEXT_MSG_BASIC_ID:
-            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_BASIC_ID)) {
-                send_basic_id_message();
-                sent_ok = true;
-            }
+            // BasicID not sent - DB201 is pre-programmed
+            sent_ok = true;  // skip to next message
             break;
         case NEXT_MSG_SYSTEM:
             if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM)) {
@@ -304,16 +308,12 @@ void AP_OpenDroneID::send_static_out()
             }
             break;
         case NEXT_MSG_SELF_ID:
-            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SELF_ID)) {
-                send_self_id_message();
-                sent_ok = true;
-            }
+            // SelfID not sent - DB201 is pre-programmed
+            sent_ok = true;  // skip to next message
             break;
         case NEXT_MSG_OPERATOR_ID:
-            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_OPERATOR_ID)) {
-                send_operator_id_message();
-                sent_ok = true;
-            }
+            // OperatorID not sent - DB201 is pre-programmed
+            sent_ok = true;  // skip to next message
             break;
         case NEXT_MSG_ENUM_END:
             break;

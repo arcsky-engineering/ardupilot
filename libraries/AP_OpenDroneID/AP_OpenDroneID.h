@@ -132,6 +132,7 @@ private:
 
     mavlink_channel_t _chan; // MAVLink channel that communicates with the Remote ID Transceiver
     const mavlink_channel_t MAV_CHAN_INVALID = mavlink_channel_t(255U);
+    uint32_t _init_time_ms;  // Time when ODID was initialized (for boot grace period)
     uint32_t _last_send_location_ms;
     uint32_t _last_send_system_update_ms;
     uint32_t _last_send_static_messages_ms;
