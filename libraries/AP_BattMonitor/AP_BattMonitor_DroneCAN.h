@@ -6,13 +6,14 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 #define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         1500000 // sensor becomes unhealthy if no successful readings for 1.5 seconds
+#define AP_BATTMONITOR_UAVCAN_ERROR_DEBOUNCE_MS     1000    // error flags must persist for 1 second before reporting UNHEALTHY
 
 #ifndef AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
 #define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
 #endif
 
 // BMS error flag definitions (must match BMS interface firmware)
-// Upper 16 bits are errors, lower 16 bits are warnings
+// Upper 16 bits are errors (block arming), lower 16 bits are warnings (allow arming)
 enum BMS_ErrorFlags : uint32_t {
     BMS_ERR_CELL_OVERTEMP        = 1UL << 31,
     BMS_ERR_CHIP_OVERTEMP        = 1UL << 30,
@@ -27,12 +28,17 @@ enum BMS_ErrorFlags : uint32_t {
     BMS_ERR_CELL_UNDERTEMP       = 1UL << 21,
     BMS_ERR_GENERIC              = 1UL << 20,
     BMS_ERR_BAY_CHG_ID_LOSS      = 1UL << 19,
-    // Warnings (lower 16 bits)
+    // Warnings (lower 16 bits) - do not block arming
     BMS_WARN_CELL_TEMP           = 1UL << 15,
     BMS_WARN_CHIP_TEMP           = 1UL << 14,
     BMS_WARN_CELL_OUT_OF_BALANCE = 1UL << 13,
     BMS_WARN_OVERCURRENT         = 1UL << 12,
 };
+
+// Mask for errors only (upper 16 bits) - these block arming and report UNHEALTHY
+#define BMS_ERROR_MASK  0xFFFF0000UL
+// Mask for warnings only (lower 16 bits) - these allow arming but may be reported
+#define BMS_WARNING_MASK  0x0000FFFFUL
 
 // Battery operating modes (must match BMS interface firmware)
 enum BMS_OperatingMode : uint8_t {
@@ -112,6 +118,10 @@ public:
     // return true if battery data has timed out (received data before but not recently)
     bool has_timed_out() const;
 
+    // return true if error flags have persisted long enough to report UNHEALTHY
+    // (debounces transient errors during hot-swap)
+    bool has_persistent_error_flags() const;
+
     // get the specific reason why battery is not ready for arm
     // returns true if battery is not ready and writes reason to buffer
     // returns false if battery is ready (no error)
@@ -165,6 +175,7 @@ private:
  // set when incoming UAVCAN BatteryInfo.status_flags has RESERVED_A bit set
     bool _ready_for_arm = false;
     uint32_t _errorFlags = 0;
+    uint32_t _error_flags_first_seen_ms = 0;  // timestamp when error flags first became non-zero (0 = no errors)
     uint8_t _operating_mode = 0;  // battery operating mode from state_of_charge_pct_stdev field
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment

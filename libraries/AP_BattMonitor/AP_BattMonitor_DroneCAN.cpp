@@ -136,13 +136,23 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     // The generated UAVCAN header provides UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A
     _ready_for_arm = ( (msg.status_flags & UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATUS_FLAG_RESERVED_A) != 0 );
 
-    _errorFlags = msg.model_instance_id;
+    // Track when error flags (not warnings) first appear for debouncing transient hot-swap errors
+    uint32_t new_error_flags = msg.model_instance_id;
+    uint32_t new_errors_only = new_error_flags & BMS_ERROR_MASK;
+    uint32_t old_errors_only = _errorFlags & BMS_ERROR_MASK;
+    if (new_errors_only != 0 && old_errors_only == 0) {
+        // errors just appeared - record timestamp
+        _error_flags_first_seen_ms = AP_HAL::millis();
+    } else if (new_errors_only == 0) {
+        // errors cleared - reset timestamp (warnings don't affect this)
+        _error_flags_first_seen_ms = 0;
+    }
+    _errorFlags = new_error_flags;
     _operating_mode = msg.state_of_charge_pct_stdev;
 
-    // force unhealthy if error flags are set
-    if (_errorFlags != 0){
+    // force unhealthy only if errors (not warnings) are set
+    if ((_errorFlags & BMS_ERROR_MASK) != 0){
         _interim_state.healthy = false;
-        //_state.healthy = false;
     }    
 
     // static uint16_t sendCnt = 0;
@@ -578,6 +588,20 @@ bool AP_BattMonitor_DroneCAN::has_timed_out() const
     return (now - _interim_state.last_time_micros) > AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS;
 }
 
+// return true if error flags (not warnings) have persisted long enough to report UNHEALTHY
+// this debounces transient errors during hot-swap (e.g., brief COV/overcurrent spikes)
+bool AP_BattMonitor_DroneCAN::has_persistent_error_flags() const
+{
+    if ((_errorFlags & BMS_ERROR_MASK) == 0) {
+        return false;  // no errors (warnings don't count)
+    }
+    if (_error_flags_first_seen_ms == 0) {
+        return false;  // timestamp not set (shouldn't happen, but be safe)
+    }
+    uint32_t now = AP_HAL::millis();
+    return (now - _error_flags_first_seen_ms) >= AP_BATTMONITOR_UAVCAN_ERROR_DEBOUNCE_MS;
+}
+
 // get the specific reason why battery is not ready for arm
 // returns true if battery is not ready and writes reason to buffer
 // returns false if battery is ready (no error)
@@ -623,7 +647,7 @@ bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) 
     } else if (_errorFlags & BMS_ERR_CELL_OUT_OF_BALANCE) {
         strncpy(buffer, "cells out of balance", buflen);
     } else if (_errorFlags & BMS_ERR_COMM_BQ76942) {
-        strncpy(buffer, "BQ76942 comm error", buflen);
+        strncpy(buffer, "BQ comm error", buflen);
     } else if (_errorFlags & BMS_ERR_COMM_AIRCRAFT) {
         strncpy(buffer, "aircraft comm error", buflen);
     } else if (_errorFlags & BMS_ERR_COMM_OTHER_BATT) {
@@ -632,11 +656,11 @@ bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) 
         strncpy(buffer, "bay charger ID loss", buflen);
     } else if (_errorFlags & BMS_ERR_GENERIC) {
         strncpy(buffer, "BMS error", buflen);
-    } else if (_errorFlags != 0) {
-        // unknown error flag
+    } else if ((_errorFlags & BMS_ERROR_MASK) != 0) {
+        // unknown error flag (upper 16 bits)
         hal.util->snprintf(buffer, buflen, "error 0x%08X", (unsigned)_errorFlags);
     } else {
-        // no error flags but not ready - battery is not in an armable mode
+        // no errors (warnings only or no flags) but not ready - battery is not in an armable mode
         strncpy(buffer, "not in armable mode", buflen);
     }
 

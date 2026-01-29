@@ -1149,17 +1149,37 @@ MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t 
     }
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
-    // check for timeout (battery missing) on DroneCAN batteries
-    // return UNDEFINED rather than UNHEALTHY for missing batteries
+    // special handling for DroneCAN batteries
     if (allocated_type(instance) == Type::UAVCAN_BatteryInfo && drivers[instance] != nullptr) {
         const AP_BattMonitor_DroneCAN* dc_driver =
             static_cast<const AP_BattMonitor_DroneCAN*>(drivers[instance]);
-        if (dc_driver->has_timed_out()) {
+
+        // return UNDEFINED for batteries that were never seen or have timed out
+        if (!dc_driver->has_received_data() || dc_driver->has_timed_out()) {
             return MAV_BATTERY_CHARGE_STATE_UNDEFINED;
         }
+
+        // for DroneCAN batteries with fresh data, only report UNHEALTHY if error flags
+        // have persisted for the debounce period (filters transient hot-swap errors)
+        if (dc_driver->has_persistent_error_flags()) {
+            return MAV_BATTERY_CHARGE_STATE_UNHEALTHY;
+        }
+
+        // fresh data and no faults - check failsafe state
+        switch (state[instance].failsafe) {
+        case Failsafe::None:
+        case Failsafe::Unhealthy:
+            return MAV_BATTERY_CHARGE_STATE_OK;
+        case Failsafe::Low:
+            return MAV_BATTERY_CHARGE_STATE_LOW;
+        case Failsafe::Critical:
+            return MAV_BATTERY_CHARGE_STATE_CRITICAL;
+        }
+        return MAV_BATTERY_CHARGE_STATE_OK;
     }
 #endif
 
+    // non-DroneCAN batteries use standard logic
     switch (state[instance].failsafe) {
 
     case Failsafe::None:

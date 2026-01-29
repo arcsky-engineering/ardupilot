@@ -1599,7 +1599,12 @@ void AP_DroneCAN::handle_debug(const CanardRxTransfer& transfer, const uavcan_pr
         if (send_mavlink) {
             // when we send as MAVLink it also gets logged locally, so
             // we return to avoid a duplicate
-            GCS_SEND_TEXT(mavlink_level, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
+            // Node 88 (BMS interface board) messages have context in the text itself
+            if (transfer.source_node_id == 88) {
+                GCS_SEND_TEXT(mavlink_level, "%s", msg.text.data);
+            } else {
+                GCS_SEND_TEXT(mavlink_level, "CAN[%u] %s", transfer.source_node_id, msg.text.data);
+            }
             return;
         }
     }
@@ -1607,7 +1612,11 @@ void AP_DroneCAN::handle_debug(const CanardRxTransfer& transfer, const uavcan_pr
 
 #if HAL_LOGGING_ENABLED
     // always log locally if we have logging enabled
-    AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
+    if (transfer.source_node_id == 88) {
+        AP::logger().Write_MessageF("%s", msg.text.data);
+    } else {
+        AP::logger().Write_MessageF("CAN[%u] %s", transfer.source_node_id, msg.text.data);
+    }
 #endif
 }
 
