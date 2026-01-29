@@ -1466,7 +1466,7 @@ bool AP_Arming::opendroneid_checks(bool display_failure)
 
     char failure_msg[50] {};
     if (!opendroneid.pre_arm_check(failure_msg, sizeof(failure_msg))) {
-        check_failed(display_failure, "OpenDroneID: %s", failure_msg);
+        check_failed(display_failure, "Remote I D: %s", failure_msg);
         return false;
     }
 #endif
