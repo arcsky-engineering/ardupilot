@@ -513,7 +513,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
     if (!tiltAlignComplete) {
         if (tiltErrorVariance < sq(radians(5.0))) {
             tiltAlignComplete = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete",(unsigned)imu_index);
+            //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete",(unsigned)imu_index);
         }
     }
 

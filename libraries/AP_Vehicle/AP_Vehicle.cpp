@@ -525,7 +525,7 @@ void AP_Vehicle::setup()
     // initialisation
     AP_Param::invalidate_count();
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduPilot Ready");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Autopilot Ready");
 
 #if AP_DDS_ENABLED
     if (!init_dds_client()) {
@@ -559,11 +559,11 @@ void AP_Vehicle::loop()
         done_safety_init = true;
         BoardConfig.init_safety();
 
-        // send RC output mode info if available
-        char banner_msg[50];
-        if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", banner_msg);
-        }
+        // // send RC output mode info if available
+        // char banner_msg[50];
+        // if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
+        //     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", banner_msg);
+        // }
     }
     const uint32_t new_internal_errors = AP::internalerror().errors();
     if(_last_internal_errors != new_internal_errors) {
@@ -725,8 +725,9 @@ void AP_Vehicle::scheduler_delay_callback()
         last_5s = tnow;
         if (AP_BoardConfig::in_config_error()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+        } 
+        else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising Autopilot");
         }
     }
 

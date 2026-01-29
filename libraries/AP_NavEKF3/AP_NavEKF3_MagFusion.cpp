@@ -107,7 +107,7 @@ void NavEKF3_core::controlMagYawReset()
     if (magYawResetRequest && use_compass()) {
         // send initial alignment status to console
         if (!yawAlignComplete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u initial yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
+            //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u initial yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
         }
 
         // set yaw from a single mag sample
@@ -115,10 +115,10 @@ void NavEKF3_core::controlMagYawReset()
 
         // send in-flight yaw alignment status to console
         if (finalResetRequest) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u in-flight yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
+            //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u in-flight yaw alignment complete",(unsigned)imu_index, (unsigned)magSelectIndex);
         } else if (interimResetRequest) {
             magYawAnomallyCount++;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u MAG%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index, (unsigned)magSelectIndex);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u MAG%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index, (unsigned)magSelectIndex);
         }
 
         // clear the complete flags if an interim reset has been performed to allow subsequent

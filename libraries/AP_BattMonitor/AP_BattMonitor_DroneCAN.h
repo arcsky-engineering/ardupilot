@@ -5,11 +5,50 @@
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
-#define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
+#define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         1500000 // sensor becomes unhealthy if no successful readings for 1.5 seconds
 
 #ifndef AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
 #define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
 #endif
+
+// BMS error flag definitions (must match BMS interface firmware)
+// Upper 16 bits are errors, lower 16 bits are warnings
+enum BMS_ErrorFlags : uint32_t {
+    BMS_ERR_CELL_OVERTEMP        = 1UL << 31,
+    BMS_ERR_CHIP_OVERTEMP        = 1UL << 30,
+    BMS_ERR_CELL_OUT_OF_BALANCE  = 1UL << 29,
+    BMS_ERR_COMM_BQ76942         = 1UL << 28,
+    BMS_ERR_COMM_AIRCRAFT        = 1UL << 27,
+    BMS_ERR_COMM_OTHER_BATT      = 1UL << 26,
+    BMS_ERR_COV                  = 1UL << 25,  // cell overvoltage
+    BMS_ERR_CUV                  = 1UL << 24,  // cell undervoltage
+    BMS_ERR_FET_OVERTEMP         = 1UL << 23,
+    BMS_ERR_OVERCURRENT          = 1UL << 22,
+    BMS_ERR_CELL_UNDERTEMP       = 1UL << 21,
+    BMS_ERR_GENERIC              = 1UL << 20,
+    BMS_ERR_BAY_CHG_ID_LOSS      = 1UL << 19,
+    // Warnings (lower 16 bits)
+    BMS_WARN_CELL_TEMP           = 1UL << 15,
+    BMS_WARN_CHIP_TEMP           = 1UL << 14,
+    BMS_WARN_CELL_OUT_OF_BALANCE = 1UL << 13,
+    BMS_WARN_OVERCURRENT         = 1UL << 12,
+};
+
+// Battery operating modes (must match BMS interface firmware)
+enum BMS_OperatingMode : uint8_t {
+    BMS_MODE_INIT             = 0,
+    BMS_MODE_PRE_ACTIVE       = 1,
+    BMS_MODE_ACTIVE_ON_NORMAL = 2,
+    BMS_MODE_ACTIVE_ON_FLYING = 3,
+    BMS_MODE_CHARGE           = 4,
+    BMS_MODE_ERROR            = 5,
+    BMS_MODE_SHUTDOWN         = 6,
+    BMS_MODE_BALANCING_ONLY   = 7,
+    BMS_MODE_DEEPSLEEP        = 8,
+    BMS_MODE_PASSIVE_ON       = 9,
+    BMS_MODE_HOTSWAP          = 10,
+    BMS_MODE_TEST             = 11,
+};
 
 class AP_BattMonitor_DroneCAN : public AP_BattMonitor_Backend
 {
@@ -66,6 +105,17 @@ public:
 
     // return true if this DroneCAN battery backend has the RESERVED_A "ready for arm" flag set
     bool is_ready_for_arm() const;
+
+    // return true if we've received at least one BatteryInfo message from this battery
+    bool has_received_data() const { return _interim_state.last_time_micros != 0; }
+
+    // return true if battery data has timed out (received data before but not recently)
+    bool has_timed_out() const;
+
+    // get the specific reason why battery is not ready for arm
+    // returns true if battery is not ready and writes reason to buffer
+    // returns false if battery is ready (no error)
+    bool get_not_ready_reason(char *buffer, size_t buflen) const;
 
     // return true if at least two UAVCAN BatteryInfo backends are present and both are ready for arm
     static bool all_batteries_ready_for_arm();

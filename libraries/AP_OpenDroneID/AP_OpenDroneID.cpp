@@ -176,13 +176,13 @@ static void translate_arm_status_error(const char* error, char* failmsg, uint8_t
 {
     // Check for specific error codes from DB201 and translate them
     if (strstr(error, "OP_LOC") != nullptr) {
-        strncpy(failmsg, "operator location not set in GCS", failmsg_len);
+        strncpy(failmsg, "No Operator Location", failmsg_len);
     } else if (strstr(error, "LOC") != nullptr) {
-        strncpy(failmsg, "vehicle location not available", failmsg_len);
+        strncpy(failmsg, "No Drone Location", failmsg_len);
     } else if (strstr(error, "SYS") != nullptr) {
-        strncpy(failmsg, "system data not received by Remote ID module", failmsg_len);
+        strncpy(failmsg, "Remote ID System Message", failmsg_len);
     } else if (strstr(error, "ID") != nullptr) {
-        strncpy(failmsg, "BasicID not configured in Remote ID module", failmsg_len);
+        strncpy(failmsg, "BasicID not Configured", failmsg_len);
     } else if (strlen(error) > 0) {
         // Unknown error, pass through as-is
         strncpy(failmsg, error, failmsg_len);

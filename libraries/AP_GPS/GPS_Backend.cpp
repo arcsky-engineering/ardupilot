@@ -154,7 +154,7 @@ void AP_GPS_Backend::broadcast_gps_type() const
 {
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buffer);
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buffer);
 }
 
 #if HAL_LOGGING_ENABLED

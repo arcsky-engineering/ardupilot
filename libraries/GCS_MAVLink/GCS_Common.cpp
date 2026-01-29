@@ -4573,49 +4573,49 @@ void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t &msg)
 void GCS_MAVLINK::send_banner()
 {
     // mark the firmware version in the tlog
-    const AP_FWVersion &fwver = AP::fwversion();
+    //const AP_FWVersion &fwver = AP::fwversion();
 
-    send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
+    //send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
 
-    if (fwver.middleware_name && fwver.os_name) {
-        send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",
-                  fwver.middleware_name, fwver.middleware_hash_str,
-                  fwver.os_name, fwver.os_hash_str);
-    } else if (fwver.os_name) {
-        send_text(MAV_SEVERITY_INFO, "%s: %s",
-                  fwver.os_name, fwver.os_hash_str);
-    }
+    // if (fwver.middleware_name && fwver.os_name) {
+    //     send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",
+    //               fwver.middleware_name, fwver.middleware_hash_str,
+    //               fwver.os_name, fwver.os_hash_str);
+    // } else if (fwver.os_name) {
+    //     send_text(MAV_SEVERITY_INFO, "%s: %s",
+    //               fwver.os_name, fwver.os_hash_str);
+    // }
 
     // send system ID if we can
-    char sysid[50];
-    if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_INFO, "%s", sysid);
-    }
+    // char sysid[50];
+    // if (hal.util->get_system_id(sysid)) {
+    //     send_text(MAV_SEVERITY_INFO, "%s", sysid);
+    // }
 
     // send MCUID if we can
 #if HAL_WITH_IO_MCU
 #define REVID_MASK	0xFFFF0000
 #define DEVID_MASK	0xFFF
-    if (AP_BoardConfig::io_enabled()) {
-        uint32_t mcuid = iomcu.get_mcu_id();
-        send_text(MAV_SEVERITY_INFO, "IOMCU: %x %x %lx", uint16_t(mcuid & DEVID_MASK), uint16_t((mcuid & REVID_MASK) >> 16U),
-            iomcu.get_cpu_id());
-    }
+    // if (AP_BoardConfig::io_enabled()) {
+    //     uint32_t mcuid = iomcu.get_mcu_id();
+    //     send_text(MAV_SEVERITY_INFO, "IOMCU: %x %x %lx", uint16_t(mcuid & DEVID_MASK), uint16_t((mcuid & REVID_MASK) >> 16U),
+    //         iomcu.get_cpu_id());
+    // }
 #endif
 
-    // send RC output mode info if available
-    char banner_msg[50];
-    if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
-        send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
-    }
+    // // send RC output mode info if available
+    // char banner_msg[50];
+    // if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
+    //     send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
+    // }
 
 #if AP_INERTIALSENSOR_ENABLED
     // output any fast sampling status messages
-    for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
-        if (AP::ins().get_output_banner(i, banner_msg, sizeof(banner_msg))) {
-            send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
-        }
-    }
+    // for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
+    //     if (AP::ins().get_output_banner(i, banner_msg, sizeof(banner_msg))) {
+    //         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
+    //     }
+    // }
 #endif
 }
 

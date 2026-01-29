@@ -449,35 +449,35 @@ void AP_AHRS::update(bool skip_ins_update)
     state.active_EKF = _active_EKF_type();
     if (state.active_EKF != last_active_ekf_type) {
         last_active_ekf_type = state.active_EKF;
-        const char *shortname = "???";
+        //const char *shortname = "???";
         switch ((EKFType)state.active_EKF) {
 #if AP_AHRS_DCM_ENABLED
         case EKFType::DCM:
-            shortname = "DCM";
+            //shortname = "DCM";
             break;
 #endif
 #if AP_AHRS_SIM_ENABLED
         case EKFType::SIM:
-            shortname = "SIM";
+            //shortname = "SIM";
             break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
         case EKFType::EXTERNAL:
-            shortname = "External";
+            //shortname = "External";
             break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         case EKFType::THREE:
-            shortname = "EKF3";
+            //shortname = "EKF3";
             break;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
         case EKFType::TWO:
-            shortname = "EKF2";
+            //shortname = "EKF2";
             break;
 #endif
         }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
 #endif // HAL_GCS_ENABLED
 

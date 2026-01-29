@@ -517,28 +517,135 @@ const char* AP_BattMonitor_DroneCAN::mppt_fault_string(const MPPT_FaultFlags fau
 // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
 uint32_t AP_BattMonitor_DroneCAN::get_mavlink_fault_bitmask() const
 {
-    // return immediately if not mppt or no faults
-    if (!_mppt.is_detected || (_mppt.fault_flags == 0)) {
-        return 0;
-    }
+    uint32_t mav_fault_bitmask = 0;
 
     // convert mppt fault bitmask to mavlink fault bitmask
-    uint32_t mav_fault_bitmask = 0;
-    if ((_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_VOLTAGE) || (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::UNDER_VOLTAGE)) {
-        mav_fault_bitmask |= MAV_BATTERY_FAULT_INCOMPATIBLE_VOLTAGE;
+    if (_mppt.is_detected && (_mppt.fault_flags != 0)) {
+        if ((_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_VOLTAGE) || (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::UNDER_VOLTAGE)) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_INCOMPATIBLE_VOLTAGE;
+        }
+        if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_CURRENT) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_CURRENT;
+        }
+        if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_TEMPERATURE) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
+        }
     }
-    if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_CURRENT) {
-        mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_CURRENT;
+
+    // convert BMS error flags to mavlink fault bitmask
+    if (_errorFlags != 0) {
+        // overtemperature conditions (cell, chip, or FET)
+        if (_errorFlags & (BMS_ERR_CELL_OVERTEMP | BMS_ERR_CHIP_OVERTEMP | BMS_ERR_FET_OVERTEMP)) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
+        }
+        // undertemperature
+        if (_errorFlags & BMS_ERR_CELL_UNDERTEMP) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_UNDER_TEMPERATURE;
+        }
+        // overcurrent
+        if (_errorFlags & BMS_ERR_OVERCURRENT) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_CURRENT;
+        }
+        // cell overvoltage
+        if (_errorFlags & BMS_ERR_COV) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_INCOMPATIBLE_VOLTAGE;
+        }
+        // cell undervoltage (deep discharge)
+        if (_errorFlags & BMS_ERR_CUV) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_DEEP_DISCHARGE;
+        }
+        // cell imbalance or BMS comm errors indicate cell/system failure
+        if (_errorFlags & (BMS_ERR_CELL_OUT_OF_BALANCE | BMS_ERR_COMM_BQ76942 | BMS_ERR_GENERIC)) {
+            mav_fault_bitmask |= MAV_BATTERY_FAULT_CELL_FAIL;
+        }
     }
-    if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_TEMPERATURE) {
-        mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
-    }
+
     return mav_fault_bitmask;
 }
 
 bool AP_BattMonitor_DroneCAN::is_ready_for_arm() const
 {
     return _ready_for_arm;
+}
+
+// return true if battery data has timed out (received data before but not recently)
+bool AP_BattMonitor_DroneCAN::has_timed_out() const
+{
+    if (_interim_state.last_time_micros == 0) {
+        return false;  // never received data, not a timeout
+    }
+    uint32_t now = AP_HAL::micros();
+    return (now - _interim_state.last_time_micros) > AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS;
+}
+
+// get the specific reason why battery is not ready for arm
+// returns true if battery is not ready and writes reason to buffer
+// returns false if battery is ready (no error)
+bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) const
+{
+    if (_ready_for_arm) {
+        return false;  // battery is ready, no error
+    }
+
+    // check if we've ever received data from this battery
+    if (_interim_state.last_time_micros == 0) {
+        strncpy(buffer, "not detected", buflen);
+        if (buflen > 0) {
+            buffer[buflen - 1] = '\0';
+        }
+        return true;
+    }
+
+    // check if battery data has timed out (was present but now missing)
+    if (has_timed_out()) {
+        strncpy(buffer, "not detected", buflen);
+        if (buflen > 0) {
+            buffer[buflen - 1] = '\0';
+        }
+        return true;
+    }
+
+    // check error flags first (higher priority)
+    if (_errorFlags & BMS_ERR_CELL_OVERTEMP) {
+        strncpy(buffer, "cell overtemp", buflen);
+    } else if (_errorFlags & BMS_ERR_CHIP_OVERTEMP) {
+        strncpy(buffer, "chip overtemp", buflen);
+    } else if (_errorFlags & BMS_ERR_FET_OVERTEMP) {
+        strncpy(buffer, "FET overtemp", buflen);
+    } else if (_errorFlags & BMS_ERR_CELL_UNDERTEMP) {
+        strncpy(buffer, "cell undertemp", buflen);
+    } else if (_errorFlags & BMS_ERR_OVERCURRENT) {
+        strncpy(buffer, "overcurrent", buflen);
+    } else if (_errorFlags & BMS_ERR_COV) {
+        strncpy(buffer, "cell overvoltage", buflen);
+    } else if (_errorFlags & BMS_ERR_CUV) {
+        strncpy(buffer, "cell undervoltage", buflen);
+    } else if (_errorFlags & BMS_ERR_CELL_OUT_OF_BALANCE) {
+        strncpy(buffer, "cells out of balance", buflen);
+    } else if (_errorFlags & BMS_ERR_COMM_BQ76942) {
+        strncpy(buffer, "BQ76942 comm error", buflen);
+    } else if (_errorFlags & BMS_ERR_COMM_AIRCRAFT) {
+        strncpy(buffer, "aircraft comm error", buflen);
+    } else if (_errorFlags & BMS_ERR_COMM_OTHER_BATT) {
+        strncpy(buffer, "other battery comm error", buflen);
+    } else if (_errorFlags & BMS_ERR_BAY_CHG_ID_LOSS) {
+        strncpy(buffer, "bay charger ID loss", buflen);
+    } else if (_errorFlags & BMS_ERR_GENERIC) {
+        strncpy(buffer, "BMS error", buflen);
+    } else if (_errorFlags != 0) {
+        // unknown error flag
+        hal.util->snprintf(buffer, buflen, "error 0x%08X", (unsigned)_errorFlags);
+    } else {
+        // no error flags but not ready - battery is not in an armable mode
+        strncpy(buffer, "not in armable mode", buflen);
+    }
+
+    // ensure null termination
+    if (buflen > 0) {
+        buffer[buflen - 1] = '\0';
+    }
+
+    return true;  // battery is not ready
 }
 
 bool AP_BattMonitor_DroneCAN::all_batteries_ready_for_arm()

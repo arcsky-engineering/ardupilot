@@ -1050,6 +1050,14 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
             continue;
         }
 
+        // Skip DroneCAN batteries - they have their own specialized check
+        // via dronecan_batteries_ready_for_arm_with_reason()
+#if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+        if (expected_type == Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+#endif
+
 #if !AP_BATTERY_SUM_ENABLED
         // CONVERSION - Added Sep 2024 for ArduPilot 4.6 as we are
         // removing the SUM backend on 1MB boards.  Give a
@@ -1133,12 +1141,24 @@ bool AP_BattMonitor::reset_remaining_mask(uint16_t battery_mask, float percentag
 
 // Returns the mavlink charge state. The following mavlink charge states are not used
 // MAV_BATTERY_CHARGE_STATE_EMERGENCY , MAV_BATTERY_CHARGE_STATE_FAILED
-// MAV_BATTERY_CHARGE_STATE_UNHEALTHY, MAV_BATTERY_CHARGE_STATE_CHARGING
-MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t instance) const 
+// MAV_BATTERY_CHARGE_STATE_CHARGING
+MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t instance) const
 {
     if (instance >= _num_instances) {
         return MAV_BATTERY_CHARGE_STATE_UNDEFINED;
     }
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
+    // check for timeout (battery missing) on DroneCAN batteries
+    // return UNDEFINED rather than UNHEALTHY for missing batteries
+    if (allocated_type(instance) == Type::UAVCAN_BatteryInfo && drivers[instance] != nullptr) {
+        const AP_BattMonitor_DroneCAN* dc_driver =
+            static_cast<const AP_BattMonitor_DroneCAN*>(drivers[instance]);
+        if (dc_driver->has_timed_out()) {
+            return MAV_BATTERY_CHARGE_STATE_UNDEFINED;
+        }
+    }
+#endif
 
     switch (state[instance].failsafe) {
 
@@ -1220,8 +1240,6 @@ bool AP_BattMonitor::dronecan_all_batteries_ready_for_arm() const
 {
     // If the DroneCAN UAVCAN batteryinfo backend is not compiled in, treat as OK.
 #if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
-    uint8_t found_uavcan = 0;
-
     for (uint8_t i = 0; i < _num_instances; i++) {
         const auto *drv = drivers[i];
         if (drv == nullptr) {
@@ -1230,7 +1248,6 @@ bool AP_BattMonitor::dronecan_all_batteries_ready_for_arm() const
         if (allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
-        found_uavcan++;
 
         // safe cast to DroneCAN backend type
         const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
@@ -1240,12 +1257,71 @@ bool AP_BattMonitor::dronecan_all_batteries_ready_for_arm() const
         }
     }
 
-    // If none present, skip check (return true). Otherwise require at least 2 UAVCAN batteries present and ready.
-    return (found_uavcan >= 2);
+    return true;
  #else
      (void)_num_instances; // silence unused warnings
      return true;
  #endif
+}
+
+// Check all DroneCAN batteries for readiness and return detailed error message
+// Returns true if all batteries ready, false otherwise with error details in buffer
+// Prioritizes errors: not detected > error flags > mode issues
+bool AP_BattMonitor::dronecan_batteries_ready_for_arm_with_reason(size_t buflen, char *buffer) const
+{
+#if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+    char reason[50] {};
+
+    // Priority 1: Check for batteries that are missing (never received data OR timed out)
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        const auto *drv = drivers[i];
+        if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
+        if (!dc->has_received_data()) {
+            hal.util->snprintf(buffer, buflen, "Battery %u not detected", i + 1);
+            return false;
+        }
+        if (dc->has_timed_out()) {
+            hal.util->snprintf(buffer, buflen, "Battery %u not detected", i + 1);
+            return false;
+        }
+    }
+
+    // Priority 2: Check for batteries with error flags
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        const auto *drv = drivers[i];
+        if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
+        if (!dc->is_ready_for_arm() && dc->get_error_flags() != 0) {
+            dc->get_not_ready_reason(reason, sizeof(reason));
+            hal.util->snprintf(buffer, buflen, "Battery %u %s", i + 1, reason);
+            return false;
+        }
+    }
+
+    // Priority 3: Check for batteries with mode issues (but no error flags)
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        const auto *drv = drivers[i];
+        if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
+        if (dc->get_not_ready_reason(reason, sizeof(reason))) {
+            hal.util->snprintf(buffer, buflen, "Battery %u %s", i + 1, reason);
+            return false;
+        }
+    }
+
+    return true;
+#else
+    (void)buflen;
+    (void)buffer;
+    return true;
+#endif
 }
 
 #if AP_BATTERY_SCRIPTING_ENABLED

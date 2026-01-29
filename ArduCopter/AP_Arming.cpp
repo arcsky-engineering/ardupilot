@@ -52,23 +52,20 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
     // DroneCAN battery readiness check via generic AP_BattMonitor API.
     // The AP_BattMonitor method hides conditional compilation and returns true if no UAVCAN backends exist.
-    if (!AP::battery().dronecan_all_batteries_ready_for_arm()) {
-        check_failed(display_failure, "Batteries not ready");
+    char batt_reason[50] {};
+    if (!AP::battery().dronecan_batteries_ready_for_arm_with_reason(sizeof(batt_reason), batt_reason)) {
+        check_failed(display_failure, "%s", batt_reason);
         passed = false;
-    }
-
-    // If not passed all checks return false
-    if (!passed) {
-        return false;
     }
 
     // if pre arm checks are disabled run only the mandatory checks
     if (checks_to_perform == 0) {
-        return mandatory_checks(display_failure);
+        return passed && mandatory_checks(display_failure);
     }
 
     // bitwise & ensures all checks are run
-    return parameter_checks(display_failure)
+    return passed
+        & parameter_checks(display_failure)
         & oa_checks(display_failure)
         & gcs_failsafe_check(display_failure)
         & winch_checks(display_failure)

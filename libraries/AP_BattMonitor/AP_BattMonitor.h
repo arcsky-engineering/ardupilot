@@ -292,9 +292,13 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // Return true if there are no UAVCAN BatteryInfo backends or
-    // at least two UAVCAN BatteryInfo backends are present and all report ready-for-arm.
+    // all UAVCAN BatteryInfo backends report ready-for-arm.
     // This allows callers to skip adding DroneCAN headers and avoids conditional compilation in arming code.
-    bool dronecan_all_batteries_ready_for_arm() const;    
+    bool dronecan_all_batteries_ready_for_arm() const;
+
+    // Check all DroneCAN batteries for readiness and return detailed error message
+    // Returns true if all batteries ready, false otherwise with error details in buffer
+    bool dronecan_batteries_ready_for_arm_with_reason(size_t buflen, char *buffer) const;
 
 #if AP_BATTERY_SCRIPTING_ENABLED
     bool handle_scripting(uint8_t idx, const struct BattMonitorScript_State &state);
