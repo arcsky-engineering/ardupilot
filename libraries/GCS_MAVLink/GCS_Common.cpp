@@ -4572,10 +4572,9 @@ void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_banner()
 {
-    // mark the firmware version in the tlog
-    //const AP_FWVersion &fwver = AP::fwversion();
-
-    //send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
+    // Custom firmware banner
+    const AP_FWVersion &fwver = AP::fwversion();
+    send_text(MAV_SEVERITY_INFO, "fw: 1.0.0 (%s)", fwver.fw_hash_str);
 
     // if (fwver.middleware_name && fwver.os_name) {
     //     send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",
