@@ -457,7 +457,7 @@ void NavEKF3_core::setAidingMode()
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = resetDataSource::GPS;
                 velResetSource = resetDataSource::GPS;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
+                //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
 #if EK3_FEATURE_BEACON_FUSION
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
@@ -712,7 +712,7 @@ bool NavEKF3_core::setOrigin(const Location &loc)
         setEarthFieldFromLocation(EKF_origin);
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
 
     if (!frontend->common_origin_valid) {
         frontend->common_origin_valid = true;
