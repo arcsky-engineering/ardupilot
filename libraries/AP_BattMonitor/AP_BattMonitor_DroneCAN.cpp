@@ -116,11 +116,17 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
 {
     update_interim_state(msg.voltage, msg.current, msg.temperature, msg.state_of_charge_pct, msg.state_of_health_pct); 
 
-    // fields that can be used to send other data or flags
-    // - average_power_10sec (float)
-    // - hours_to_full_charge (float)
-    // - state_of_charge_pct_stdev (uint8_t)
-    // - model_instance_id (uint32_t) - probably can be used
+    // Additional temperatures from repurposed fields (sent in Celsius)
+    // - average_power_10sec: BQ chip temperature
+    // - hours_to_full_charge: STM32 CPU temperature
+    if (!isnan(msg.average_power_10sec)) {
+        _temp_chip = msg.average_power_10sec;
+        _has_temp_chip = true;
+    }
+    if (!isnan(msg.hours_to_full_charge)) {
+        _temp_cpu = msg.hours_to_full_charge;
+        _has_temp_cpu = true;
+    }
 
     WITH_SEMAPHORE(_sem_battmon);
     _remaining_capacity_wh = msg.remaining_capacity_wh;
@@ -154,31 +160,6 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     if ((_errorFlags & BMS_ERROR_MASK) != 0){
         _interim_state.healthy = false;
     }    
-
-    // static uint16_t sendCnt = 0;
-
-    // if (_errorFlags)
-    // {
-        
-    //     if (sendCnt < 20)
-    //     {
-    //         sendCnt++;
-    //     }
-    //     else
-    //     {
-    //         // send out the periodic warning to the GCS
-    //         if (_errorFlags & 0x80000000)
-    //         {
-    //             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Overtemp", (unsigned)_instance+1);
-    //         }
-    //         else
-    //         {
-    //             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Battery %u: Error 0x%X", (unsigned)_instance+1, (unsigned)_errorFlags);
-    //         }
-    //         sendCnt = 0;
-    //     }
-
-    // }
 
 } // end of handle_battery_info
 
@@ -222,9 +203,11 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_
     WITH_SEMAPHORE(_sem_battmon);
     uint8_t cell_count = MIN(ARRAY_SIZE(_interim_state.cell_voltages.cells), msg.voltage_cell.len);
 
-    // fields that can possibly be used to send other data or flags
-    // - over_discharge_count (uint16_t)
-    // - max_current (float)
+    // FET temperature from repurposed max_current field (sent in Celsius)
+    if (!isnan(msg.max_current)) {
+        _temp_fet = msg.max_current;
+        _has_temp_fet = true;
+    }
 
     _cycle_count = msg.cycle_count;
     for (uint8_t i = 0; i < cell_count; i++) {
@@ -420,6 +403,36 @@ bool AP_BattMonitor_DroneCAN::get_cycle_count(uint16_t &cycles) const
 {
     if (_has_battery_info_aux) {
         cycles = _cycle_count;
+        return true;
+    }
+    return false;
+}
+
+// get BMS chip temperature
+bool AP_BattMonitor_DroneCAN::get_temp_chip(float &temperature) const
+{
+    if (_has_temp_chip) {
+        temperature = _temp_chip;
+        return true;
+    }
+    return false;
+}
+
+// get BMS processor temperature
+bool AP_BattMonitor_DroneCAN::get_temp_cpu(float &temperature) const
+{
+    if (_has_temp_cpu) {
+        temperature = _temp_cpu;
+        return true;
+    }
+    return false;
+}
+
+// get BMS FET temperature
+bool AP_BattMonitor_DroneCAN::get_temp_fet(float &temperature) const
+{
+    if (_has_temp_fet) {
+        temperature = _temp_fet;
         return true;
     }
     return false;

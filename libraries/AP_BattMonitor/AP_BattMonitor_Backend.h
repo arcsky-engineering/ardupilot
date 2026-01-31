@@ -56,6 +56,15 @@ public:
     // returns true if temperature retrieved successfully
     virtual bool get_temperature(float &temperature) const;
 
+    // returns true if BMS chip temperature retrieved successfully (DroneCAN smart batteries)
+    virtual bool get_temp_chip(float &temperature) const { return false; }
+
+    // returns true if BMS processor temperature retrieved successfully (DroneCAN smart batteries)
+    virtual bool get_temp_cpu(float &temperature) const { return false; }
+
+    // returns true if BMS FET temperature retrieved successfully (DroneCAN smart batteries)
+    virtual bool get_temp_fet(float &temperature) const { return false; }
+
     // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
     // returns false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
     virtual bool capacity_remaining_pct(uint8_t &percentage) const WARN_IF_UNUSED;

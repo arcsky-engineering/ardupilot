@@ -27,6 +27,19 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
     uint16_t cycles = 0;
     IGNORE_RETURN(get_cycle_count(cycles));
 
+    // Get additional temperatures (DroneCAN smart batteries)
+    float temp_chip, temp_cpu, temp_fet;
+    int16_t temp_chip_cd = 0, temp_cpu_cd = 0, temp_fet_cd = 0;
+    if (get_temp_chip(temp_chip)) {
+        temp_chip_cd = temp_chip * 100.0;
+    }
+    if (get_temp_cpu(temp_cpu)) {
+        temp_cpu_cd = temp_cpu * 100.0;
+    }
+    if (get_temp_fet(temp_fet)) {
+        temp_fet_cd = temp_fet * 100.0;
+    }
+
     const struct log_BAT pkt{
         LOG_PACKET_HEADER_INIT(LOG_BAT_MSG),
         time_us             : time_us,
@@ -34,8 +47,6 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         voltage             : _state.voltage,
         voltage_resting     : _state.voltage_resting_estimate,
         current_amps        : has_curr ? _state.current_amps : AP::logger().quiet_nanf(),
-        current_total       : has_curr ? _state.consumed_mah : AP::logger().quiet_nanf(),
-        consumed_wh         : has_curr ? _state.consumed_wh : AP::logger().quiet_nanf(),
         temperature         : temperature_cd,
         resistance          : _state.resistance,
         rem_percent         : percent,
@@ -43,7 +54,10 @@ void AP_BattMonitor_Backend::Log_Write_BAT(const uint8_t instance, const uint64_
         state_of_health_pct : soh_pct,
         operating_mode      : get_operating_mode(),
         error_flags         : get_error_flags(),
-        cycle_count         : cycles
+        cycle_count         : cycles,
+        temp_chip           : temp_chip_cd,
+        temp_cpu            : temp_cpu_cd,
+        temp_fet            : temp_fet_cd
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

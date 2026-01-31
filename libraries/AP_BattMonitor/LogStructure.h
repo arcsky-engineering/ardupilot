@@ -13,9 +13,7 @@
 // @Field: V: measured voltage
 // @Field: VR: estimated resting voltage
 // @Field: A: measured current
-// @Field: Ah: consumed Ah, current * time
-// @Field: Wh: consumed Wh, energy this battery has expended
-// @Field: Temp: measured temperature
+// @Field: Temp: measured cell/battery temperature
 // @Field: Res: estimated battery resistance
 // @Field: Pct: remaining percentage
 // @Field: H: health
@@ -23,6 +21,9 @@
 // @Field: OpM: battery operating mode (DroneCAN smart batteries)
 // @Field: Err: battery error flags (DroneCAN smart batteries)
 // @Field: Cyc: battery cycle count. 0 if unknown
+// @Field: TChp: BMS chip temperature (DroneCAN smart batteries)
+// @Field: TCPU: BMS processor temperature (DroneCAN smart batteries)
+// @Field: TFET: BMS FET temperature (DroneCAN smart batteries)
 struct PACKED log_BAT {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -30,8 +31,6 @@ struct PACKED log_BAT {
     float    voltage;
     float    voltage_resting;
     float    current_amps;
-    float    current_total;
-    float    consumed_wh;
     int16_t  temperature; // degrees C * 100
     float    resistance;
     uint8_t  rem_percent;
@@ -40,6 +39,9 @@ struct PACKED log_BAT {
     uint8_t  operating_mode;
     uint32_t error_flags;
     uint16_t cycle_count;
+    int16_t  temp_chip;    // BMS chip temp, degrees C * 100
+    int16_t  temp_cpu;     // BMS processor temp, degrees C * 100
+    int16_t  temp_fet;     // BMS FET temp, degrees C * 100
 };
 
 // @LoggerMessage: BCL
@@ -69,6 +71,6 @@ struct PACKED log_BCL {
 
 #define LOG_STRUCTURE_FROM_BATTMONITOR        \
     { LOG_BAT_MSG, sizeof(log_BAT), \
-        "BAT", "QBfffffcfBBBBIH", "TimeUS,Inst,V,VR,A,Ah,Wh,Temp,Res,Pct,H,SH,OpM,Err,Cyc", "s#vvAaXOw%-----", "F-000C0?0000000" , true },  \
+        "BAT", "QBfffcfBBBBIHccc", "TimeUS,Inst,V,VR,A,Temp,Res,Pct,H,SH,OpM,Err,Cyc,TChp,TCPU,TFET", "s#vvAOw%-----OOO", "F-000C0000000CCC" , true },  \
     { LOG_BCL_MSG, sizeof(log_BCL), \
         "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" , true },

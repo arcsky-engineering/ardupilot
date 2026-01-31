@@ -78,6 +78,11 @@ public:
 
     bool has_temperature() const override { return _has_temperature; }
 
+    // Additional temperature accessors for BMS components
+    bool get_temp_chip(float &temperature) const override;
+    bool get_temp_cpu(float &temperature) const override;
+    bool get_temp_fet(float &temperature) const override;
+
     bool has_current() const override { return true; }
 
     // Always have consumed energy, either directly from BatteryInfoAux msg or by cumulative current draw
@@ -170,6 +175,14 @@ private:
     bool _has_cell_voltages;
     bool _has_time_remaining;
     bool _has_battery_info_aux;
+
+    // Additional BMS temperatures (stored in Celsius)
+    float _temp_chip;           // BQ chip temperature
+    float _temp_cpu;            // STM32 processor temperature
+    float _temp_fet;            // FET temperature
+    bool _has_temp_chip;
+    bool _has_temp_cpu;
+    bool _has_temp_fet;
     uint8_t _instance;                  // instance of this battery monitor
 
  // set when incoming UAVCAN BatteryInfo.status_flags has RESERVED_A bit set
