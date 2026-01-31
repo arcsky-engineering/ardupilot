@@ -689,6 +689,17 @@ public:
     AP_Float pldp_range_finder_maximum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
+
+#if AP_RANGEFINDER_ENABLED
+    // forward rangefinder avoidance parameters
+    AP_Int16 fwdavd_enable;     // bitmask of modes to enable for
+    AP_Float fwdavd_dist;       // trigger distance in meters
+    AP_Int8  fwdavd_samp;       // sample count threshold
+    AP_Int8  fwdavd_cond;       // altitude condition (0=none, 1=home alt, 2=terrain)
+    AP_Float fwdavd_alt;        // altitude threshold in meters
+    AP_Int8  fwdavd_act;        // action (0=None, 1=RTL, 2=SmartRTL, 3=Land, 4=Stop/Lockout)
+    AP_Int8  fwdavd_chan;       // RC channel for master enable (0=always, 1-16=channel)
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

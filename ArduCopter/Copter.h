@@ -422,6 +422,20 @@ private:
         uint32_t start_ms;  // system time that EKF began deadreckoning
     } dead_reckoning;
 
+#if AP_RANGEFINDER_ENABLED
+    // forward rangefinder avoidance state
+    struct {
+        uint8_t thresh_count;           // current sample count (increments on obstacle, decrements when clear)
+        bool triggered;                 // true if avoidance action has been triggered
+        bool stick_locked;              // true if stick input is locked (Stop action)
+        bool active;                    // true if activation condition is met
+        bool last_active;               // previous active state for change detection
+        bool terrain_problem;           // true if terrain data unavailable
+        uint32_t last_terrain_warn_ms;  // last time we warned about terrain
+        Mode::Number prev_mode;         // mode before avoidance was triggered
+    } fwdavd_state;
+#endif
+
     // Motor Output
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
@@ -735,6 +749,17 @@ private:
 #if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
+#endif
+
+#if AP_RANGEFINDER_ENABLED
+    // avoidance_rfnd.cpp
+    void avoidance_rfnd_update(void);
+    bool is_fwdavd_enabled_for_mode();
+    bool check_fwdavd_activation();
+    void handle_fwdavd_action();
+    void handle_fwdavd_stop_lockout();
+    void check_fwdavd_stick_unlock();
+    bool fwdavd_stick_locked() const;
 #endif
 
     // baro_ground_effect.cpp

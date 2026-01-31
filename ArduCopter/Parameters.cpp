@@ -1250,6 +1250,62 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_RNG_SPD", 10, ParametersG2, land_rng_spd, 75),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: FWDAVD_EN
+    // @DisplayName: Forward Avoidance Enable
+    // @Description: Bitmask of flight modes for which forward rangefinder avoidance is enabled. When enabled, a forward-facing rangefinder will trigger a failsafe action when obstacles are detected.
+    // @Bitmask: 0:Auto/Guided/RTL/SmartRTL, 1:Loiter, 2:PosHold, 3:AltHold
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_EN", 11, ParametersG2, fwdavd_enable, 0),
+
+    // @Param: FWDAVD_DIST
+    // @DisplayName: Forward Avoidance Distance
+    // @Description: Distance in meters at which forward rangefinder avoidance triggers. Obstacles closer than this distance will trigger the avoidance action.
+    // @Units: m
+    // @Range: 1 30
+    // @Increment: 0.5
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_DIST", 12, ParametersG2, fwdavd_dist, 12.0),
+
+    // @Param: FWDAVD_SAMP
+    // @DisplayName: Forward Avoidance Sample Count
+    // @Description: Number of consecutive rangefinder samples below the distance threshold required to trigger avoidance. Higher values reduce false triggers but increase response time. At 10Hz update rate, 3 samples = 0.3 seconds.
+    // @Range: 1 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_SAMP", 13, ParametersG2, fwdavd_samp, 3),
+
+    // @Param: FWDAVD_COND
+    // @DisplayName: Forward Avoidance Altitude Condition
+    // @Description: Altitude condition for forward avoidance activation. 0=No altitude check (always active if RC enabled), 1=Only active when above FWDAVD_ALT altitude relative to home, 2=Only active when above FWDAVD_ALT terrain altitude.
+    // @Values: 0:No Altitude Check, 1:Above Home Altitude, 2:Above Terrain Altitude
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_COND", 14, ParametersG2, fwdavd_cond, 0),
+
+    // @Param: FWDAVD_ALT
+    // @DisplayName: Forward Avoidance Altitude Threshold
+    // @Description: Minimum altitude in meters above which forward avoidance is active. Used when FWDAVD_COND is 1 (home altitude) or 2 (terrain altitude). Helps prevent false triggers near ground.
+    // @Units: m
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_ALT", 15, ParametersG2, fwdavd_alt, 3.0),
+
+    // @Param: FWDAVD_ACT
+    // @DisplayName: Forward Avoidance Action
+    // @Description: Action to take when forward avoidance is triggered. For manual modes, action 4 (Stop) switches to Loiter and locks stick input until sticks are returned to neutral and obstacle clears.
+    // @Values: 0:None, 1:RTL, 2:SmartRTL, 3:Land, 4:Stop with Lockout
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_ACT", 16, ParametersG2, fwdavd_act, 2),
+
+    // @Param: FWDAVD_CHAN
+    // @DisplayName: Forward Avoidance RC Channel
+    // @Description: RC channel number (6-11) used as master enable/disable switch for forward avoidance. Feature is disabled unless a valid channel (6-11) is configured. When configured, avoidance is only active when that channel PWM > 1500.
+    // @Values: 0:Disabled,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_CHAN", 17, ParametersG2, fwdavd_chan, 0),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

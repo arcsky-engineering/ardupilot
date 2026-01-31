@@ -46,6 +46,15 @@ void ModeAltHold::run()
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
+#if AP_RANGEFINDER_ENABLED
+    // zero out pilot inputs if forward avoidance stick lockout is active
+    if (copter.fwdavd_stick_locked()) {
+        target_roll = 0.0f;
+        target_pitch = 0.0f;
+        target_yaw_rate = 0.0f;
+    }
+#endif
+
     // Alt Hold State Machine Determination
     AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
 

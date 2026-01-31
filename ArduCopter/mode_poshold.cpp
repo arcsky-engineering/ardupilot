@@ -89,6 +89,15 @@ void ModePosHold::run()
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
+#if AP_RANGEFINDER_ENABLED
+    // zero out pilot inputs if forward avoidance stick lockout is active
+    if (copter.fwdavd_stick_locked()) {
+        target_roll = 0.0f;
+        target_pitch = 0.0f;
+        target_yaw_rate = 0.0f;
+    }
+#endif
+
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();

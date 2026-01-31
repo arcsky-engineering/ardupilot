@@ -107,6 +107,15 @@ void ModeLoiter::run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
+
+#if AP_RANGEFINDER_ENABLED
+        // zero out pilot inputs if forward avoidance stick lockout is active
+        if (copter.fwdavd_stick_locked()) {
+            loiter_nav->clear_pilot_desired_acceleration();
+            target_yaw_rate = 0.0f;
+            // allow descent but not forward movement
+        }
+#endif
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();
