@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forward Rangefinder Avoidance - Implementation Guide & Test Plan</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #1a5f7a;
+            border-bottom: 3px solid #1a5f7a;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .warning {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        ul.checklist {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        ul.checklist li {
+            padding: 5px 0;
+        }
+        ul.checklist li::before {
+            content: "☐ ";
+            font-size: 1.2em;
+        }
+        .test-section {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .test-section h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        @media print {
+            body {
+                max-width: 100%;
+            }
+            .test-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Forward Rangefinder Avoidance</h1>
+    <p><strong>Implementation Guide & Test Plan</strong></p>
+    <p><em>ArduCopter Custom Feature</em></p>
+
+    <h2>1. Overview</h2>
+    <p>
+        The Forward Rangefinder Avoidance system provides obstacle detection and avoidance using a
+        forward-facing rangefinder. When obstacles are detected within a configurable distance for
+        a sufficient number of consecutive samples, the system triggers a configurable failsafe action.
+    </p>
+
+    <h3>Key Features</h3>
+    <ul>
+        <li>RC channel master switch for activation (channels 6-11)</li>
+        <li>Optional altitude gating (home altitude or terrain)</li>
+        <li>Mode-specific enable bitmask</li>
+        <li>Configurable threshold distance and sample count</li>
+        <li>Multiple failsafe actions: RTL, SmartRTL, Land, or Stop with stick lockout</li>
+        <li>Automatic escalation to Land if obstacle detected during RTL</li>
+        <li>Continue-if-landing behavior respected</li>
+    </ul>
+
+    <h2>2. Parameters</h2>
+
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Default</th>
+            <th>Range</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_EN</code></td>
+            <td>0</td>
+            <td>0-31 (bitmask)</td>
+            <td>Enable bitmask for modes:<br>
+                Bit 0: Auto/Guided/RTL/SmartRTL<br>
+                Bit 1: Loiter<br>
+                Bit 2: PosHold<br>
+                Bit 3: AltHold
+            </td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_DIST</code></td>
+            <td>12.0</td>
+            <td>1-100 meters</td>
+            <td>Distance threshold for obstacle detection</td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_SAMP</code></td>
+            <td>3</td>
+            <td>1-20</td>
+            <td>Number of consecutive samples required to trigger</td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_COND</code></td>
+            <td>0</td>
+            <td>0-2</td>
+            <td>Altitude condition:<br>
+                0 = No altitude check (RC only)<br>
+                1 = Above home/EKF origin altitude<br>
+                2 = Above terrain altitude
+            </td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_ALT</code></td>
+            <td>3.0</td>
+            <td>0-100 meters</td>
+            <td>Minimum altitude for activation (used with COND=1 or 2)</td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_ACT</code></td>
+            <td>0</td>
+            <td>0-4</td>
+            <td>Failsafe action:<br>
+                0 = None<br>
+                1 = RTL<br>
+                2 = SmartRTL (falls back to RTL)<br>
+                3 = Land<br>
+                4 = Stop with stick lockout (manual modes)
+            </td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_CHAN</code></td>
+            <td>0</td>
+            <td>0, 6-11</td>
+            <td>RC channel for master enable switch<br>
+                0 = Disabled (feature off)<br>
+                6-11 = RC channel number
+            </td>
+        </tr>
+    </table>
+
+    <h2>3. Activation Logic</h2>
+
+    <h3>3.1 RC Channel Master Switch</h3>
+    <p>The feature requires a valid RC channel (6-11) to be configured via <code>FWDAVD_CHAN</code>.</p>
+    <ul>
+        <li>If <code>FWDAVD_CHAN</code> is 0 or outside 6-11 range: Feature is <strong>disabled</strong></li>
+        <li>If RC channel PWM &le; 1500: Feature is <strong>inactive</strong></li>
+        <li>If RC channel PWM &gt; 1500: Feature is <strong>active</strong> (pending altitude check)</li>
+    </ul>
+
+    <h3>3.2 Altitude Gating</h3>
+    <p>After the RC switch is enabled, the altitude condition is checked:</p>
+
+    <table>
+        <tr>
+            <th>FWDAVD_COND</th>
+            <th>Behavior</th>
+        </tr>
+        <tr>
+            <td>0 (None)</td>
+            <td>No altitude check - active whenever RC switch is high</td>
+        </tr>
+        <tr>
+            <td>1 (Home Alt)</td>
+            <td>Active only when altitude above home &ge; FWDAVD_ALT</td>
+        </tr>
+        <tr>
+            <td>2 (Terrain)</td>
+            <td>Active only when altitude above terrain &ge; FWDAVD_ALT<br>
+                (Requires valid terrain data; warns if unavailable)</td>
+        </tr>
+    </table>
+
+    <h3>3.3 Mode Enable Check</h3>
+    <p>The <code>FWDAVD_EN</code> bitmask determines which flight modes have avoidance enabled:</p>
+
+    <table>
+        <tr>
+            <th>Bit</th>
+            <th>Value</th>
+            <th>Modes Enabled</th>
+        </tr>
+        <tr>
+            <td>0</td>
+            <td>1</td>
+            <td>Auto, Guided, RTL, SmartRTL</td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>2</td>
+            <td>Loiter</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>4</td>
+            <td>PosHold</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>8</td>
+            <td>AltHold</td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Example:</strong> To enable for Loiter + PosHold + AltHold, set <code>FWDAVD_EN = 14</code> (2+4+8)
+    </div>
+
+    <h2>4. Detection Algorithm</h2>
+
+    <h3>4.1 Rangefinder Reading</h3>
+    <ul>
+        <li>Uses forward-facing rangefinder (ROTATION_NONE / ROTATION_YAW_0)</li>
+        <li>Requires <code>Status::Good</code> for valid reading</li>
+        <li>Invalid readings (NoData, timeout, etc.) cause counter to decrement</li>
+    </ul>
+
+    <h3>4.2 Counter Logic</h3>
+    <pre>
+If (valid reading AND distance < threshold AND distance > 0):
+    Increment counter (up to FWDAVD_SAMP)
+    If counter >= FWDAVD_SAMP:
+        Trigger failsafe action (if not already triggered)
+Else:
+    Decrement counter (down to 0)
+    If counter == 0 AND was triggered:
+        Reset triggered state (obstacle cleared)</pre>
+
+    <h2>5. Failsafe Actions</h2>
+
+    <h3>5.1 Auto Modes (is_autopilot() = true)</h3>
+    <p>When obstacle detected in Auto, Guided, or mission modes:</p>
+    <ul>
+        <li><strong>Action 1 (RTL):</strong> Switch to RTL mode</li>
+        <li><strong>Action 2 (SmartRTL):</strong> Try SmartRTL, fall back to RTL if unavailable</li>
+        <li><strong>Action 3 (Land):</strong> Switch to Land mode</li>
+    </ul>
+
+    <h3>5.2 Manual Modes (Loiter, PosHold, AltHold)</h3>
+    <p>When obstacle detected in manual modes:</p>
+    <ul>
+        <li><strong>Actions 1-3:</strong> Same as auto modes</li>
+        <li><strong>Action 4 (Stop with Lockout):</strong>
+            <ul>
+                <li>Switches to Loiter (or Brake, or Land as fallback)</li>
+                <li>Locks out roll/pitch stick input</li>
+                <li>Pilot must return sticks to neutral AND obstacle must clear to regain control</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>5.3 Special Behaviors</h3>
+
+    <div class="warning">
+        <strong>RTL Escalation:</strong> If obstacle is detected while already in RTL or SmartRTL,
+        the system escalates to Land mode.
+    </div>
+
+    <div class="note">
+        <strong>Continue-if-Landing:</strong> If the vehicle is already landing (is_landing() = true),
+        the system logs the event but allows the landing to continue.
+    </div>
+
+    <h2>6. GCS Messages</h2>
+
+    <table>
+        <tr>
+            <th>Message</th>
+            <th>Severity</th>
+            <th>Condition</th>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Active"</td>
+            <td>INFO</td>
+            <td>Feature becomes active (RC + altitude OK)</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Inactive"</td>
+            <td>INFO</td>
+            <td>Feature becomes inactive</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Obstacle detected"</td>
+            <td>WARNING</td>
+            <td>Failsafe action triggered</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Cleared"</td>
+            <td>INFO</td>
+            <td>Obstacle cleared, system reset</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Stop - Return sticks to neutral"</td>
+            <td>WARNING</td>
+            <td>Stop with lockout triggered</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Control restored"</td>
+            <td>INFO</td>
+            <td>Sticks neutral + obstacle cleared</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Continuing landing"</td>
+            <td>WARNING</td>
+            <td>Obstacle during landing (continues)</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Obstacle during RTL - Landing"</td>
+            <td>CRITICAL</td>
+            <td>Escalation from RTL to Land</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: No terrain data"</td>
+            <td>WARNING</td>
+            <td>Terrain mode but no data (every 10s)</td>
+        </tr>
+    </table>
+
+    <h2>7. Modified Files</h2>
+
+    <table>
+        <tr>
+            <th>File</th>
+            <th>Changes</th>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/avoidance_rfnd.cpp</code></td>
+            <td>New file - core implementation</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/Parameters.cpp</code></td>
+            <td>Added 7 FWDAVD_* parameters</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/Parameters.h</code></td>
+            <td>Added parameter declarations</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/Copter.h</code></td>
+            <td>Added fwdavd_state struct and function declarations</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/Copter.cpp</code></td>
+            <td>Added scheduler task (10Hz)</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/mode_loiter.cpp</code></td>
+            <td>Added stick lockout integration</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/mode_poshold.cpp</code></td>
+            <td>Added stick lockout integration</td>
+        </tr>
+        <tr>
+            <td><code>ArduCopter/mode_althold.cpp</code></td>
+            <td>Added stick lockout integration</td>
+        </tr>
+        <tr>
+            <td><code>libraries/AP_Logger/AP_Logger.h</code></td>
+            <td>Added FAILSAFE_FWDAVD log subsystem (32)</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h1>Test Plan</h1>
+
+    <h2>8. Test Environment Setup</h2>
+
+    <h3>8.1 Hardware Requirements</h3>
+    <ul>
+        <li>Copter with forward-facing rangefinder (ROTATION_NONE orientation)</li>
+        <li>RC transmitter with available switch on channel 6-11</li>
+        <li>GCS software (Mission Planner, QGroundControl, etc.)</li>
+        <li>Obstacle for testing (wall, barrier, etc.)</li>
+    </ul>
+
+    <h3>8.2 Recommended Test Parameters</h3>
+    <pre>
+FWDAVD_EN    = 15        # Enable for Auto + Loiter + PosHold + AltHold
+FWDAVD_DIST  = 12        # 12 meter threshold
+FWDAVD_SAMP  = 3         # 3 samples (0.3 seconds at 10Hz)
+FWDAVD_COND  = 0         # No altitude check (for initial testing)
+FWDAVD_ALT   = 3         # 3 meters (when using altitude condition)
+FWDAVD_ACT   = 3         # Land action (safest for testing)
+FWDAVD_CHAN  = 7         # RC channel 7 for master switch</pre>
+
+    <h3>8.3 Rangefinder Setup</h3>
+    <pre>
+RNGFND1_TYPE     = [your rangefinder type]
+RNGFND1_ORIENT   = 0     # Forward (ROTATION_NONE)
+RNGFND1_MIN_CM   = 20    # Minimum range
+RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
+
+    <h2>9. Test Cases</h2>
+
+    <div class="test-section">
+        <h4>Test 1: Feature Disabled by Default</h4>
+        <p><strong>Objective:</strong> Verify feature is disabled when FWDAVD_CHAN is not configured</p>
+        <p><strong>Setup:</strong> FWDAVD_CHAN = 0 (default)</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Arm and take off in Loiter mode</li>
+            <li>Fly toward obstacle within FWDAVD_DIST</li>
+            <li>Verify no "Forward Avoidance" messages appear</li>
+            <li>Verify no failsafe action is taken</li>
+        </ul>
+        <p><strong>Expected Result:</strong> No avoidance behavior, feature fully disabled</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 2: Invalid RC Channel Rejected</h4>
+        <p><strong>Objective:</strong> Verify channels outside 6-11 are rejected</p>
+        <p><strong>Setup:</strong> Try FWDAVD_CHAN = 5, then FWDAVD_CHAN = 12</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Set FWDAVD_CHAN = 5, arm and fly toward obstacle</li>
+            <li>Set FWDAVD_CHAN = 12, arm and fly toward obstacle</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Feature remains disabled for both invalid values</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 3: RC Master Switch Activation</h4>
+        <p><strong>Objective:</strong> Verify RC switch controls feature activation</p>
+        <p><strong>Setup:</strong> FWDAVD_CHAN = 7, FWDAVD_COND = 0, FWDAVD_EN = 2 (Loiter)</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Arm and take off in Loiter</li>
+            <li>With RC7 low (&le;1500 PWM), verify no "Active" message</li>
+            <li>Switch RC7 high (&gt;1500 PWM), verify "Forward Avoidance: Active" message</li>
+            <li>Switch RC7 low, verify "Forward Avoidance: Inactive" message</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Messages appear on state transitions</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 4: Altitude Gating - Home Altitude</h4>
+        <p><strong>Objective:</strong> Verify altitude above home gating works</p>
+        <p><strong>Setup:</strong> FWDAVD_COND = 1, FWDAVD_ALT = 5, RC switch enabled</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Arm and hover at 3m altitude</li>
+            <li>Verify feature shows "Inactive" (below 5m threshold)</li>
+            <li>Climb to 6m altitude</li>
+            <li>Verify "Forward Avoidance: Active" message appears</li>
+            <li>Descend to 4m</li>
+            <li>Verify "Forward Avoidance: Inactive" message appears</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Feature activates/deactivates based on home altitude</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 5: Altitude Gating - Terrain Altitude</h4>
+        <p><strong>Objective:</strong> Verify terrain altitude gating works</p>
+        <p><strong>Setup:</strong> FWDAVD_COND = 2, FWDAVD_ALT = 5, terrain data available</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Arm and hover at altitude where terrain AGL &lt; 5m</li>
+            <li>Verify feature shows "Inactive"</li>
+            <li>Climb until terrain AGL &ge; 5m</li>
+            <li>Verify "Forward Avoidance: Active" message appears</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Feature uses terrain-relative altitude</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 6: Terrain Data Warning</h4>
+        <p><strong>Objective:</strong> Verify warning when terrain data unavailable</p>
+        <p><strong>Setup:</strong> FWDAVD_COND = 2, no terrain data loaded</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Enable RC switch</li>
+            <li>Wait for warning message</li>
+        </ul>
+        <p><strong>Expected Result:</strong> "Forward Avoidance: No terrain data" warning (every 10s)</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 7: Mode Enable Bitmask</h4>
+        <p><strong>Objective:</strong> Verify mode-specific enable works</p>
+        <p><strong>Setup:</strong> FWDAVD_EN = 2 (Loiter only), feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>In Loiter mode, approach obstacle - verify avoidance triggers</li>
+            <li>Switch to AltHold, approach obstacle - verify NO avoidance (not enabled)</li>
+            <li>Set FWDAVD_EN = 8 (AltHold only)</li>
+            <li>In AltHold, approach obstacle - verify avoidance triggers</li>
+            <li>Switch to Loiter, approach obstacle - verify NO avoidance</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Avoidance only active in enabled modes</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 8: Obstacle Detection Counter</h4>
+        <p><strong>Objective:</strong> Verify sample counting works correctly</p>
+        <p><strong>Setup:</strong> FWDAVD_SAMP = 5, feature active in Loiter</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Briefly pass rangefinder beam across obstacle (1-2 readings)</li>
+            <li>Verify NO failsafe triggers (below 5 samples)</li>
+            <li>Hold steady pointing at obstacle for &gt;0.5 seconds</li>
+            <li>Verify failsafe triggers after 5 consecutive samples</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Failsafe requires FWDAVD_SAMP consecutive readings</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 9: Failsafe Action - RTL</h4>
+        <p><strong>Objective:</strong> Verify RTL action works</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT = 1, feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly in Loiter toward obstacle</li>
+            <li>Verify "Forward Avoidance: Obstacle detected" message</li>
+            <li>Verify vehicle switches to RTL mode</li>
+            <li>Verify log contains FAILSAFE_FWDAVD error</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Vehicle enters RTL on obstacle detection</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 10: Failsafe Action - SmartRTL</h4>
+        <p><strong>Objective:</strong> Verify SmartRTL action works</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT = 2, SmartRTL enabled</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly a path to build SmartRTL breadcrumbs</li>
+            <li>Fly toward obstacle</li>
+            <li>Verify vehicle enters SmartRTL mode</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Vehicle enters SmartRTL (or RTL if SmartRTL unavailable)</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 11: Failsafe Action - Land</h4>
+        <p><strong>Objective:</strong> Verify Land action works</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT = 3, feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly in Loiter toward obstacle</li>
+            <li>Verify vehicle switches to Land mode</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Vehicle enters Land mode on obstacle detection</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 12: Stop with Stick Lockout (Manual Mode)</h4>
+        <p><strong>Objective:</strong> Verify stop and stick lockout in manual mode</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT = 4, FWDAVD_EN = 2 (Loiter)</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly in Loiter toward obstacle</li>
+            <li>Verify "Forward Avoidance: Stop - Return sticks to neutral" message</li>
+            <li>Verify vehicle enters Loiter and holds position</li>
+            <li>Try to move with sticks - verify NO response (locked out)</li>
+            <li>Clear the obstacle (move vehicle or remove obstacle)</li>
+            <li>Return sticks to center</li>
+            <li>Verify "Forward Avoidance: Control restored" message</li>
+            <li>Verify stick control is restored</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Stick lockout until obstacle clear AND sticks neutral</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 13: RTL Escalation to Land</h4>
+        <p><strong>Objective:</strong> Verify escalation when obstacle during RTL</p>
+        <p><strong>Setup:</strong> Feature active, obstacle on RTL path</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Position vehicle so RTL path passes obstacle</li>
+            <li>Trigger RTL (via switch or first avoidance trigger)</li>
+            <li>Allow vehicle to approach second obstacle while in RTL</li>
+            <li>Verify "Forward Avoidance: Obstacle during RTL - Landing" message</li>
+            <li>Verify vehicle switches to Land mode</li>
+        </ul>
+        <p><strong>Expected Result:</strong> RTL escalates to Land on second obstacle</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 14: Continue-if-Landing Behavior</h4>
+        <p><strong>Objective:</strong> Verify landing continues when obstacle detected</p>
+        <p><strong>Setup:</strong> Feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Enter Land mode manually or via failsafe</li>
+            <li>During descent, point rangefinder at obstacle</li>
+            <li>Verify "Forward Avoidance: Continuing landing" message</li>
+            <li>Verify vehicle continues landing (does not abort)</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Landing continues, obstacle logged but no mode change</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 15: Obstacle Cleared Reset</h4>
+        <p><strong>Objective:</strong> Verify system resets when obstacle clears</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT = 4 (Stop), feature active in Loiter</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Trigger avoidance with obstacle</li>
+            <li>Remove obstacle or reposition vehicle</li>
+            <li>Wait for counter to decrement to zero</li>
+            <li>Return sticks to neutral</li>
+            <li>Verify "Forward Avoidance: Cleared" or "Control restored" message</li>
+            <li>Fly toward same location - verify avoidance can trigger again</li>
+        </ul>
+        <p><strong>Expected Result:</strong> System resets and can trigger again</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 16: Radio Failsafe Interaction</h4>
+        <p><strong>Objective:</strong> Verify behavior during radio failsafe</p>
+        <p><strong>Setup:</strong> Feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Trigger radio failsafe (turn off TX)</li>
+            <li>Verify forward avoidance becomes inactive (can't read RC switch)</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Feature deactivates during radio failsafe</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 17: Invalid Rangefinder Reading</h4>
+        <p><strong>Objective:</strong> Verify invalid readings don't trigger false positives</p>
+        <p><strong>Setup:</strong> Feature active</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Point rangefinder at sky (beyond max range)</li>
+            <li>Verify no avoidance triggers (Status != Good)</li>
+            <li>Intermittently block/unblock sensor</li>
+            <li>Verify counter resets on invalid readings</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Only consecutive valid readings below threshold trigger</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 18: Disarm State Reset</h4>
+        <p><strong>Objective:</strong> Verify state resets on disarm</p>
+        <p><strong>Setup:</strong> Feature active, previously triggered</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Trigger avoidance action</li>
+            <li>Land and disarm (or disarm in air if safe)</li>
+            <li>Arm again</li>
+            <li>Verify all state variables reset (no lingering lockout)</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Clean state on rearm</p>
+    </div>
+
+    <h2>10. Logging Verification</h2>
+    <p>After testing, review logs for:</p>
+    <ul class="checklist">
+        <li>FAILSAFE_FWDAVD errors logged when avoidance triggers</li>
+        <li>Mode changes logged with ModeReason::AVOIDANCE</li>
+        <li>No unexpected errors or crashes</li>
+    </ul>
+
+    <h2>11. Known Limitations</h2>
+    <ul>
+        <li>Only works with forward-facing rangefinder (ROTATION_NONE)</li>
+        <li>Does not consider vehicle velocity or stopping distance</li>
+        <li>Single sensor - no redundancy</li>
+        <li>Terrain mode requires valid terrain data</li>
+        <li>RC master switch required (no pure-parameter enable)</li>
+    </ul>
+
+    <div class="success">
+        <strong>Test Complete:</strong> If all test cases pass, the Forward Rangefinder Avoidance
+        feature is functioning correctly and ready for field deployment.
+    </div>
+
+    <hr>
+    <p><em>Document generated for ArduCopter Forward Rangefinder Avoidance feature</em></p>
+    <p><em>Last updated: January 2026</em></p>
+
+</body>
+</html>
