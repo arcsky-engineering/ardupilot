@@ -568,6 +568,10 @@ public:
     // Land alt final stage
     AP_Int16 land_alt_low;
 
+    // Rangefinder-based landing speed limiting
+    AP_Int16 land_rng_alt;    // altitude threshold for rangefinder speed limiting (cm)
+    AP_Int16 land_rng_spd;    // max descent speed when rangefinder below land_rng_alt (cm/s)
+
 #if TOY_MODE_ENABLED
     ToyMode toy_mode;
 #endif

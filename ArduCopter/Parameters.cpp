@@ -1232,6 +1232,24 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
+    // @Param: LAND_RNG_ALT
+    // @DisplayName: Land rangefinder altitude threshold
+    // @Description: Altitude in cm at which rangefinder-based landing speed limiting activates. When the rangefinder detects altitude below this value, descent speed is limited to LAND_RNG_SPD. Set to 0 to disable.
+    // @Units: cm
+    // @Range: 0 2000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("LAND_RNG_ALT", 9, ParametersG2, land_rng_alt, 0),
+
+    // @Param: LAND_RNG_SPD
+    // @DisplayName: Land rangefinder speed limit
+    // @Description: Maximum descent speed in cm/s when rangefinder altitude is below LAND_RNG_ALT. This limits both autonomous and pilot-commanded descent rates to prevent hard landings.
+    // @Units: cm/s
+    // @Range: 30 200
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("LAND_RNG_SPD", 10, ParametersG2, land_rng_spd, 75),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

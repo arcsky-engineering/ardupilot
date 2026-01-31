@@ -194,6 +194,19 @@ void ModeLoiter::run()
 #if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
+
+        // Rangefinder-based descent speed limiting
+        // When rangefinder is enabled and detects altitude below LAND_RNG_ALT, limit descent speed
+        if (g2.land_rng_alt > 0 && copter.rangefinder_alt_ok() && target_climb_rate < 0) {
+            int32_t rng_alt_cm;
+            if (copter.get_rangefinder_height_interpolated_cm(rng_alt_cm)) {
+                if (rng_alt_cm > 0 && rng_alt_cm < g2.land_rng_alt) {
+                    const int16_t min_rng_spd = 30;
+                    const float rng_max_descent = -MAX(abs(g2.land_rng_spd), min_rng_spd);
+                    target_climb_rate = MAX(target_climb_rate, rng_max_descent);
+                }
+            }
+        }
 #endif
 
         // Send the commanded climb rate to the position controller
