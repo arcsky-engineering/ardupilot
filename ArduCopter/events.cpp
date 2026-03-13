@@ -307,7 +307,15 @@ void Copter::gpsglitch_check()
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
+            // Get detailed EKF innovation ratios for diagnostics
+            float velVar, posVar, hgtVar, tasVar;
+            Vector3f magVar;
+            if (ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch: vel=%.2f pos=%.2f mag=%.2f",
+                               (double)velVar, (double)posVar, (double)magVar.length());
+            } else {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
+            }
         } else {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");

@@ -103,6 +103,9 @@ public:
     // return battery error flags
     uint32_t get_error_flags() const override { return _errorFlags; }
 
+    // return model name string from DroneCAN BatteryInfo message
+    const char *get_model_name() const override { return _has_model_name ? _model_name : nullptr; }
+
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_BattMonitor_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id);
     static void handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg);
@@ -190,6 +193,10 @@ private:
     uint32_t _errorFlags = 0;
     uint32_t _error_flags_first_seen_ms = 0;  // timestamp when error flags first became non-zero (0 = no errors)
     uint8_t _operating_mode = 0;  // battery operating mode from state_of_charge_pct_stdev field
+
+    char _model_name[32];           // model name from DroneCAN BatteryInfo (e.g. "Arcsky-2603001")
+    bool _has_model_name = false;   // true once model_name received from BatteryInfo
+    bool _model_name_logged = false; // true once model_name has been written to the log
 
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables

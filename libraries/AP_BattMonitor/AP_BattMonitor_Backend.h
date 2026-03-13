@@ -100,6 +100,9 @@ public:
     // return battery error flags (for DroneCAN smart batteries)
     virtual uint32_t get_error_flags() const { return 0; }
 
+    // return model name string (for DroneCAN smart batteries), nullptr if not available
+    virtual const char *get_model_name() const { return nullptr; }
+
     // logging functions 
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;

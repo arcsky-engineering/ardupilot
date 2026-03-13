@@ -785,6 +785,22 @@ bool AP_BattMonitor::option_is_set(uint8_t instance, AP_BattMonitor_Params::Opti
     return drivers[instance]->option_is_set(option);
 }
 
+// return 1-based display number for user-facing messages, skipping InternalUseOnly instances
+uint8_t AP_BattMonitor::user_display_number(uint8_t instance) const
+{
+    uint8_t display_num = 0;
+    for (uint8_t i = 0; i <= instance && i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        if (!option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            display_num++;
+        }
+    }
+    // if this instance is itself InternalUseOnly, still return something sensible (raw i+1)
+    if (display_num == 0) {
+        return instance + 1;
+    }
+    return display_num;
+}
+
 /// current_amps - returns the instantaneous current draw in amperes
 bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
@@ -857,6 +873,11 @@ void AP_BattMonitor::check_failsafes(void)
             continue;
         }
 
+        // skip InternalUseOnly instances for failsafe reporting
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
+
         const Failsafe type = drivers[i]->update_failsafes();
 
         // when disarmed, allow failsafe state to recover (e.g., after battery swap)
@@ -906,7 +927,7 @@ void AP_BattMonitor::check_failsafes(void)
                 break;
         }
 
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", user_display_number(i), type_str,
                         (double)voltage(i), (double)state[i].consumed_mah);
         _has_triggered_failsafe = true;
 #ifndef HAL_BUILD_AP_PERIPH
@@ -1039,6 +1060,14 @@ bool AP_BattMonitor::get_cycle_count(uint8_t instance, uint16_t &cycles) const
     return drivers[instance]->get_cycle_count(cycles);
 }
 
+const char *AP_BattMonitor::get_model_name(uint8_t instance) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return nullptr;
+    }
+    return drivers[instance]->get_model_name();
+}
+
 bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
 {
     char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
@@ -1047,6 +1076,11 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
         const auto expected_type = configured_type(i);
 
         if (drivers[i] == nullptr && expected_type == Type::NONE) {
+            continue;
+        }
+
+        // skip InternalUseOnly instances for arming checks
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
             continue;
         }
 
@@ -1063,18 +1097,18 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
         // removing the SUM backend on 1MB boards.  Give a
         // more-specific error for the sum backend:
         if (expected_type == Type::Sum) {
-            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "feature BATTERY_SUM not available");
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", user_display_number(i), "feature BATTERY_SUM not available");
             return false;
         }
 #endif
 
         if (drivers[i] == nullptr || allocated_type(i) != expected_type) {
-            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "unhealthy");
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", user_display_number(i), "unhealthy");
             return false;
         }
 
         if (!drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer))) {
-            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, temp_buffer);
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", user_display_number(i), temp_buffer);
             return false;
         }
     }
@@ -1098,7 +1132,7 @@ void AP_BattMonitor::checkPoweringOff(void)
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
             GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, user_display_number(i));
 #endif
 
             // only send this once
@@ -1298,40 +1332,69 @@ bool AP_BattMonitor::dronecan_batteries_ready_for_arm_with_reason(size_t buflen,
         if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
         const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
         if (!dc->has_received_data()) {
-            hal.util->snprintf(buffer, buflen, "Battery %u not detected", i + 1);
+            hal.util->snprintf(buffer, buflen, "Battery %u not detected", user_display_number(i));
             return false;
         }
         if (dc->has_timed_out()) {
-            hal.util->snprintf(buffer, buflen, "Battery %u not detected", i + 1);
+            hal.util->snprintf(buffer, buflen, "Battery %u not detected", user_display_number(i));
             return false;
         }
     }
 
-    // Priority 2: Check for batteries with error flags
+    // Priority 2: Check voltage is above minimum arming voltage (BATT_ARM_VOLT)
     for (uint8_t i = 0; i < _num_instances; i++) {
         const auto *drv = drivers[i];
         if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
+        // Check if minimum arming voltage is configured (must be positive)
+        const float min_voltage = _params[i]._arming_minimum_voltage;
+        if (is_positive(min_voltage)) {
+            const float voltage = state[i].voltage;
+            if (voltage < min_voltage) {
+                hal.util->snprintf(buffer, buflen, "Battery %u below minimum arming voltage", user_display_number(i));
+                return false;
+            }
+        }
+    }
+
+    // Priority 3: Check for batteries with error flags
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        const auto *drv = drivers[i];
+        if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
             continue;
         }
         const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
         if (!dc->is_ready_for_arm() && dc->get_error_flags() != 0) {
             dc->get_not_ready_reason(reason, sizeof(reason));
-            hal.util->snprintf(buffer, buflen, "Battery %u %s", i + 1, reason);
+            hal.util->snprintf(buffer, buflen, "Battery %u %s", user_display_number(i), reason);
             return false;
         }
     }
 
-    // Priority 3: Check for batteries with mode issues (but no error flags)
+    // Priority 4: Check for batteries with mode issues (but no error flags)
     for (uint8_t i = 0; i < _num_instances; i++) {
         const auto *drv = drivers[i];
         if (drv == nullptr || allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
         const AP_BattMonitor_DroneCAN *dc = static_cast<const AP_BattMonitor_DroneCAN*>(drv);
         if (dc->get_not_ready_reason(reason, sizeof(reason))) {
-            hal.util->snprintf(buffer, buflen, "Battery %u %s", i + 1, reason);
+            hal.util->snprintf(buffer, buflen, "Battery %u %s", user_display_number(i), reason);
             return false;
         }
     }

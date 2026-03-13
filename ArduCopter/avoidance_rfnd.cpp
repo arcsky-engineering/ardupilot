@@ -6,9 +6,9 @@
    distance for a sufficient number of samples, a failsafe action is
    triggered (RTL, SmartRTL, Land, or Stop with stick lockout).
 
-   The behavior differs between auto modes (missions) and manual modes:
-   - Auto modes: triggers configurable failsafe action (RTL, SmartRTL, Land)
-   - Manual modes: can trigger RTL/SmartRTL/Land OR Stop with stick lockout
+   The behavior differs between auto modes and manual modes via separate parameters:
+   - Auto modes (FWDAVD_ACT_AUTO): RTL, SmartRTL, or Land
+   - Manual modes (FWDAVD_ACT_MAN): RTL, SmartRTL, Land, or Stop with stick lockout
 
    The system includes activation gating based on altitude, terrain, or RC channel.
 */
@@ -52,14 +52,25 @@ void Copter::avoidance_rfnd_update()
     fwdavd_state.active = activation_ok;
 
     if (!activation_ok) {
-        // reset counter but don't reset triggered state
+        // reset all state when feature is deactivated (RC switch off)
         fwdavd_state.thresh_count = 0;
+        fwdavd_state.triggered = false;
+        if (fwdavd_state.stick_locked) {
+            fwdavd_state.stick_locked = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Control restored (disabled)");
+        }
         return;
     }
 
     // check if enabled for current flight mode
     if (!is_fwdavd_enabled_for_mode()) {
         fwdavd_state.thresh_count = 0;
+        // clear lockout if pilot switched to a non-enabled mode
+        if (fwdavd_state.stick_locked) {
+            fwdavd_state.stick_locked = false;
+            fwdavd_state.triggered = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Control restored (mode change)");
+        }
         return;
     }
 
@@ -101,14 +112,11 @@ void Copter::avoidance_rfnd_update()
         }
 
         // check for reset condition (obstacle cleared)
-        if (fwdavd_state.triggered && fwdavd_state.thresh_count == 0) {
-            // obstacle has cleared - allow reset
+        // don't reset triggered if stick_locked is still true to prevent re-triggering
+        if (fwdavd_state.triggered && fwdavd_state.thresh_count == 0 && !fwdavd_state.stick_locked) {
+            // obstacle has cleared and sticks aren't locked - allow reset
             fwdavd_state.triggered = false;
-            if (fwdavd_state.stick_locked) {
-                // will be unlocked when sticks are neutral
-            } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Cleared");
-            }
+            gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Cleared");
         }
     }
 }
@@ -165,7 +173,7 @@ bool Copter::check_fwdavd_activation()
 {
     // Check RC channel master switch - must be configured to valid channel (6-11)
     const int8_t rc_chan_num = g2.fwdavd_chan.get();
-    if (rc_chan_num < 6 || rc_chan_num > 11) {
+    if (rc_chan_num < 5 || rc_chan_num > 11) {
         // No valid RC channel configured - feature disabled
         return false;
     }
@@ -188,7 +196,18 @@ bool Copter::check_fwdavd_activation()
         case 1: {
             // altitude above home/EKF origin
             const float alt_m = inertial_nav.get_position_z_up_cm() * 0.01f;
-            return alt_m >= g2.fwdavd_alt;
+            const float threshold_m = g2.fwdavd_alt;
+            if (alt_m < threshold_m) {
+                // notify periodically when RC is on but altitude is too low
+                static uint32_t last_alt_warn_ms = 0;
+                if (last_alt_warn_ms == 0 || (AP_HAL::millis() - last_alt_warn_ms) > 5000) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Below alt (%.1fm < %.1fm)",
+                                   (double)alt_m, (double)threshold_m);
+                    last_alt_warn_ms = AP_HAL::millis();
+                }
+                return false;
+            }
+            return true;
         }
 
         case 2: {
@@ -198,7 +217,18 @@ bool Copter::check_fwdavd_activation()
                 float terr_alt = 0.0f;
                 if (terrain.height_above_terrain(terr_alt, true)) {
                     fwdavd_state.terrain_problem = false;
-                    return terr_alt >= g2.fwdavd_alt;
+                    const float threshold_m = g2.fwdavd_alt;
+                    if (terr_alt < threshold_m) {
+                        // notify periodically when RC is on but terrain altitude is too low
+                        static uint32_t last_terr_alt_warn_ms = 0;
+                        if (last_terr_alt_warn_ms == 0 || (AP_HAL::millis() - last_terr_alt_warn_ms) > 5000) {
+                            gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Below terrain alt (%.1fm < %.1fm)",
+                                           (double)terr_alt, (double)threshold_m);
+                            last_terr_alt_warn_ms = AP_HAL::millis();
+                        }
+                        return false;
+                    }
+                    return true;
                 } else {
                     // no valid terrain data
                     fwdavd_state.terrain_problem = true;
@@ -257,17 +287,27 @@ void Copter::handle_fwdavd_action()
 
     FailsafeAction action;
     if (is_auto) {
-        // auto mode - use auto action parameter
-        action = (FailsafeAction)g2.fwdavd_act.get();
+        // auto mode - use auto action parameter (validate range 0-3)
+        int8_t action_val = g2.fwdavd_act_auto.get();
+        if (action_val < 0 || action_val > 3) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Forward Avoidance: Invalid auto action %d, using None", (int)action_val);
+            action = FailsafeAction::NONE;
+        } else {
+            action = (FailsafeAction)action_val;
+        }
     } else {
-        // manual mode - use manual action parameter
-        // Action 4 = Stop with stick lockout
-        if (g2.fwdavd_act.get() == 4) {
+        // manual mode - use manual action parameter (validate range 0-4)
+        int8_t action_val = g2.fwdavd_act_man.get();
+        if (action_val < 0 || action_val > 4) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Forward Avoidance: Invalid manual action %d, using None", (int)action_val);
+            action = FailsafeAction::NONE;
+        } else if (action_val == 4) {
             // Stop with stick lockout for manual mode
             handle_fwdavd_stop_lockout();
             return;
+        } else {
+            action = (FailsafeAction)action_val;
         }
-        action = (FailsafeAction)g2.fwdavd_act.get();
     }
 
     // execute the failsafe action
@@ -316,25 +356,26 @@ void Copter::handle_fwdavd_stop_lockout()
 #endif
 }
 
-// check if sticks are neutral and obstacle is clear to unlock
+// check if pitch stick is neutral and obstacle is clear to unlock
 void Copter::check_fwdavd_stick_unlock()
 {
     if (!fwdavd_state.stick_locked) {
         return;
     }
 
-    // check if sticks are neutral (within deadzone)
-    const int16_t roll_in = channel_roll->get_control_in();
+    // check if pitch stick is neutral (within deadzone)
+    // only check pitch since we only block forward pitch - roll is always allowed
     const int16_t pitch_in = channel_pitch->get_control_in();
     const int16_t deadzone = 100;  // ~10% stick movement allowed
 
-    bool sticks_neutral = (abs(roll_in) < deadzone) && (abs(pitch_in) < deadzone);
+    bool pitch_neutral = (abs(pitch_in) < deadzone);
 
     // check if obstacle is clear (counter back to zero)
     bool obstacle_clear = (fwdavd_state.thresh_count == 0);
 
-    if (sticks_neutral && obstacle_clear) {
+    if (pitch_neutral && obstacle_clear) {
         fwdavd_state.stick_locked = false;
+        fwdavd_state.triggered = false;
         gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: Control restored");
     }
 }

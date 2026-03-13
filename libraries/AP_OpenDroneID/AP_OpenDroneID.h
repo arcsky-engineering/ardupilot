@@ -97,6 +97,10 @@ public:
     {
         return _singleton;
     }
+
+    // get UAS ID string for logging, returns nullptr if not set
+    const char *get_uas_id() const { return id_len > 0 ? id_str : nullptr; }
+
 private:
     static AP_OpenDroneID *_singleton;
     bool _initialised;
@@ -107,8 +111,8 @@ private:
     AP_Int8  _mav_port;
     AP_Int8  _can_driver;
 
-    char ua_type[3];
-    char id_type[3];
+    char ua_type[4];
+    char id_type[4];
     size_t id_len;
     char id_str[21];
     bool bootloader_flashed;

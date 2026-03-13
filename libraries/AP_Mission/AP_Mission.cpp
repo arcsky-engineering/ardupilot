@@ -46,6 +46,15 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
+    // @Param: LAST_INDEX
+    // @DisplayName: Last mission index
+    // @Description: Last mission item index saved on disarm. Used to resume mission after power cycle. Automatically managed by system.
+    // @Range: 0 32766
+    // @Increment: 1
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO_FLAGS("LAST_INDEX", 3, AP_Mission, _last_index, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 
@@ -122,6 +131,16 @@ void AP_Mission::start()
 /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
 void AP_Mission::stop()
 {
+    // if mission is complete or in landing/RTL sequence, all waypoints are done - clear index
+    if (_flags.state == MISSION_COMPLETE || _flags.in_landing_sequence || _flags.in_return_path) {
+        _last_index.set_and_save(0);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Cleared saved index (mission complete or landing)");
+    } else if (_prev_nav_cmd_wp_index != AP_MISSION_CMD_INDEX_NONE) {
+        // save previous waypoint index so the full leg is re-flown on resume
+        _last_index.set_and_save(_prev_nav_cmd_wp_index);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Saved index %u for resume", (unsigned)_prev_nav_cmd_wp_index);
+    }
+
     _flags.state = MISSION_STOPPED;
 }
 
@@ -139,10 +158,18 @@ void AP_Mission::resume()
     if (_flags.state == MISSION_STOPPED) {
         _flags.state = MISSION_RUNNING;
 
-        // if no valid nav command index restart from beginning
+        // if no valid nav command index, try to restore from saved NVM index
         if (_nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
-            start();
-            return;
+            // check if we have a saved index from previous flight
+            if (_last_index > 0 && _last_index < _cmd_total) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Resuming from saved index %u", (unsigned)_last_index.get());
+                set_current_cmd(_last_index);
+                return;
+            } else {
+                // no valid saved index, restart from beginning
+                start();
+                return;
+            }
         }
     }
 
@@ -309,6 +336,9 @@ void AP_Mission::truncate(uint16_t index)
 ///     should be called at 10hz or higher
 void AP_Mission::update()
 {
+    // always check for disarm events to save mission index
+    check_and_save_on_disarm();
+
     // exit immediately if not running or no mission commands
     if (_flags.state != MISSION_RUNNING || _cmd_total == 0) {
         return;
@@ -357,6 +387,33 @@ void AP_Mission::update()
             _flags.do_cmd_loaded = false;
         }
     }
+}
+
+/// check_and_save_on_disarm - checks for disarm events and saves mission index to NVM
+///     should be called regularly from main vehicle loop
+void AP_Mission::check_and_save_on_disarm()
+{
+    const bool armed = hal.util->get_soft_armed();
+
+    // detect disarm event (was armed, now disarmed)
+    if (_was_armed && !armed) {
+        // if mission is complete or in landing/RTL sequence, all waypoints are done - clear index
+        if (_flags.state == MISSION_COMPLETE || _flags.in_landing_sequence || _flags.in_return_path) {
+            _last_index.set_and_save(0);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Cleared saved index (mission complete or landing)");
+        } else if (_prev_nav_cmd_wp_index != AP_MISSION_CMD_INDEX_NONE) {
+            // save previous waypoint index so the full leg is re-flown on resume
+            _last_index.set_and_save(_prev_nav_cmd_wp_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Saved index %u for resume", (unsigned)_prev_nav_cmd_wp_index);
+        } else {
+            // no valid nav command, clear saved index
+            _last_index.set_and_save(0);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Cleared saved index (no active waypoint)");
+        }
+    }
+
+    // update tracked armed state
+    _was_armed = armed;
 }
 
 // handle events for when the mission has been updated (but maybe not changed)
@@ -2013,6 +2070,10 @@ void AP_Mission::complete()
     _flags.state = MISSION_COMPLETE;
     _flags.in_landing_sequence = false;
     _flags.in_return_path = false;
+
+    // clear saved mission index so next flight starts fresh
+    _last_index.set_and_save(0);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: Complete, cleared saved index");
 
     // callback to main program's mission complete function
     _mission_complete_fn();

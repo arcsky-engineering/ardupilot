@@ -1291,19 +1291,28 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("FWDAVD_ALT", 15, ParametersG2, fwdavd_alt, 3.0),
 
-    // @Param: FWDAVD_ACT
-    // @DisplayName: Forward Avoidance Action
-    // @Description: Action to take when forward avoidance is triggered. For manual modes, action 4 (Stop) switches to Loiter and locks stick input until sticks are returned to neutral and obstacle clears.
-    // @Values: 0:None, 1:RTL, 2:SmartRTL, 3:Land, 4:Stop with Lockout
+    // @Param: FWDAVD_ACT_AUTO
+    // @DisplayName: Forward Avoidance Action for Auto Modes
+    // @Description: Action to take when forward avoidance is triggered in autopilot modes (Auto, Guided, RTL, SmartRTL). This allows different behavior than manual modes.
+    // @Values: 0:None, 1:Land, 2:RTL, 3:SmartRTL
+    // @Range: 0 3
     // @User: Standard
-    AP_GROUPINFO("FWDAVD_ACT", 16, ParametersG2, fwdavd_act, 2),
+    AP_GROUPINFO("FWDAVD_ACT_AUTO", 16, ParametersG2, fwdavd_act_auto, 3),
+
+    // @Param: FWDAVD_ACT_MAN
+    // @DisplayName: Forward Avoidance Action for Manual Modes
+    // @Description: Action to take when forward avoidance is triggered in manual modes (Loiter, PosHold, AltHold). Action 4 (Stop) switches to Loiter and locks stick input until sticks are returned to neutral and obstacle clears.
+    // @Values: 0:None, 1:Land, 2:RTL, 3:SmartRTL, 4:Stop with Lockout
+    // @Range: 0 4
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_ACT_MAN", 17, ParametersG2, fwdavd_act_man, 4),
 
     // @Param: FWDAVD_CHAN
     // @DisplayName: Forward Avoidance RC Channel
     // @Description: RC channel number (6-11) used as master enable/disable switch for forward avoidance. Feature is disabled unless a valid channel (6-11) is configured. When configured, avoidance is only active when that channel PWM > 1500.
     // @Values: 0:Disabled,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11
     // @User: Standard
-    AP_GROUPINFO("FWDAVD_CHAN", 17, ParametersG2, fwdavd_chan, 0),
+    AP_GROUPINFO("FWDAVD_CHAN", 18, ParametersG2, fwdavd_chan, 0),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION

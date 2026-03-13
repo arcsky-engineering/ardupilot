@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Resume After Power Cycle - Implementation Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #555;
+            margin-top: 20px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .flowchart {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .step {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            margin: 10px auto;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        .arrow {
+            color: #3498db;
+            font-size: 24px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mission Resume After Power Cycle</h1>
+        <p><strong>Implementation Guide for ArduPilot</strong></p>
+
+        <div class="info-box">
+            <strong>Feature Summary:</strong> This feature allows ArduPilot to save mission progress to non-volatile memory (NVM) and automatically resume from the last waypoint after a power cycle, eliminating the need to manually restart missions or reconfigure via ground control station.
+        </div>
+
+        <h2>1. Overview</h2>
+
+        <h3>What Problem Does This Solve?</h3>
+        <p>Previously, if you powered off your flight controller mid-mission, the mission progress was lost. Upon reboot, you had to either:</p>
+        <ul>
+            <li>Restart the mission from the beginning</li>
+            <li>Manually select a waypoint in your ground control station</li>
+            <li>Hope that QGroundControl remembered your position (which didn't always work)</li>
+        </ul>
+
+        <p><strong>Now:</strong> The system automatically saves your mission progress when you exit AUTO mode or disarm, and resumes from that exact position when you enter AUTO mode again, even after a complete power cycle.</p>
+
+        <h3>Two-Tier Recovery System</h3>
+
+        <table>
+            <tr>
+                <th>Scenario</th>
+                <th>Recovery Mechanism</th>
+                <th>Storage Location</th>
+                <th>Survives Power Cycle?</th>
+            </tr>
+            <tr>
+                <td><strong>Software Crash / Watchdog Reset</strong></td>
+                <td>Existing <code>persistent_data.waypoint_num</code></td>
+                <td>Special RAM region</td>
+                <td>❌ No (RAM cleared on power cycle)</td>
+            </tr>
+            <tr>
+                <td><strong>Power Cycle Between Flights</strong></td>
+                <td>New <code>MIS_LAST_INDEX</code> parameter</td>
+                <td>EEPROM/Flash (NVM)</td>
+                <td>✅ Yes</td>
+            </tr>
+        </table>
+
+        <h2>2. How It Works</h2>
+
+        <div class="flowchart">
+            <h3>Mission Resume Flow</h3>
+            <div class="step">Start Mission in AUTO Mode</div>
+            <div class="arrow">↓</div>
+            <div class="step">Fly Waypoints 1 → 2 → 3 → 4</div>
+            <div class="arrow">↓</div>
+            <div class="step">Exit AUTO Mode or Disarm<br><small>MIS_LAST_INDEX = 4 saved to Flash</small></div>
+            <div class="arrow">↓</div>
+            <div class="step">Power Off Flight Controller</div>
+            <div class="arrow">↓</div>
+            <div class="step">Power On Flight Controller</div>
+            <div class="arrow">↓</div>
+            <div class="step">Enter AUTO Mode<br><small>Check MIS_RESTART parameter</small></div>
+            <div class="arrow">↓</div>
+            <div class="step">Resume from Waypoint 4<br><small>GCS Message: "Mission: Resuming from saved index 4"</small></div>
+        </div>
+
+        <h3>When Mission Index is Saved</h3>
+        <p>The system saves your current waypoint index to NVM in two situations:</p>
+
+        <ol>
+            <li><strong>Exiting AUTO Mode</strong> - When you switch from AUTO to any other flight mode (e.g., LOITER, RTL, LAND)
+                <ul>
+                    <li>Triggered in <code>AP_Mission::stop()</code></li>
+                    <li>GCS Message: <code>"Mission: Saved index X for resume"</code></li>
+                </ul>
+            </li>
+            <li><strong>Disarming</strong> - When you disarm the vehicle
+                <ul>
+                    <li>Triggered in <code>AP_Mission::check_and_save_on_disarm()</code></li>
+                    <li>GCS Message: <code>"Mission: Saved index X for resume"</code></li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>When Mission Index is Cleared</h3>
+        <p>The saved index is automatically reset to 0 when:</p>
+        <ul>
+            <li><strong>Mission Completes Successfully</strong>
+                <ul>
+                    <li>All waypoints executed</li>
+                    <li>GCS Message: <code>"Mission: Complete, cleared saved index"</code></li>
+                    <li>Ensures next flight starts from the beginning</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>3. Configuration</h2>
+
+        <h3>Required Parameter Settings</h3>
+
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><code>MIS_RESTART</code></td>
+                <td><strong>0</strong> (Resume Mission)</td>
+                <td>Controls whether to resume or restart mission when entering AUTO mode. <strong>Must be 0 to use saved index.</strong></td>
+            </tr>
+            <tr>
+                <td><code>MIS_LAST_INDEX</code></td>
+                <td>Auto-managed</td>
+                <td>Last waypoint index, automatically saved/cleared by system. <strong>Read-only, do not manually edit.</strong></td>
+            </tr>
+        </table>
+
+        <div class="warning-box">
+            <strong>⚠ Important:</strong> If <code>MIS_RESTART=1</code> (Restart Mission), the saved index will be ignored and the mission will always restart from waypoint 1.
+        </div>
+
+        <h3>Setting Parameters via Mission Planner</h3>
+        <ol>
+            <li>Connect to your flight controller</li>
+            <li>Go to <strong>CONFIG → Full Parameter List</strong></li>
+            <li>Find <code>MIS_RESTART</code> and set it to <strong>0</strong></li>
+            <li>Click <strong>Write Params</strong></li>
+        </ol>
+
+        <div class="info-box">
+            <strong>Note:</strong> <code>MIS_LAST_INDEX</code> has the <code>INTERNAL_USE_ONLY</code> flag, so it won't appear in the normal parameter list in Mission Planner. You can view it in the full parameter file if you save parameters to a file.
+        </div>
+
+        <h2>4. Testing Procedures</h2>
+
+        <h3>Test 1: Basic Resume After Power Cycle</h3>
+
+        <div class="success-box">
+            <strong>Objective:</strong> Verify mission resumes from correct waypoint after power cycle
+        </div>
+
+        <ol>
+            <li><strong>Setup:</strong>
+                <ul>
+                    <li>Create a simple mission with 5-7 waypoints</li>
+                    <li>Set <code>MIS_RESTART=0</code></li>
+                    <li>Upload mission to flight controller</li>
+                </ul>
+            </li>
+            <li><strong>Execute:</strong>
+                <ul>
+                    <li>Arm and take off</li>
+                    <li>Enter AUTO mode</li>
+                    <li>Fly through waypoints 1, 2, 3</li>
+                    <li>Switch to LOITER or another mode</li>
+                    <li><strong>Watch for GCS message:</strong> <code>"Mission: Saved index 3 for resume"</code></li>
+                    <li>Land and disarm</li>
+                    <li><strong>Power off</strong> the flight controller completely</li>
+                    <li>Wait 10 seconds</li>
+                    <li><strong>Power on</strong> the flight controller</li>
+                </ul>
+            </li>
+            <li><strong>Verify:</strong>
+                <ul>
+                    <li>Arm and take off</li>
+                    <li>Enter AUTO mode</li>
+                    <li><strong>Watch for GCS message:</strong> <code>"Mission: Resuming from saved index 3"</code></li>
+                    <li>Verify vehicle proceeds to waypoint 4 (not waypoint 1)</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Test 2: Mission Complete Clears Saved Index</h3>
+
+        <div class="success-box">
+            <strong>Objective:</strong> Verify saved index is cleared after mission completes
+        </div>
+
+        <ol>
+            <li><strong>Execute:</strong>
+                <ul>
+                    <li>Start mission in AUTO mode</li>
+                    <li>Let mission run to completion (all waypoints)</li>
+                    <li><strong>Watch for GCS message:</strong> <code>"Mission: Complete, cleared saved index"</code></li>
+                    <li>Power cycle the flight controller</li>
+                </ul>
+            </li>
+            <li><strong>Verify:</strong>
+                <ul>
+                    <li>Enter AUTO mode again</li>
+                    <li>Mission should start from waypoint 1 (not resume from end)</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Test 3: Resume After Disarm (No Mode Change)</h3>
+
+        <div class="success-box">
+            <strong>Objective:</strong> Verify index saved when disarming while still in AUTO mode
+        </div>
+
+        <ol>
+            <li><strong>Execute:</strong>
+                <ul>
+                    <li>Start mission, fly through several waypoints</li>
+                    <li>Land while still in AUTO mode</li>
+                    <li>Disarm (without switching modes)</li>
+                    <li><strong>Watch for GCS message:</strong> <code>"Mission: Saved index X for resume"</code></li>
+                    <li>Power cycle</li>
+                </ul>
+            </li>
+            <li><strong>Verify:</strong>
+                <ul>
+                    <li>Mission resumes from saved waypoint</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Test 4: MIS_RESTART Override</h3>
+
+        <div class="success-box">
+            <strong>Objective:</strong> Verify MIS_RESTART=1 always restarts mission
+        </div>
+
+        <ol>
+            <li><strong>Setup:</strong>
+                <ul>
+                    <li>Fly partway through mission</li>
+                    <li>Exit AUTO, verify index saved</li>
+                    <li>Set <code>MIS_RESTART=1</code></li>
+                </ul>
+            </li>
+            <li><strong>Verify:</strong>
+                <ul>
+                    <li>Enter AUTO mode</li>
+                    <li>Mission should start from waypoint 1 (saved index ignored)</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>5. GCS Messages Reference</h2>
+
+        <table>
+            <tr>
+                <th>Message</th>
+                <th>When It Appears</th>
+                <th>Meaning</th>
+            </tr>
+            <tr>
+                <td><code>Mission: Saved index X for resume</code></td>
+                <td>Exiting AUTO mode or disarming</td>
+                <td>Mission progress saved to NVM, will resume from waypoint X after power cycle</td>
+            </tr>
+            <tr>
+                <td><code>Mission: Cleared saved index (no active waypoint)</code></td>
+                <td>Disarming with no active mission</td>
+                <td>No waypoint to save, cleared saved index</td>
+            </tr>
+            <tr>
+                <td><code>Mission: Complete, cleared saved index</code></td>
+                <td>Mission completes successfully</td>
+                <td>All waypoints executed, ready for fresh start next time</td>
+            </tr>
+            <tr>
+                <td><code>Mission: Resuming from saved index X</code></td>
+                <td>Entering AUTO mode with saved index</td>
+                <td>Restoring mission from waypoint X (from NVM)</td>
+            </tr>
+        </table>
+
+        <h2>6. Technical Implementation Details</h2>
+
+        <h3>Files Modified</h3>
+        <ul>
+            <li><code>libraries/AP_Mission/AP_Mission.h</code> - Added parameter and method declarations</li>
+            <li><code>libraries/AP_Mission/AP_Mission.cpp</code> - Implemented save/clear/resume logic</li>
+        </ul>
+
+        <h3>Key Code Locations</h3>
+
+        <table>
+            <tr>
+                <th>Function</th>
+                <th>Purpose</th>
+                <th>File</th>
+            </tr>
+            <tr>
+                <td><code>AP_Mission::stop()</code></td>
+                <td>Saves index when exiting AUTO mode</td>
+                <td>AP_Mission.cpp</td>
+            </tr>
+            <tr>
+                <td><code>AP_Mission::check_and_save_on_disarm()</code></td>
+                <td>Detects disarm and saves index</td>
+                <td>AP_Mission.cpp</td>
+            </tr>
+            <tr>
+                <td><code>AP_Mission::complete()</code></td>
+                <td>Clears saved index on mission complete</td>
+                <td>AP_Mission.cpp</td>
+            </tr>
+            <tr>
+                <td><code>AP_Mission::resume()</code></td>
+                <td>Restores from saved index on mission start</td>
+                <td>AP_Mission.cpp</td>
+            </tr>
+        </table>
+
+        <h3>Parameter Storage</h3>
+        <pre>
+Parameter Name: MIS_LAST_INDEX
+Type:           AP_Int16 (16-bit integer)
+Storage:        EEPROM/Flash (NVM)
+Default:        0 (no saved position)
+Flags:          INTERNAL_USE_ONLY, ReadOnly
+Index:          3 (in AP_Mission parameter group)</pre>
+
+        <h2>7. Troubleshooting</h2>
+
+        <h3>Problem: Mission Always Restarts from Beginning</h3>
+        <p><strong>Solutions:</strong></p>
+        <ul>
+            <li>Check <code>MIS_RESTART</code> parameter - must be <strong>0</strong> (Resume Mission)</li>
+            <li>Verify you're seeing the "Mission: Saved index X" message when exiting AUTO or disarming</li>
+            <li>Ensure mission didn't complete (which clears the saved index)</li>
+        </ul>
+
+        <h3>Problem: Not Seeing GCS Messages</h3>
+        <p><strong>Solutions:</strong></p>
+        <ul>
+            <li>Check GCS message console/log window</li>
+            <li>Verify GCS is connected and receiving telemetry</li>
+            <li>Check message severity filter (messages are MAV_SEVERITY_INFO level)</li>
+        </ul>
+
+        <h3>Problem: Resumes from Wrong Waypoint</h3>
+        <p><strong>Solutions:</strong></p>
+        <ul>
+            <li>Check what waypoint was active when you exited AUTO mode</li>
+            <li>Note: System saves the <em>current</em> navigation waypoint, not the next one</li>
+            <li>If you modified the mission after saving, the index might be invalid</li>
+        </ul>
+
+        <h3>Problem: "Cleared saved index (no active waypoint)" Message</h3>
+        <p><strong>This is normal if:</strong></p>
+        <ul>
+            <li>You disarmed before starting a mission</li>
+            <li>Mission was already complete</li>
+            <li>No navigation command was loaded</li>
+        </ul>
+
+        <h2>8. Limitations & Considerations</h2>
+
+        <div class="warning-box">
+            <h3>Important Limitations</h3>
+            <ul>
+                <li><strong>Mission Must Be Unchanged:</strong> If you upload a different mission after saving the index, the saved index may point to an incorrect or non-existent waypoint</li>
+                <li><strong>Only Works with MIS_RESTART=0:</strong> Resume functionality requires MIS_RESTART set to 0 (Resume Mission mode)</li>
+                <li><strong>Index Only, Not Position:</strong> System saves waypoint index, not GPS position. Vehicle will navigate to the saved waypoint from current position</li>
+                <li><strong>Flash Write Frequency:</strong> Index is written to flash only when exiting AUTO or disarming, not during flight (to minimize flash wear)</li>
+            </ul>
+        </div>
+
+        <h2>9. Best Practices</h2>
+
+        <ul>
+            <li><strong>Always Monitor GCS Messages:</strong> Pay attention to save/resume messages to understand system behavior</li>
+            <li><strong>Test Before Critical Missions:</strong> Verify resume functionality works with your specific mission profile</li>
+            <li><strong>Don't Edit Missions Between Flights:</strong> If you save a position at waypoint 5, don't upload a new mission with only 3 waypoints before resuming</li>
+            <li><strong>Complete Missions When Possible:</strong> Letting missions complete naturally clears the saved index, preventing confusion on next flight</li>
+            <li><strong>Keep MIS_RESTART=0:</strong> Once you enable resume functionality, keep MIS_RESTART at 0 unless you specifically want to restart missions</li>
+        </ul>
+
+        <h2>10. Future Enhancements</h2>
+
+        <p>Possible future improvements to this feature:</p>
+        <ul>
+            <li>Save/restore DO command state</li>
+            <li>Option to save GPS position along with index</li>
+            <li>Mission change detection (warn if mission modified since save)</li>
+            <li>Multiple saved mission positions (slots)</li>
+            <li>Parameter to control auto-clear behavior</li>
+        </ul>
+
+        <hr>
+
+        <p><em>Document created: 2026-02-04</em></p>
+        <p><em>ArduPilot Mission Resume Feature - Implementation Guide</em></p>
+    </div>
+</body>
+</html>

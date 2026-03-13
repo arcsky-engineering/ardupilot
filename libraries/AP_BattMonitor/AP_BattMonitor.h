@@ -263,8 +263,14 @@ public:
 
     bool option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const;
 
+    // return 1-based display number for user-facing messages, skipping InternalUseOnly instances
+    uint8_t user_display_number(uint8_t instance) const;
+
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;
+
+    // return model name string from DroneCAN BatteryInfo, nullptr if not available
+    const char *get_model_name(uint8_t instance) const;
 
     // get battery resistance estimate in ohms
     float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }

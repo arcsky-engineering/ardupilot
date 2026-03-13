@@ -98,6 +98,17 @@ void ModeLoiter::run()
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
+#if AP_RANGEFINDER_ENABLED
+        // limit forward pitch if forward avoidance stick lockout is active
+        // negative pitch = forward (nose down), so only block negative pitch (allow backward and roll)
+        if (copter.fwdavd_stick_locked()) {
+            if (target_pitch < 0.0f) {
+                target_pitch = 0.0f;
+            }
+            // allow roll and yaw for maneuvering around obstacle
+        }
+#endif
+
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
@@ -107,15 +118,6 @@ void ModeLoiter::run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-
-#if AP_RANGEFINDER_ENABLED
-        // zero out pilot inputs if forward avoidance stick lockout is active
-        if (copter.fwdavd_stick_locked()) {
-            loiter_nav->clear_pilot_desired_acceleration();
-            target_yaw_rate = 0.0f;
-            // allow descent but not forward movement
-        }
-#endif
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         loiter_nav->clear_pilot_desired_acceleration();

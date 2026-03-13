@@ -101,11 +101,16 @@ void AP_OpenDroneID::dronecan_send(AP_DroneCAN *uavcan)
         return;
     }
 
-    // BasicID, SelfID, and OperatorID are not sent - DB201 is pre-programmed with these values
-    // Only Location and System messages are required from ArduPilot
-    need_send_basic_id &= ~driver_mask;
+    // SelfID and OperatorID are not sent - DB201 is pre-programmed with these values
     need_send_self_id &= ~driver_mask;
     need_send_operator_id &= ~driver_mask;
+
+    // Send BasicID so DB201 can auto-save UAS ID if not already programmed
+    if (need_send_basic_id & driver_mask) {
+        WITH_SEMAPHORE(_sem);
+        dronecan_send_basic_id(uavcan);
+        need_send_basic_id &= ~driver_mask;
+    }
 
     if (need_send_system & driver_mask) {
         WITH_SEMAPHORE(_sem);

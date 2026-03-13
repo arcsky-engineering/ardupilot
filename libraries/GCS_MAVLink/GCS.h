@@ -800,6 +800,9 @@ private:
     uint32_t last_deprecation_warning_send_time_ms;
     const char *last_deprecation_message;
 
+    // rate limit banner sends to avoid duplicates during connection
+    uint32_t last_banner_send_time_ms;
+
     void service_statustext(void);
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_int_t &packet);

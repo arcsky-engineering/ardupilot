@@ -697,7 +697,8 @@ public:
     AP_Int8  fwdavd_samp;       // sample count threshold
     AP_Int8  fwdavd_cond;       // altitude condition (0=none, 1=home alt, 2=terrain)
     AP_Float fwdavd_alt;        // altitude threshold in meters
-    AP_Int8  fwdavd_act;        // action (0=None, 1=RTL, 2=SmartRTL, 3=Land, 4=Stop/Lockout)
+    AP_Int8  fwdavd_act_auto;   // action for auto modes (0=None, 1=RTL, 2=SmartRTL, 3=Land)
+    AP_Int8  fwdavd_act_man;    // action for manual modes (0=None, 1=RTL, 2=SmartRTL, 3=Land, 4=Stop/Lockout)
     AP_Int8  fwdavd_chan;       // RC channel for master enable (0=always, 1-16=channel)
 #endif
 };

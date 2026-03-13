@@ -135,7 +135,9 @@
         <li>Optional altitude gating (home altitude or terrain)</li>
         <li>Mode-specific enable bitmask</li>
         <li>Configurable threshold distance and sample count</li>
-        <li>Multiple failsafe actions: RTL, SmartRTL, Land, or Stop with stick lockout</li>
+        <li>Separate failsafe actions for auto vs manual modes</li>
+        <li>Auto modes: RTL, SmartRTL, or Land</li>
+        <li>Manual modes: RTL, SmartRTL, Land, or Stop with stick lockout</li>
         <li>Automatic escalation to Land if obstacle detected during RTL</li>
         <li>Continue-if-landing behavior respected</li>
     </ul>
@@ -189,15 +191,26 @@
             <td>Minimum altitude for activation (used with COND=1 or 2)</td>
         </tr>
         <tr>
-            <td><code>FWDAVD_ACT</code></td>
-            <td>0</td>
-            <td>0-4</td>
-            <td>Failsafe action:<br>
+            <td><code>FWDAVD_ACT_AUTO</code></td>
+            <td>3</td>
+            <td>0-3</td>
+            <td>Failsafe action for auto modes (Auto, Guided, RTL, SmartRTL):<br>
                 0 = None<br>
-                1 = RTL<br>
-                2 = SmartRTL (falls back to RTL)<br>
-                3 = Land<br>
-                4 = Stop with stick lockout (manual modes)
+                1 = Land<br>
+                2 = RTL<br>
+                3 = SmartRTL (falls back to RTL)
+            </td>
+        </tr>
+        <tr>
+            <td><code>FWDAVD_ACT_MAN</code></td>
+            <td>4</td>
+            <td>0-4</td>
+            <td>Failsafe action for manual modes (Loiter, PosHold, AltHold):<br>
+                0 = None<br>
+                1 = Land<br>
+                2 = RTL<br>
+                3 = SmartRTL (falls back to RTL)<br>
+                4 = Stop with stick lockout
             </td>
         </tr>
         <tr>
@@ -208,6 +221,46 @@
                 0 = Disabled (feature off)<br>
                 6-11 = RC channel number
             </td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Separate Actions for Auto vs Manual Modes:</strong> The system uses different action parameters
+        based on the flight mode type. This allows you to configure, for example, SmartRTL for autonomous missions
+        but Stop with Lockout for manual flying, giving the pilot direct control to back away from obstacles.
+    </div>
+
+    <h3>Example Configurations</h3>
+    <table>
+        <tr>
+            <th>Scenario</th>
+            <th>FWDAVD_ACT_AUTO</th>
+            <th>FWDAVD_ACT_MAN</th>
+            <th>Behavior</th>
+        </tr>
+        <tr>
+            <td>Conservative (Land always)</td>
+            <td>1 (Land)</td>
+            <td>1 (Land)</td>
+            <td>All modes land immediately on obstacle</td>
+        </tr>
+        <tr>
+            <td>Smart Return (recommended)</td>
+            <td>3 (SmartRTL)</td>
+            <td>4 (Stop/Lockout)</td>
+            <td>Auto modes return via safe path; manual modes let pilot maneuver</td>
+        </tr>
+        <tr>
+            <td>RTL Only</td>
+            <td>2 (RTL)</td>
+            <td>2 (RTL)</td>
+            <td>All modes return to home on obstacle</td>
+        </tr>
+        <tr>
+            <td>Manual Override</td>
+            <td>1 (Land)</td>
+            <td>0 (None)</td>
+            <td>Auto modes land; manual modes do nothing (pilot handles)</td>
         </tr>
     </table>
 
@@ -316,8 +369,14 @@ Else:
         <li><strong>Action 4 (Stop with Lockout):</strong>
             <ul>
                 <li>Switches to Loiter (or Brake, or Land as fallback)</li>
-                <li>Locks out roll/pitch stick input</li>
-                <li>Pilot must return sticks to neutral AND obstacle must clear to regain control</li>
+                <li>Locks out <strong>forward pitch only</strong> - pilot can still:</li>
+                <ul>
+                    <li>Pull back (backward pitch) to back away from obstacle</li>
+                    <li>Use roll to strafe left/right around obstacle</li>
+                    <li>Use yaw to rotate</li>
+                    <li>Use throttle to climb/descend</li>
+                </ul>
+                <li>To regain full forward control: pilot must return pitch stick to neutral AND obstacle must clear</li>
             </ul>
         </li>
     </ul>
@@ -332,6 +391,16 @@ Else:
     <div class="note">
         <strong>Continue-if-Landing:</strong> If the vehicle is already landing (is_landing() = true),
         the system logs the event but allows the landing to continue.
+    </div>
+
+    <div class="success">
+        <strong>Emergency Escape from Lockout:</strong> If stick lockout occurs and the pilot needs to regain
+        full control immediately, they can:
+        <ul>
+            <li>Turn OFF the RC master switch (FWDAVD_CHAN) - immediately clears lockout</li>
+            <li>Switch to a non-enabled flight mode (e.g., Stabilize) - clears lockout</li>
+            <li>Back away using backward pitch while in lockout (allowed)</li>
+        </ul>
     </div>
 
     <h2>6. GCS Messages</h2>
@@ -370,7 +439,17 @@ Else:
         <tr>
             <td>"Forward Avoidance: Control restored"</td>
             <td>INFO</td>
-            <td>Sticks neutral + obstacle cleared</td>
+            <td>Pitch stick neutral + obstacle cleared</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Control restored (disabled)"</td>
+            <td>INFO</td>
+            <td>RC master switch turned off while locked</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Control restored (mode change)"</td>
+            <td>INFO</td>
+            <td>Pilot switched to non-enabled mode while locked</td>
         </tr>
         <tr>
             <td>"Forward Avoidance: Continuing landing"</td>
@@ -386,6 +465,16 @@ Else:
             <td>"Forward Avoidance: No terrain data"</td>
             <td>WARNING</td>
             <td>Terrain mode but no data (every 10s)</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Below alt (X.Xm < X.Xm)"</td>
+            <td>INFO</td>
+            <td>RC switch on but altitude below threshold (every 5s)</td>
+        </tr>
+        <tr>
+            <td>"Forward Avoidance: Below terrain alt (X.Xm < X.Xm)"</td>
+            <td>INFO</td>
+            <td>RC switch on but terrain altitude below threshold (every 5s)</td>
         </tr>
     </table>
 
@@ -450,13 +539,14 @@ Else:
 
     <h3>8.2 Recommended Test Parameters</h3>
     <pre>
-FWDAVD_EN    = 15        # Enable for Auto + Loiter + PosHold + AltHold
-FWDAVD_DIST  = 12        # 12 meter threshold
-FWDAVD_SAMP  = 3         # 3 samples (0.3 seconds at 10Hz)
-FWDAVD_COND  = 0         # No altitude check (for initial testing)
-FWDAVD_ALT   = 3         # 3 meters (when using altitude condition)
-FWDAVD_ACT   = 3         # Land action (safest for testing)
-FWDAVD_CHAN  = 7         # RC channel 7 for master switch</pre>
+FWDAVD_EN        = 15    # Enable for Auto + Loiter + PosHold + AltHold
+FWDAVD_DIST      = 12    # 12 meter threshold
+FWDAVD_SAMP      = 3     # 3 samples (0.3 seconds at 10Hz)
+FWDAVD_COND      = 0     # No altitude check (for initial testing)
+FWDAVD_ALT       = 3     # 3 meters (when using altitude condition)
+FWDAVD_ACT_AUTO  = 3     # SmartRTL for auto modes
+FWDAVD_ACT_MAN   = 4     # Stop with lockout for manual modes
+FWDAVD_CHAN      = 7     # RC channel 7 for master switch</pre>
 
     <h3>8.3 Rangefinder Setup</h3>
     <pre>
@@ -579,9 +669,9 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 9: Failsafe Action - RTL</h4>
-        <p><strong>Objective:</strong> Verify RTL action works</p>
-        <p><strong>Setup:</strong> FWDAVD_ACT = 1, feature active</p>
+        <h4>Test 9: Failsafe Action - RTL (Manual Mode)</h4>
+        <p><strong>Objective:</strong> Verify RTL action works in manual modes</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_MAN = 2, FWDAVD_EN = 2 (Loiter), feature active</p>
         <p><strong>Steps:</strong></p>
         <ul class="checklist">
             <li>Fly in Loiter toward obstacle</li>
@@ -593,12 +683,13 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 10: Failsafe Action - SmartRTL</h4>
-        <p><strong>Objective:</strong> Verify SmartRTL action works</p>
-        <p><strong>Setup:</strong> FWDAVD_ACT = 2, SmartRTL enabled</p>
+        <h4>Test 10: Failsafe Action - SmartRTL (Auto Mode)</h4>
+        <p><strong>Objective:</strong> Verify SmartRTL action works in auto modes</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_AUTO = 3, FWDAVD_EN = 1 (Auto modes), SmartRTL enabled</p>
         <p><strong>Steps:</strong></p>
         <ul class="checklist">
             <li>Fly a path to build SmartRTL breadcrumbs</li>
+            <li>Switch to Auto or Guided mode</li>
             <li>Fly toward obstacle</li>
             <li>Verify vehicle enters SmartRTL mode</li>
         </ul>
@@ -608,7 +699,7 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     <div class="test-section">
         <h4>Test 11: Failsafe Action - Land</h4>
         <p><strong>Objective:</strong> Verify Land action works</p>
-        <p><strong>Setup:</strong> FWDAVD_ACT = 3, feature active</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_MAN = 1, FWDAVD_EN = 2 (Loiter), feature active</p>
         <p><strong>Steps:</strong></p>
         <ul class="checklist">
             <li>Fly in Loiter toward obstacle</li>
@@ -620,23 +711,61 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     <div class="test-section">
         <h4>Test 12: Stop with Stick Lockout (Manual Mode)</h4>
         <p><strong>Objective:</strong> Verify stop and stick lockout in manual mode</p>
-        <p><strong>Setup:</strong> FWDAVD_ACT = 4, FWDAVD_EN = 2 (Loiter)</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_MAN = 4, FWDAVD_EN = 2 (Loiter)</p>
         <p><strong>Steps:</strong></p>
         <ul class="checklist">
             <li>Fly in Loiter toward obstacle</li>
             <li>Verify "Forward Avoidance: Stop - Return sticks to neutral" message</li>
             <li>Verify vehicle enters Loiter and holds position</li>
-            <li>Try to move with sticks - verify NO response (locked out)</li>
-            <li>Clear the obstacle (move vehicle or remove obstacle)</li>
-            <li>Return sticks to center</li>
+            <li>Try to push forward with pitch - verify NO forward movement (blocked)</li>
+            <li>Pull back on pitch - verify vehicle DOES move backward (allowed)</li>
+            <li>Use roll to strafe left/right - verify movement is allowed</li>
+            <li>Back away from obstacle using backward pitch</li>
+            <li>Return pitch stick to center (roll can remain deflected)</li>
             <li>Verify "Forward Avoidance: Control restored" message</li>
-            <li>Verify stick control is restored</li>
+            <li>Verify full stick control is restored including forward pitch</li>
         </ul>
-        <p><strong>Expected Result:</strong> Stick lockout until obstacle clear AND sticks neutral</p>
+        <p><strong>Expected Result:</strong> Only forward pitch blocked; backward, roll, yaw allowed. Full control restored after pitch neutral + obstacle clear.</p>
     </div>
 
     <div class="test-section">
-        <h4>Test 13: RTL Escalation to Land</h4>
+        <h4>Test 12a: Emergency Escape from Lockout</h4>
+        <p><strong>Objective:</strong> Verify emergency escape methods from stick lockout</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_MAN = 4, FWDAVD_EN = 2 (Loiter)</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly in Loiter toward obstacle to trigger lockout</li>
+            <li>Verify forward pitch is blocked</li>
+            <li><strong>Test RC switch escape:</strong> Turn OFF RC master switch</li>
+            <li>Verify "Forward Avoidance: Control restored (disabled)" message</li>
+            <li>Verify full control is immediately restored</li>
+            <li>Turn RC switch back on, re-trigger lockout</li>
+            <li><strong>Test mode change escape:</strong> Switch to Stabilize (non-enabled mode)</li>
+            <li>Verify "Forward Avoidance: Control restored (mode change)" message</li>
+            <li>Verify full control is restored</li>
+        </ul>
+        <p><strong>Expected Result:</strong> RC switch off OR mode change to non-enabled mode immediately clears lockout</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 13: Separate Auto/Manual Actions</h4>
+        <p><strong>Objective:</strong> Verify auto and manual modes use different action parameters</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_AUTO = 3 (SmartRTL), FWDAVD_ACT_MAN = 4 (Stop), FWDAVD_EN = 3 (Auto + Loiter)</p>
+        <p><strong>Steps:</strong></p>
+        <ul class="checklist">
+            <li>Fly in Loiter mode toward obstacle</li>
+            <li>Verify vehicle stops and locks stick input (action 4 from FWDAVD_ACT_MAN)</li>
+            <li>Clear obstacle and return pitch stick to neutral to restore control</li>
+            <li>Switch to Guided mode</li>
+            <li>Fly toward obstacle again</li>
+            <li>Verify vehicle enters SmartRTL mode (action 3 from FWDAVD_ACT_AUTO)</li>
+            <li>Verify NO stick lockout occurs in auto mode</li>
+        </ul>
+        <p><strong>Expected Result:</strong> Different actions taken based on mode type (manual vs auto)</p>
+    </div>
+
+    <div class="test-section">
+        <h4>Test 14: RTL Escalation to Land</h4>
         <p><strong>Objective:</strong> Verify escalation when obstacle during RTL</p>
         <p><strong>Setup:</strong> Feature active, obstacle on RTL path</p>
         <p><strong>Steps:</strong></p>
@@ -651,7 +780,7 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 14: Continue-if-Landing Behavior</h4>
+        <h4>Test 15: Continue-if-Landing Behavior</h4>
         <p><strong>Objective:</strong> Verify landing continues when obstacle detected</p>
         <p><strong>Setup:</strong> Feature active</p>
         <p><strong>Steps:</strong></p>
@@ -665,15 +794,15 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 15: Obstacle Cleared Reset</h4>
+        <h4>Test 16: Obstacle Cleared Reset</h4>
         <p><strong>Objective:</strong> Verify system resets when obstacle clears</p>
-        <p><strong>Setup:</strong> FWDAVD_ACT = 4 (Stop), feature active in Loiter</p>
+        <p><strong>Setup:</strong> FWDAVD_ACT_MAN = 4 (Stop), feature active in Loiter</p>
         <p><strong>Steps:</strong></p>
         <ul class="checklist">
             <li>Trigger avoidance with obstacle</li>
             <li>Remove obstacle or reposition vehicle</li>
             <li>Wait for counter to decrement to zero</li>
-            <li>Return sticks to neutral</li>
+            <li>Return pitch stick to neutral</li>
             <li>Verify "Forward Avoidance: Cleared" or "Control restored" message</li>
             <li>Fly toward same location - verify avoidance can trigger again</li>
         </ul>
@@ -681,7 +810,7 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 16: Radio Failsafe Interaction</h4>
+        <h4>Test 17: Radio Failsafe Interaction</h4>
         <p><strong>Objective:</strong> Verify behavior during radio failsafe</p>
         <p><strong>Setup:</strong> Feature active</p>
         <p><strong>Steps:</strong></p>
@@ -693,7 +822,7 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 17: Invalid Rangefinder Reading</h4>
+        <h4>Test 18: Invalid Rangefinder Reading</h4>
         <p><strong>Objective:</strong> Verify invalid readings don't trigger false positives</p>
         <p><strong>Setup:</strong> Feature active</p>
         <p><strong>Steps:</strong></p>
@@ -707,7 +836,7 @@ RNGFND1_MAX_CM   = 2000  # Maximum range (adjust to sensor)</pre>
     </div>
 
     <div class="test-section">
-        <h4>Test 18: Disarm State Reset</h4>
+        <h4>Test 19: Disarm State Reset</h4>
         <p><strong>Objective:</strong> Verify state resets on disarm</p>
         <p><strong>Setup:</strong> Feature active, previously triggered</p>
         <p><strong>Steps:</strong></p>

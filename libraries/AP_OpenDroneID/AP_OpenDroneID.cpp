@@ -136,7 +136,6 @@ void AP_OpenDroneID::load_UAS_ID_from_persistent_memory()
         if (id_len && id_type_len && ua_type_len) {
             _options.set_and_save(_options.get() & ~LockUASIDOnFirstBasicIDRx);
             _options.notify();
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OpenDroneID: Locked UAS_ID: %s", id_str);
         }
     } else {
         id_len = 0;
@@ -162,11 +161,8 @@ void AP_OpenDroneID::set_basic_id() {
 
 void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
 {
-    if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
-        && (_options & LockUASIDOnFirstBasicIDRx)
-        && id_len == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", pkt_basic_id.uas_id);
-        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", pkt_basic_id.uas_id, pkt_basic_id.id_type, pkt_basic_id.ua_type);
+    if (id_len > 0) {
+        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%s\nDID_UA_TYPE=%s\n", id_str, id_type, ua_type);
     }
 }
 
@@ -230,16 +226,6 @@ void AP_OpenDroneID::update()
 {
     if (_enable == 0) {
         return;
-    }
-
-    if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
-        && (_options & LockUASIDOnFirstBasicIDRx)
-        && id_len == 0
-        && !bootloader_flashed) {
-        hal.util->flash_bootloader();
-        // reset the basic id on next set_basic_id call
-        pkt_basic_id.id_type = MAV_ODID_ID_TYPE_NONE;
-        bootloader_flashed = true;
     }
 
     set_basic_id();
@@ -322,8 +308,9 @@ void AP_OpenDroneID::send_static_out()
         bool sent_ok = false;
         switch (next_msg_to_send) {
         case NEXT_MSG_BASIC_ID:
-            // BasicID not sent - DB201 is pre-programmed
-            sent_ok = true;  // skip to next message
+            // Send BasicID over DroneCAN so DB201 can auto-save UAS ID
+            send_basic_id_message();
+            sent_ok = true;
             break;
         case NEXT_MSG_SYSTEM:
             if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM)) {
@@ -784,11 +771,26 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
         break;
-    case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
-        if (id_len == 0) {
-            mavlink_msg_open_drone_id_basic_id_decode(&msg, &pkt_basic_id);
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID: {
+        mavlink_open_drone_id_basic_id_t tmp;
+        mavlink_msg_open_drone_id_basic_id_decode(&msg, &tmp);
+        if (tmp.id_type != MAV_ODID_ID_TYPE_NONE && strnlen((const char*)tmp.uas_id, 20) > 0) {
+            pkt_basic_id = tmp;
+            // Update persistent storage fields
+            snprintf(id_str, sizeof(id_str), "%s", (const char*)tmp.uas_id);
+            id_len = strlen(id_str);
+            snprintf(id_type, sizeof(id_type), "%u", tmp.id_type);
+            snprintf(ua_type, sizeof(ua_type), "%u", tmp.ua_type);
+            // Flash to bootloader persistent storage
+            _options.set_and_save(_options.get() | LockUASIDOnFirstBasicIDRx);
+            if (!bootloader_flashed) {
+                hal.util->flash_bootloader();
+                bootloader_flashed = true;
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OpenDroneID: Set UAS_ID: %s", id_str);
         }
         break;
+    }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);
         last_system_ms = AP_HAL::millis();

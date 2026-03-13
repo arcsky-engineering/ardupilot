@@ -90,11 +90,13 @@ void ModePosHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
 #if AP_RANGEFINDER_ENABLED
-    // zero out pilot inputs if forward avoidance stick lockout is active
+    // limit forward pitch if forward avoidance stick lockout is active
+    // negative pitch = forward (nose down), so only block negative pitch (allow backward and roll)
     if (copter.fwdavd_stick_locked()) {
-        target_roll = 0.0f;
-        target_pitch = 0.0f;
-        target_yaw_rate = 0.0f;
+        if (target_pitch < 0.0f) {
+            target_pitch = 0.0f;
+        }
+        // allow roll and yaw for maneuvering around obstacle
     }
 #endif
 

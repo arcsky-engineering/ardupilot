@@ -449,7 +449,8 @@ public:
         _mission_complete_fn(mission_complete_fn),
         _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
         _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
-        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE)
+        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
+        _was_armed(false)
     {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
@@ -536,6 +537,10 @@ public:
     /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission
     ///     should be called at 10hz or higher
     void update();
+
+    /// check_and_save_on_disarm - checks for disarm events and saves mission index to NVM
+    ///     should be called regularly from main vehicle loop
+    void check_and_save_on_disarm();
 
     ///
     /// public command methods
@@ -894,9 +899,11 @@ private:
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Int16                _last_index; // last mission index saved to NVM on disarm, used for resume after power cycle
 
     // internal variables
     bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
+    bool                    _was_armed;     // tracks previous armed state to detect disarm events
     uint16_t                _repeat_dist; // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index

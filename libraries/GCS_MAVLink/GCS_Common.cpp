@@ -134,6 +134,8 @@ GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
     _port = &uart;
 
     streamRates = parameters.streamRates;
+
+    last_banner_send_time_ms = 0;
 }
 
 bool GCS_MAVLINK::init(uint8_t instance)
@@ -4572,9 +4574,22 @@ void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_banner()
 {
+    // Rate limit banner sends to prevent duplicates during connection
+    // Only send banner once per channel within 5 seconds
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t rate_limit_ms = 5000; // 5 seconds
+
+    if (last_banner_send_time_ms != 0 &&
+        (now_ms - last_banner_send_time_ms) < rate_limit_ms) {
+        // Too soon since last banner send, skip this one
+        return;
+    }
+
+    last_banner_send_time_ms = now_ms;
+
     // Custom firmware banner
     const AP_FWVersion &fwver = AP::fwversion();
-    send_text(MAV_SEVERITY_INFO, "fw: 1.0.0 (%s)", fwver.fw_hash_str);
+    send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
 
     // if (fwver.middleware_name && fwver.os_name) {
     //     send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",

@@ -12,6 +12,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Logger/AP_Logger.h>
 
 #define LOG_TAG "BattMon"
 
@@ -155,6 +156,23 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
     }
     _errorFlags = new_error_flags;
     _operating_mode = msg.state_of_charge_pct_stdev;
+
+    // store model_name string (e.g. "Arcsky-2603001")
+    // The BMS interface sends model_name.len=0 until it receives the serial number
+    // from the BMS via NVM data, then sends "Arcsky-XXXXXXX" (>7 chars).
+    // We require >7 chars to ensure the serial number portion is present.
+    if (msg.model_name.len > 0 && msg.model_name.len <= 31) {
+        const uint8_t len = msg.model_name.len < sizeof(_model_name) - 1 ? msg.model_name.len : sizeof(_model_name) - 1;
+        char new_name[sizeof(_model_name)];
+        memcpy(new_name, msg.model_name.data, len);
+        new_name[len] = '\0';
+        // if the name changed (e.g. hot-swap), reset the logged flag so it gets re-logged
+        if (strncmp(_model_name, new_name, sizeof(_model_name)) != 0) {
+            memcpy(_model_name, new_name, sizeof(_model_name));
+            _model_name_logged = false;
+        }
+        _has_model_name = (len > 7);  // only consider valid once serial number is appended
+    }
 
     // force unhealthy only if errors (not warnings) are set
     if ((_errorFlags & BMS_ERROR_MASK) != 0){
@@ -347,6 +365,17 @@ void AP_BattMonitor_DroneCAN::read()
     if (_mppt.is_detected) {
         mppt_check_powered_state();
     }
+
+#if HAL_LOGGING_ENABLED
+    // log model name once when it becomes available with serial number
+    if (_has_model_name && !_model_name_logged) {
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger != nullptr && logger->logging_started()) {
+            logger->Write_MessageF("Battery %u: %s", (unsigned)_instance, _model_name);
+            _model_name_logged = true;
+        }
+    }
+#endif
 }
 
 // Return true if the DroneCAN state of charge should be used.
@@ -469,7 +498,7 @@ void AP_BattMonitor_DroneCAN::mppt_set_powered_state(bool power_on)
 
     _mppt.powered_state = power_on;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s%s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s%s", (unsigned)AP::battery().user_display_number(_instance), _mppt.powered_state ? "ON" : "OFF",
         (_mppt.powered_state_remote_ms == 0) ? "" : " Retry");
 
     mppt_OutputEnableRequest request;
@@ -506,7 +535,7 @@ void AP_BattMonitor_DroneCAN::mppt_report_faults(const uint8_t instance, const u
 {
     // handle recovery
     if (fault_flags == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)instance+1);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)AP::battery().user_display_number(instance));
         return;
     }
 
@@ -515,7 +544,7 @@ void AP_BattMonitor_DroneCAN::mppt_report_faults(const uint8_t instance, const u
         // this loop is to generate multiple messages if there are multiple concurrent faults, but also run once if there are no faults
         if ((fault_bit & fault_flags) != 0) {
             const MPPT_FaultFlags err = (MPPT_FaultFlags)fault_bit;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)instance+1, mppt_fault_string(err));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)AP::battery().user_display_number(instance), mppt_fault_string(err));
         }
     }
 }
