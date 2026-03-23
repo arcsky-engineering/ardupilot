@@ -25,6 +25,8 @@
 #define FUEL_WARNING_SEND_INTERVAL 42 // cycles at 3.3 Hz (0.303) seconds
 #define GENERATOR_TIMEOUT_SEND_INTERVAL 43 // cycles at 3.3 Hz
 #define VOLTAGE_WRN_SEND_INTERVAL 37 // cycles at 3.3 Hz
+#define ECU_COMMS_TIMEOUT_CNT 33 // cycles at 3.3 Hz (~10 seconds)
+#define ECU_COMMS_LOST_SEND_INTERVAL 43 // cycles at 3.3 Hz (~13 seconds)
 #define AVOID_BAD_SEND_INTERVAL 153 // cycles at 10 Hz
 #define RFND_FS_TRIGGERED_WARN_INTERVAL 167 // cycles at 10 Hz
 
@@ -117,61 +119,33 @@ struct Reading {
     uint16_t generatorTimeoutErrorSendCnt;
     uint8_t generatorTimeoutErrorSet;
 
-    // new EFI data stuff added June 2023
+    // EFI data — matches firmware 40-byte EFI packet (footer 0xFC)
     uint8_t efiMsgReceived;
 
-      // run timer 
-      uint32_t runTimerEfi;
-      // pulseWidth1
-      uint16_t pulseWidthms;
-      // rpm
-      uint16_t efiRPM;
-      // engine state
-      uint8_t engineState;      
-      // afrtgt1
-      uint8_t afrtgt;
-      // baro
-      int16_t baro;
-      // mat
-      int16_t mat;
-      // clt
-      int16_t clt;
-      // tps
-      int16_t tps;
-      // bv
-      int16_t bv;
-      // afr1
-      //int16_t afr1;
-      // aircor
-      int16_t aircor;
-      // warmcor
-      int16_t warmcor;
-      // accelEnrich
-      int16_t accelEnrich;
-      // tpsfuelcut
-      //int16_t tpsfuelcut;
-      // baroCorrection
-      int16_t baroCorrection;
-      // gammaEnrich
-      int16_t gammaEnrich;
-      // ve1
-      int16_t ve1;
-      // TPSdot
-      int16_t TPSdot;
-      // RPMdot
-      int16_t RPMdot;
-      // ECU temp
-      int16_t ECUtemp;
-      // loop speed
-      uint16_t loopSpd;
-      // error vector
-      uint16_t errorVector;
-      // misc 1
-      int16_t misc1;
-      // misc 2
-      int16_t misc2;    
+    uint16_t pulseWidthms;      // [2-3]  injection pulse width, scale 0.001ms
+    uint16_t efiRPM;            // [4-5]  engine RPM
+    uint8_t afrtgt;             // [6]    AFR target, scale 0.1
+    int16_t baro;               // [7-8]  barometric pressure, scale 0.1 kPa
+    int16_t mat;                // [9-10] manifold air temp, scale 0.1 F
+    int16_t clt;                // [11-12] coolant temp, scale 0.1 F
+    int16_t tps;                // [13-14] throttle position, scale 0.1 %
+    int16_t bv;                 // [15-16] battery voltage, scale 0.1 V
+    int16_t afr1;               // [17-18] actual AFR, scale 0.1
+    int16_t gammaEnrich;        // [19-20] gamma enrichment, scale 0.1 %
+    int16_t ve1;                // [21-22] volumetric efficiency, scale 0.1 %
+    int16_t TPSdot;             // [23-24] TPS rate of change, scale 0.1
+    uint16_t tpsAdcLatest;      // [25-26] raw TPS ADC value
+    uint16_t reqFuelCurrent;    // [27-28] required fuel constant, scale 0.001ms
+    uint8_t ecuConfigStatus;    // [29]   config status code
+    uint16_t fuelPressure;      // [30-31] fuel pressure, bars x 100
+    uint16_t serialNumber;      // [32-33] rectifier board serial number
 
     uint8_t msgType; // type of message received by system (1 = GENERATOR / 2 = EFI)
+
+    // ECU comms timeout tracking
+    uint16_t efiTimeoutCnt;            // increments each slow-loop tick when no EFI packet
+    uint8_t ecuCommsLost;              // 1 when ECU comms declared lost (after efiMsgReceived was 1)
+    uint16_t ecuCommsLostSendCnt;      // periodic warning send counter
 };
 
 // declare some variables to use
@@ -265,6 +239,9 @@ void Copter::userhook_init()
     last_reading.currentErrorSendCnt = CURRENT_ERROR_SEND_INTERVAL; // so that they send right away the first time
     last_reading.generatorTimeoutCnt = 0;
     last_reading.generatorTimeoutErrorSendCnt = GENERATOR_TIMEOUT_SEND_INTERVAL;
+    last_reading.efiTimeoutCnt = 0;
+    last_reading.ecuCommsLost = 0;
+    last_reading.ecuCommsLostSendCnt = ECU_COMMS_LOST_SEND_INTERVAL; // send right away first time
     fuelSendCnt = 0;
     last_reading.filtered_output_voltage = 0;
 
@@ -975,9 +952,15 @@ void Copter::userhook_SlowLoop()
         }
         else if (last_reading.msgType == 2)
         {
-            // EFI message received
+            // EFI message received — reset ECU comms timeout
+            last_reading.efiTimeoutCnt = 0;
 
-            // do any updating here that is necessary
+            // If ECU comms were previously lost, announce restoration
+            if (last_reading.ecuCommsLost)
+            {
+                last_reading.ecuCommsLost = 0;
+                gcs().send_text(MAV_SEVERITY_INFO, "ECU Communication Restored");
+            }
         }
 
     } // if (get_reading())
@@ -1209,11 +1192,12 @@ void Copter::userhook_SlowLoop()
 
     // LOGGING SECTION ****************************************************
 
+    // Log one message every 2 slow-loop ticks (~1.65 Hz each), rotating:
+    //   tick 2: GEN,  tick 4: EFI,  tick 6: EF2,  then repeat
     static uint8_t counter2;
     counter2++;
-    if (counter2 == 1)
+    if (counter2 == 2)
     {
-        // log //    log runtime, current, power, mode, etc.
         if (last_reading.generatorDetected)
         {
             AP::logger().Write(
@@ -1242,19 +1226,18 @@ void Copter::userhook_SlowLoop()
                 );
         }
     }
-    else if (counter2 == 2)
+    else if (counter2 == 4)
     {
-
         if (last_reading.efiMsgReceived)
         {
-            // EFI Message logging
             AP::logger().Write(
                 "EFI",
-                "TimeUS,rpm,afrt,bar,mat,clt,tps,bv,et,ac,wc,ae,spd,bc,ge,pw",
-                "sq-POO-vO---z---",
-                "F-AAAAAAAAAA-AAC",
-                "QHBhhhhhhhhhHhhH",
+                "TimeUS,pw,rpm,afrt,bar,mat,clt,tps,bv,af1,ge,ve1,td",
+                "s---POO-v----",
+                "F------------",
+                "QHHBhhhhhhhh",
                 AP_HAL::micros64(),
+                last_reading.pulseWidthms,
                 last_reading.efiRPM,
                 last_reading.afrtgt,
                 last_reading.baro,
@@ -1262,21 +1245,32 @@ void Copter::userhook_SlowLoop()
                 last_reading.clt,
                 last_reading.tps,
                 last_reading.bv,
-                last_reading.ECUtemp,
-                last_reading.aircor,
-                last_reading.warmcor,
-                last_reading.accelEnrich,
-                last_reading.loopSpd,
-                last_reading.baroCorrection,
+                last_reading.afr1,
                 last_reading.gammaEnrich,
-                last_reading.pulseWidthms
+                last_reading.ve1,
+                last_reading.TPSdot
+                );
+        }
+    }
+    else if (counter2 >= 6)
+    {
+        if (last_reading.efiMsgReceived)
+        {
+            AP::logger().Write(
+                "EF2",
+                "TimeUS,tadc,rf,cs,fp,sn",
+                "s-----",
+                "F-----",
+                "QHHBHH",
+                AP_HAL::micros64(),
+                last_reading.tpsAdcLatest,
+                last_reading.reqFuelCurrent,
+                last_reading.ecuConfigStatus,
+                last_reading.fuelPressure,
+                last_reading.serialNumber
                 );
         }
 
-        counter2 = 0;
-    } /// else if (counter2 == 2)
-    else if (counter2 > 2)
-    {
         counter2 = 0;
     }
 
@@ -1305,6 +1299,33 @@ void Copter::userhook_SlowLoop()
                 // send mavlink message
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Hybrid Module Communication Lost");
                 last_reading.generatorTimeoutErrorSendCnt = 0;
+            }
+        }
+    }
+
+    // ECU comms timeout — only check if we have previously received EFI data
+    if (last_reading.efiMsgReceived)
+    {
+        if (last_reading.efiTimeoutCnt < ECU_COMMS_TIMEOUT_CNT)
+        {
+            last_reading.efiTimeoutCnt++;
+        }
+        else
+        {
+            // ECU comms lost
+            if (!last_reading.ecuCommsLost)
+            {
+                last_reading.ecuCommsLost = 1;
+            }
+
+            if (last_reading.ecuCommsLostSendCnt < ECU_COMMS_LOST_SEND_INTERVAL)
+            {
+                last_reading.ecuCommsLostSendCnt++;
+            }
+            else
+            {
+                gcs().send_text(MAV_SEVERITY_WARNING, "ECU Communication Lost");
+                last_reading.ecuCommsLostSendCnt = 0;
             }
         }
     }
@@ -1343,15 +1364,9 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
     if (last_reading.efiMsgReceived)
     {
 
-        // populate some dummy variables for things we don't have
-        // available
-
-        // if these variables don't work for some reason (following data type of EFI_STATUS message online)
-        // then possibly use the data types found in the AP_EFI.cpp file
         float ecu_index = 1;
         float dummyZero = 0.001;
         float erpm = ((float)(last_reading.efiRPM));
-        //float engineLoad = ((float)(last_reading.fuelload))*0.1;
         float tps = ((float)(last_reading.tps))*0.1;
         float baroPress = ((float)(last_reading.baro))*0.1;
         float mat = ((float)(last_reading.mat))*0.1;
@@ -1359,52 +1374,37 @@ void Copter::send_efi_status(const GCS_MAVLINK &channel)
         float injtime = ((float)(last_reading.pulseWidthms))*0.001;
         float ptcomp = ((float)(last_reading.gammaEnrich))*0.1;
         float bv = ((float)(last_reading.bv))*0.1;
-        uint8_t health = 1; // hard coded for now
+        float fp = ((float)(last_reading.fuelPressure))*0.01; // bars x 100 -> kPa*100? keep as bars for now
+        uint8_t health = 1;
 
-/*
- mavlink_msg_efi_status_send(
- mavlink_channel_t chan,
- uint8_t health,
- float ecu_index,
- float rpm,
- float fuel_consumed,
- float fuel_flow,
- float engine_load,
- float throttle_position,
- float spark_dwell_time,
- float barometric_pressure,
- float intake_manifold_pressure,
- float intake_manifold_temperature,
- float cylinder_head_temperature,
- float ignition_timing,
- float injection_time,
- float exhaust_gas_temperature,
- float throttle_out,
- float pt_compensation,
- float ignition_voltage,
- float fuel_pressure)
- */
+        // MAVLink EFI_STATUS (msg 225) field mapping:
+        // health, ecu_index, rpm, fuel_consumed, fuel_flow, engine_load,
+        // throttle_position, spark_dwell_time, barometric_pressure,
+        // intake_manifold_pressure, intake_manifold_temperature,
+        // cylinder_head_temperature, ignition_timing, injection_time,
+        // exhaust_gas_temperature, throttle_out, pt_compensation,
+        // ignition_voltage, fuel_pressure
         mavlink_msg_efi_status_send(
         channel.get_chan(),
-        health,
-        ecu_index,
-        erpm,
-        dummyZero,
-        dummyZero,
-        tps,
-        tps,
-        dummyZero,
-        baroPress,
-        dummyZero,
-        mat,
-        clt,
-        dummyZero,
-        injtime,
-        dummyZero,
-        tps,
-        ptcomp,
-        bv,
-        dummyZero
+        health,             // health
+        ecu_index,          // ecu_index
+        erpm,               // rpm
+        dummyZero,          // fuel_consumed (N/A)
+        dummyZero,          // fuel_flow (N/A)
+        tps,                // engine_load (using TPS)
+        tps,                // throttle_position
+        dummyZero,          // spark_dwell_time (N/A)
+        baroPress,          // barometric_pressure
+        dummyZero,          // intake_manifold_pressure (N/A)
+        mat,                // intake_manifold_temperature
+        clt,                // cylinder_head_temperature
+        dummyZero,          // ignition_timing (N/A)
+        injtime,            // injection_time
+        dummyZero,          // exhaust_gas_temperature (N/A)
+        tps,                // throttle_out
+        ptcomp,             // pt_compensation (gamma enrichment)
+        bv,                 // ignition_voltage (battery voltage)
+        fp                  // fuel_pressure
         );
     }
 
@@ -1578,7 +1578,7 @@ bool Copter::get_reading()
             last_reading.servoCmd = tempUint16;
 
         } // if the generator status message is found
-        else if (RxBuf[38] == FOOTER_MAGIC3) // EFI message        
+        else if (RxBuf[38] == FOOTER_MAGIC3) // EFI message (40-byte, footer 0xFC)
         {
             last_reading.msgType = 2;
             uint16_t tempUint16 = 0;
@@ -1588,77 +1588,56 @@ bool Copter::get_reading()
             {
                 last_reading.efiMsgReceived = 1;
             }
-            
-            // PROCESS EFI DATA into variables
-            // pulseWidth1
+
+            // Parse 40-byte EFI packet — field layout matches firmware transmitDataEFI()
             tempUint16 = (RxBuf[3] << 8) | RxBuf[2];
             last_reading.pulseWidthms = tempUint16;
 
-            // rpm
             tempUint16 = (RxBuf[5] << 8) | RxBuf[4];
             last_reading.efiRPM = tempUint16;
-            
-            // afrtgt1
+
             last_reading.afrtgt = RxBuf[6];
-            
-            // baro
+
             tempInt16 = (RxBuf[8] << 8) | RxBuf[7];
             last_reading.baro = tempInt16;
 
-            // mat
             tempInt16 = (RxBuf[10] << 8) | RxBuf[9];
-            last_reading.mat = tempInt16;            
-            
-            // clt
-            tempInt16 = (RxBuf[12] << 8) | RxBuf[11];
-            last_reading.clt = tempInt16;            
+            last_reading.mat = tempInt16;
 
-            // tps
+            tempInt16 = (RxBuf[12] << 8) | RxBuf[11];
+            last_reading.clt = tempInt16;
+
             tempInt16 = (RxBuf[14] << 8) | RxBuf[13];
             last_reading.tps = tempInt16;
 
-            // bv
             tempInt16 = (RxBuf[16] << 8) | RxBuf[15];
             last_reading.bv = tempInt16;
 
-            // ECU temp
             tempInt16 = (RxBuf[18] << 8) | RxBuf[17];
-            last_reading.ECUtemp = tempInt16;
+            last_reading.afr1 = tempInt16;
 
-            // aircor
             tempInt16 = (RxBuf[20] << 8) | RxBuf[19];
-            last_reading.aircor = tempInt16;
-
-            // warmcor
-            tempInt16 = (RxBuf[22] << 8) | RxBuf[21];
-            last_reading.warmcor = tempInt16;            
-
-            // accelEnrich
-            tempInt16 = (RxBuf[24] << 8) | RxBuf[23];
-            last_reading.accelEnrich = tempInt16;
-
-            // loop speed
-            tempUint16 = (RxBuf[26] << 8) | RxBuf[25];
-            last_reading.loopSpd = tempUint16;
-
-            // baroCorrection
-            tempInt16 = (RxBuf[28] << 8) | RxBuf[27];
-            last_reading.baroCorrection = tempInt16;
-
-            // gammaEnrich
-            tempInt16 = (RxBuf[30] << 8) | RxBuf[29];
             last_reading.gammaEnrich = tempInt16;
 
-            // ve1
-            tempInt16 = (RxBuf[32] << 8) | RxBuf[31];
+            tempInt16 = (RxBuf[22] << 8) | RxBuf[21];
             last_reading.ve1 = tempInt16;
 
-            // error vector
-            tempUint16 = (RxBuf[34] << 8) | RxBuf[33];
-            last_reading.errorVector = tempUint16;
+            tempInt16 = (RxBuf[24] << 8) | RxBuf[23];
+            last_reading.TPSdot = tempInt16;
 
-            // LSB of misc1
-            last_reading.misc1 = RxBuf[35];
+            tempUint16 = (RxBuf[26] << 8) | RxBuf[25];
+            last_reading.tpsAdcLatest = tempUint16;
+
+            tempUint16 = (RxBuf[28] << 8) | RxBuf[27];
+            last_reading.reqFuelCurrent = tempUint16;
+
+            last_reading.ecuConfigStatus = RxBuf[29];
+
+            tempUint16 = (RxBuf[31] << 8) | RxBuf[30];
+            last_reading.fuelPressure = tempUint16;
+
+            tempUint16 = (RxBuf[33] << 8) | RxBuf[32];
+            last_reading.serialNumber = tempUint16;
 
         }
 
