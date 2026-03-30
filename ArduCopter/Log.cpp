@@ -566,6 +566,14 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     char frame_and_type_string[30];
     copter.motors->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
     logger.Write_MessageF("%s", frame_and_type_string);
+#if AP_OPENDRONEID_ENABLED
+    {
+        const char *uas_id = copter.opendroneid.get_uas_id();
+        if (uas_id != nullptr) {
+            logger.Write_MessageF("SerialNumber: %s", uas_id);
+        }
+    }
+#endif
     logger.Write_Mode((uint8_t)flightmode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();

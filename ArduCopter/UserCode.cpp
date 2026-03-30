@@ -138,7 +138,10 @@ struct Reading {
     uint16_t reqFuelCurrent;    // [27-28] required fuel constant, scale 0.001ms
     uint8_t ecuConfigStatus;    // [29]   config status code
     uint16_t fuelPressure;      // [30-31] fuel pressure, bars x 100
-    uint16_t serialNumber;      // [32-33] rectifier board serial number
+    uint16_t serialNumber;      // [32-33] rectifier board serial number (EFI pkt)
+                                // [18-19] rectifier board serial number (GEN pkt)
+    uint8_t hwVersion;          // [34] hardware version (EFI pkt)
+    uint8_t fwVersion;          // [35] firmware version (EFI pkt)
 
     uint8_t msgType; // type of message received by system (1 = GENERATOR / 2 = EFI)
 
@@ -1258,16 +1261,18 @@ void Copter::userhook_SlowLoop()
         {
             AP::logger().Write(
                 "EF2",
-                "TimeUS,tadc,rf,cs,fp,sn",
-                "s-----",
-                "F-----",
-                "QHHBHH",
+                "TimeUS,tadc,rf,cs,fp,sn,hw,fw",
+                "s-------",
+                "F-------",
+                "QHHBHHBB",
                 AP_HAL::micros64(),
                 last_reading.tpsAdcLatest,
                 last_reading.reqFuelCurrent,
                 last_reading.ecuConfigStatus,
                 last_reading.fuelPressure,
-                last_reading.serialNumber
+                last_reading.serialNumber,
+                last_reading.hwVersion,
+                last_reading.fwVersion
                 );
         }
 
@@ -1329,6 +1334,33 @@ void Copter::userhook_SlowLoop()
             }
         }
     }
+    // send fleet-management identifiers via NAMED_VALUE_INT (~every 30s)
+    // broadcast on all active GCS channels so the message reaches the GCS
+    // regardless of whether it is connected via USB, telem radio, etc.
+    static uint8_t namedValCnt;
+    if (last_reading.generatorDetected || last_reading.efiMsgReceived)
+    {
+        if (++namedValCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
+        {
+            uint32_t now_ms = AP_HAL::millis();
+            // name field is 10 bytes in NAMED_VALUE_INT; pad to avoid memcpy overread
+            const char name_sn[10] = "GEN_SN";
+            const char name_hw[10] = "GEN_HW";
+            const char name_fw[10] = "GEN_FW";
+            for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
+                const GCS_MAVLINK *c = gcs().chan(i);
+                if (c == nullptr) {
+                    continue;
+                }
+                mavlink_channel_t ch = c->get_chan();
+                mavlink_msg_named_value_int_send(ch, now_ms, name_sn, (int32_t)last_reading.serialNumber);
+                mavlink_msg_named_value_int_send(ch, now_ms, name_hw, (int32_t)last_reading.hwVersion);
+                mavlink_msg_named_value_int_send(ch, now_ms, name_fw, (int32_t)last_reading.fwVersion);
+            }
+            namedValCnt = 0;
+        }
+    }
+
 } // end of slow loop
 #endif
 
@@ -1446,7 +1478,7 @@ void Copter::send_generator_status(const GCS_MAVLINK &channel)
         last_reading.pwrGenerated,
         last_reading.output_voltage, // bus_voltage; Voltage of the bus seen at the generator
         last_reading.rectTemp, // rectifier_temperature
-        last_reading.batt_current_setpoint, // bat_current_setpoint; The target battery current
+        0.0f, // bat_current_setpoint; field repurposed for serial number, send 0
         last_reading.genTemp, // generator temperature
         last_reading.runtime,
         last_reading.seconds_until_maintenance
@@ -1561,9 +1593,9 @@ bool Copter::get_reading()
             // get power generated
             tempUint16 = (RxBuf[15] << 8) | RxBuf[14];
             last_reading.pwrGenerated = ((float)(tempUint16)) * 0.1;
-            // get batt current setpoint
+            // get serial number (repurposed from batt current setpoint)
             tempUint16 = (RxBuf[19] << 8) | RxBuf[18];
-            last_reading.batt_current_setpoint = ((float)(tempUint16)) * 0.01;
+            last_reading.serialNumber = tempUint16;
             // get batt current
             tempInt16 = (RxBuf[11] << 8) | RxBuf[10];
             last_reading.batt_current = ((float)(tempInt16)) * 0.01;
@@ -1638,6 +1670,10 @@ bool Copter::get_reading()
 
             tempUint16 = (RxBuf[33] << 8) | RxBuf[32];
             last_reading.serialNumber = tempUint16;
+
+            // hardware and firmware version
+            last_reading.hwVersion = RxBuf[34];
+            last_reading.fwVersion = RxBuf[35];
 
         }
 
