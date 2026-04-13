@@ -267,6 +267,42 @@ void Copter::userhook_init()
 
     status = 0;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Simulate hybrid module presence for SITL testing
+    last_reading.generatorDetected = 1;
+    last_reading.efiMsgReceived = 1;
+    last_reading.serialNumber = 12345;
+    last_reading.hwVersion = 2;
+    last_reading.fwVersion = 5;
+    last_reading.runtime = 3600;            // start at 1 hour
+    last_reading.seconds_until_maintenance = 86400; // 24 hours
+    last_reading.rpm = 0;
+    last_reading.output_voltage = 51.5f;
+    last_reading.filtered_output_voltage = 51.5f;
+    last_reading.filtered_voltage_initialized = 1;
+    last_reading.output_current = 0.0f;
+    last_reading.mode = IDLE;
+    last_reading.fuelPct = 100;
+    // EFI simulated data
+    last_reading.pulseWidthms = 0;
+    last_reading.efiRPM = 0;
+    last_reading.afrtgt = 147;
+    last_reading.baro = 1013;
+    last_reading.mat = 250;     // manifold air temp (0.1 F)
+    last_reading.clt = 200;     // coolant temp (0.1 F)
+    last_reading.tps = 0;       // throttle position (0.1 %)
+    last_reading.bv = 120;      // battery voltage (0.1 V)
+    last_reading.afr1 = 147;    // AFR (0.1)
+    last_reading.gammaEnrich = 100;
+    last_reading.ve1 = 100;
+    last_reading.TPSdot = 0;
+    last_reading.tpsAdcLatest = 0;
+    last_reading.reqFuelCurrent = 0;
+    last_reading.ecuConfigStatus = 0;
+    last_reading.fuelPressure = 300;
+    UART_FOUND = 0; // no real UART in SITL
+#endif
+
     // set output to be "IDLE" initially for the generator
     genCmdOut = 1500;
     SRV_Channels::set_output_pwm(SRV_Channel::k_generator_control, genCmdOut);
@@ -1238,7 +1274,7 @@ void Copter::userhook_SlowLoop()
                 "TimeUS,pw,rpm,afrt,bar,mat,clt,tps,bv,af1,ge,ve1,td",
                 "s---POO-v----",
                 "F------------",
-                "QHHBhhhhhhhh",
+                "QHHBhhhhhhhhh",
                 AP_HAL::micros64(),
                 last_reading.pulseWidthms,
                 last_reading.efiRPM,
@@ -1334,31 +1370,65 @@ void Copter::userhook_SlowLoop()
             }
         }
     }
-    // send fleet-management identifiers via NAMED_VALUE_INT (~every 30s)
-    // broadcast on all active GCS channels so the message reaches the GCS
-    // regardless of whether it is connected via USB, telem radio, etc.
-    static uint8_t namedValCnt;
-    if (last_reading.generatorDetected || last_reading.efiMsgReceived)
-    {
-        if (++namedValCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
-        {
-            uint32_t now_ms = AP_HAL::millis();
-            // name field is 10 bytes in NAMED_VALUE_INT; pad to avoid memcpy overread
-            const char name_sn[10] = "GEN_SN";
-            const char name_hw[10] = "GEN_HW";
-            const char name_fw[10] = "GEN_FW";
-            for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
-                const GCS_MAVLINK *c = gcs().chan(i);
-                if (c == nullptr) {
-                    continue;
-                }
-                mavlink_channel_t ch = c->get_chan();
-                mavlink_msg_named_value_int_send(ch, now_ms, name_sn, (int32_t)last_reading.serialNumber);
-                mavlink_msg_named_value_int_send(ch, now_ms, name_hw, (int32_t)last_reading.hwVersion);
-                mavlink_msg_named_value_int_send(ch, now_ms, name_fw, (int32_t)last_reading.fwVersion);
-            }
-            namedValCnt = 0;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Simulate continuous hybrid module / ECU comms so timeout logic doesn't fire
+    last_reading.generatorTimeoutCnt = 0;
+    last_reading.efiTimeoutCnt = 0;
+
+    // Simulate generator runtime ticking while armed
+    if (AP::arming().is_armed()) {
+        static uint8_t simRtTick;
+        if (++simRtTick >= 3) { // ~1 second at 3.3Hz
+            last_reading.runtime++;
+            last_reading.seconds_until_maintenance++;
+            simRtTick = 0;
         }
+    }
+#endif
+
+    // --------------------------------------------------------------------------------------------------------
+    //      ARCSKY TELEMETRY METADATA (~ prefix: logged to tlog, hidden from GCS UI)
+    //      Messages are staggered: one message every 30s, alternating between types
+    // --------------------------------------------------------------------------------------------------------
+    static uint8_t metadataCnt;
+    static uint8_t metadataSlot; // 0 = drone identity, 1 = hybrid module
+    if (++metadataCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
+    {
+        if (metadataSlot == 0)
+        {
+            // --- Drone identity: ~ARCSKY,X55,<serial>,<flight_hours> ---
+            float fltHours = (float)(droneFlightTime) / 3600.0f;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            const char *uas_id = "1924A0123080000"; // test serial for SITL
+#elif AP_OPENDRONEID_ENABLED
+            const char *uas_id = copter.opendroneid.get_uas_id();
+#else
+            const char *uas_id = nullptr;
+#endif
+            if (uas_id != nullptr) {
+                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,X55,%s,%.1f", uas_id, fltHours);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,X55,NO_SN,%.1f", fltHours);
+            }
+        }
+        else if (metadataSlot == 1)
+        {
+            // --- Hybrid Module: ~HM,<serial>,HW<v>,FW<v>,<rt_hours>,<maint_hours> ---
+            if (last_reading.generatorDetected || last_reading.efiMsgReceived)
+            {
+                float genRtHours = (float)(last_reading.runtime) / 3600.0f;
+                float genMaintHours = (float)(last_reading.seconds_until_maintenance) / 3600.0f;
+                gcs().send_text(MAV_SEVERITY_INFO, "~HM,%u,HW%u,FW%u,%.1f,%.1f",
+                    (unsigned)last_reading.serialNumber,
+                    (unsigned)last_reading.hwVersion,
+                    (unsigned)last_reading.fwVersion,
+                    genRtHours,
+                    genMaintHours);
+            }
+        }
+
+        metadataSlot = (metadataSlot + 1) % 2;
+        metadataCnt = 0;
     }
 
 } // end of slow loop

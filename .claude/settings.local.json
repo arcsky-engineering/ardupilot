@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(h|cpp\\)$\")",
+      "Bash(xargs grep:*)",
+      "WebSearch",
+      "Bash(pip install:*)",
+      "Bash(python -c ':*)",
+      "Read(//c/ProgramData/anaconda3/**)",
+      "Read(//c/ProgramData/Anaconda3/**)",
+      "Read(//c/ProgramData/**)",
+      "Bash(/c/ProgramData/anaconda3/python.exe -c \"import pymavlink; print\\('pymavlink OK'\\)\")",
+      "Bash(/c/ProgramData/anaconda3/python.exe -m pip install pymavlink)",
+      "Bash(/c/ProgramData/anaconda3/python.exe -c ':*)",
+      "Bash(grep -E \"\\\\.\\(h|cc|cpp\\)$\")",
+      "Bash(ls -d /c/qhl/QGCHL-Cstm/src/*/)",
+      "Read(//c/Users/js.LAPTOP-OK5IHI7D/Desktop/**)"
+    ]
+  }
+}
