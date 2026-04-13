@@ -776,18 +776,24 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         mavlink_msg_open_drone_id_basic_id_decode(&msg, &tmp);
         if (tmp.id_type != MAV_ODID_ID_TYPE_NONE && strnlen((const char*)tmp.uas_id, 20) > 0) {
             pkt_basic_id = tmp;
+            // Check if this is actually a new/different ID
+            char new_id_str[21];
+            snprintf(new_id_str, sizeof(new_id_str), "%s", (const char*)tmp.uas_id);
+            const bool id_changed = (strncmp(new_id_str, id_str, sizeof(id_str)) != 0) ||
+                                    (tmp.id_type != atoi(id_type)) ||
+                                    (tmp.ua_type != atoi(ua_type));
             // Update persistent storage fields
-            snprintf(id_str, sizeof(id_str), "%s", (const char*)tmp.uas_id);
+            memcpy(id_str, new_id_str, sizeof(id_str));
             id_len = strlen(id_str);
             snprintf(id_type, sizeof(id_type), "%u", tmp.id_type);
             snprintf(ua_type, sizeof(ua_type), "%u", tmp.ua_type);
-            // Flash to bootloader persistent storage
-            _options.set_and_save(_options.get() | LockUASIDOnFirstBasicIDRx);
-            if (!bootloader_flashed) {
+            // Only flash to bootloader if the ID actually changed
+            if (id_changed) {
+                _options.set_and_save(_options.get() | LockUASIDOnFirstBasicIDRx);
                 hal.util->flash_bootloader();
                 bootloader_flashed = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OpenDroneID: Set UAS_ID: %s", id_str);
             }
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "OpenDroneID: Set UAS_ID: %s", id_str);
         }
         break;
     }

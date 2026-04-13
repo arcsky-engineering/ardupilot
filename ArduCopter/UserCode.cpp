@@ -1,4 +1,6 @@
 #include "Copter.h"
+#include <AP_Stats/AP_Stats.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #define PWR_STATUS_BAD_SEND_INTERVAL 99// cycles at 3.3 Hz (about every 30 seconds)
 
@@ -120,7 +122,85 @@ void Copter::userhook_SlowLoop()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Power Issue! Land Immediately!");
             board_voltage_warn_counter = 0;
         }
-    } // end of else if (!board_voltage_warn_triggered)    
+    } // end of else if (!board_voltage_warn_triggered)
+
+    // --------------------------------------------------------------------------------------------------------
+    //      ARCSKY TELEMETRY METADATA (~ prefix: logged to tlog, hidden from GCS UI)
+    //      Messages are staggered: one message every 30s, alternating between types
+    // --------------------------------------------------------------------------------------------------------
+    static uint8_t metadataCnt;
+    static uint8_t metadataSlot; // 0 = drone identity, 1+ = batteries
+    if (++metadataCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
+    {
+        if (metadataSlot == 0)
+        {
+            // --- Drone identity: ~ARCSKY,XPLORER,<serial>,<flight_hours> ---
+#if AP_STATS_ENABLED
+            AP_Stats *ap_stats = AP::stats();
+            float fltHours = (ap_stats != nullptr) ? (float)(ap_stats->flttime) / 3600.0f : 0.0f;
+#else
+            float fltHours = 0.0f;
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            const char *uas_id = "1924A0226040004"; // test serial for SITL
+#elif AP_OPENDRONEID_ENABLED
+            const char *uas_id = copter.opendroneid.get_uas_id();
+#else
+            const char *uas_id = nullptr;
+#endif
+            if (uas_id != nullptr) {
+                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,XPLORER,%s,%.1f", uas_id, fltHours);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,XPLORER,NO_SN,%.1f", fltHours);
+            }
+        }
+        else
+        {
+            // --- Battery serial + cycle count: ~BAT<n>,<model_name>,<cycles> ---
+            // Send one battery per slot (slot 1 = battery 0, slot 2 = battery 1, etc.)
+            uint8_t batIdx = metadataSlot - 1;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // Simulated DroneCAN batteries for SITL
+            static const char *simBatNames[] = {"Arcsky-2603001", "Arcsky-2603002"};
+            static const uint16_t simBatCycles[] = {42, 87};
+            if (batIdx < 2) {
+                gcs().send_text(MAV_SEVERITY_INFO, "~BAT%u,%s,%u",
+                                (unsigned)batIdx, simBatNames[batIdx], (unsigned)simBatCycles[batIdx]);
+            }
+#else
+            if (batIdx < AP::battery().num_instances()) {
+                if (AP::battery().option_is_set(batIdx, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+                    // skip internal-only batteries
+                } else {
+                    const char *model = AP::battery().get_model_name(batIdx);
+                    uint16_t cycles = 0;
+                    AP::battery().get_cycle_count(batIdx, cycles);
+                    if (model != nullptr) {
+                        gcs().send_text(MAV_SEVERITY_INFO, "~BAT%u,%s,%u",
+                                        (unsigned)batIdx, model, (unsigned)cycles);
+                    } else {
+                        int32_t sn = AP::battery().get_serial_number(batIdx);
+                        if (sn > 0) {
+                            gcs().send_text(MAV_SEVERITY_INFO, "~BAT%u,%ld,%u",
+                                            (unsigned)batIdx, (long)sn, (unsigned)cycles);
+                        }
+                    }
+                }
+            }
+#endif
+        }
+
+        // Rotate slots: 0=drone, 1=bat0, 2=bat1, then wrap
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        const uint8_t totalSlots = 3; // drone + 2 simulated batteries
+#else
+        const uint8_t totalSlots = 1 + AP::battery().num_instances();
+#endif
+        metadataSlot = (metadataSlot + 1) % totalSlots;
+        metadataCnt = 0;
+    }
+
 } // end of userhook_SlowLoop
 #endif
 
