@@ -256,10 +256,8 @@ void Copter::userhook_init()
     // initialize the serial manager, according to how it's done in RichenPower
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
     if (uart != nullptr) {
-        //const uint32_t baud = serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0);
-        //uart->begin(baud, 256, 256);
-        // try 57600 directly
-        uart->begin(57600,256,256);
+        // 115200 baud to match rectifier board (no more baud switching)
+        uart->begin(115200,256,256);
         UART_FOUND = 1;
     }
 
@@ -689,7 +687,43 @@ void Copter::userhook_MediumLoop()
 // should we have an error message here
 
 
+    // --- Drain rectifier serial at 10 Hz ---
+    // Process ALL available packets each call so the UART buffer never backs up.
+    // Only updates last_reading and resets timeout counters here.
+    // Voltage filtering, low-voltage warnings, logging, etc. stay in SlowLoop
+    // where the filter coefficients are tuned for 3.3 Hz.
+    if (UART_FOUND)
+    {
+        uint8_t packets_this_call = 0;
+        while (get_reading() && packets_this_call < 10)
+        {
+            packets_this_call++;
 
+            if (last_reading.msgType == 1)
+            {
+                if (!last_reading.generatorDetected)
+                {
+                    last_reading.generatorDetected = 1;
+                    battery.setGenFound();
+                }
+                last_reading.generatorTimeoutCnt = 0;
+                if (last_reading.generatorTimeoutErrorSet)
+                {
+                    last_reading.generatorTimeoutErrorSet = 0;
+                }
+                battery.setGenFuel(last_reading.fuelPct);
+            }
+            else if (last_reading.msgType == 2)
+            {
+                last_reading.efiTimeoutCnt = 0;
+                if (last_reading.ecuCommsLost)
+                {
+                    last_reading.ecuCommsLost = 0;
+                    gcs().send_text(MAV_SEVERITY_INFO, "ECU Communication Restored");
+                }
+            }
+        }
+    }
 
 } // Medium loop
 #endif
@@ -890,119 +924,75 @@ void Copter::userhook_SlowLoop()
 //    }
 
 
-    // check for UART and process it into data, populate last_reading structure
+    // Serial parsing is now done in MediumLoop (10 Hz) to keep the UART buffer drained.
+    // Voltage filtering and low-voltage warnings run here at 3.3 Hz (filter coefficients
+    // are tuned for this rate). last_reading is kept fresh by MediumLoop.
 
-    if (get_reading())
+    if (last_reading.generatorDetected)
     {
-        if (last_reading.msgType == 1) // generator message
+        // voltage filtering (runs every SlowLoop tick on latest data)
+        if (!last_reading.filtered_voltage_initialized)
         {
-            if (!last_reading.filtered_voltage_initialized)
+            if (last_reading.output_voltage > 20.0)
             {
-                if (last_reading.output_voltage > 20.0)
-                {
-                    last_reading.filtered_output_voltage = last_reading.output_voltage;
-                    last_reading.filtered_voltage_initialized = 1;
-                }
-            } // if !filtered_voltage_initialized
+                last_reading.filtered_output_voltage = last_reading.output_voltage;
+                last_reading.filtered_voltage_initialized = 1;
+            }
+        }
+        else
+        {
+            last_reading.filtered_output_voltage = (ALFA_VOLTAGE_FILTER * last_reading.output_voltage) + (ALFA_VOLTAGE_FILTER_INV * last_reading.filtered_output_voltage);
+        }
+
+        // low voltage check
+        if (last_reading.filtered_output_voltage < GENERATOR_LOW_VOLTAGE_LEVEL)
+        {
+            if (last_reading.low_voltage_wrn_cnt < LOW_VOLTAGE_WARNING_CNT)
+            {
+                last_reading.low_voltage_wrn_cnt++;
+            }
             else
             {
-                // it has been initialized - do the filtering here
-                last_reading.filtered_output_voltage = (ALFA_VOLTAGE_FILTER * last_reading.output_voltage) + (ALFA_VOLTAGE_FILTER_INV * last_reading.filtered_output_voltage);
+                last_reading.low_voltage_warning = 1;
             }
-
-            // do the low voltage check algorithm here
-            if (last_reading.filtered_output_voltage < GENERATOR_LOW_VOLTAGE_LEVEL)
-            {
-                if (last_reading.low_voltage_wrn_cnt < LOW_VOLTAGE_WARNING_CNT)
-                {
-                    last_reading.low_voltage_wrn_cnt++;
-                }
-                else
-                {
-                    last_reading.low_voltage_warning = 1;
-                }
-            }
-            else
-            { // voltage is above low warning level
-                if (last_reading.low_voltage_warning)
-                { // if the warning is already active
-                    if (last_reading.low_voltage_wrn_cnt)
-                    {
-                        last_reading.low_voltage_wrn_cnt--;
-                    }
-                    else
-                    {
-                        last_reading.low_voltage_warning = 0;
-                    }
-                }
-            }
-
+        }
+        else
+        {
             if (last_reading.low_voltage_warning)
             {
-                // if it's active at all
-                if (last_reading.lowVoltageWrnSendCnt < VOLTAGE_WRN_SEND_INTERVAL)
+                if (last_reading.low_voltage_wrn_cnt)
                 {
-                    last_reading.lowVoltageWrnSendCnt++;
+                    last_reading.low_voltage_wrn_cnt--;
                 }
                 else
                 {
-
-                    // warn the user
-                    gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE LOW!");
-
-                    // set sent flag
-                    last_reading.lowVoltageWarningSent = 1;
-
-                    // reset counter
-                    last_reading.lowVoltageWrnSendCnt = 0;
+                    last_reading.low_voltage_warning = 0;
                 }
-            } // if last_reading.low_voltage_warning
+            }
+        }
+
+        if (last_reading.low_voltage_warning)
+        {
+            if (last_reading.lowVoltageWrnSendCnt < VOLTAGE_WRN_SEND_INTERVAL)
+            {
+                last_reading.lowVoltageWrnSendCnt++;
+            }
             else
             {
-                if (last_reading.lowVoltageWarningSent)
-                {
-                    gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE NORMAL");
-                    last_reading.lowVoltageWarningSent = 0;
-                }
+                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE LOW!");
+                last_reading.lowVoltageWarningSent = 1;
+                last_reading.lowVoltageWrnSendCnt = 0;
             }
-
-
-            // temporary
-            //gcs().send_text(MAV_SEVERITY_INFO, "DBGFUEL: %u%%",last_reading.fuelPct);
-
-            // update the flag to indicate that we have detected the generator in the system
-            if (!last_reading.generatorDetected)
-            {
-                last_reading.generatorDetected = 1;
-                battery.setGenFound();
-            }
-
-            // reset timeout count since we have received data
-            last_reading.generatorTimeoutCnt = 0;
-
-            if (last_reading.generatorTimeoutErrorSet)
-            {
-                last_reading.generatorTimeoutErrorSet = 0;
-            }
-
-
-            // set the percentage of the battery based on fuel available
-            battery.setGenFuel(last_reading.fuelPct);
         }
-        else if (last_reading.msgType == 2)
+        else
         {
-            // EFI message received — reset ECU comms timeout
-            last_reading.efiTimeoutCnt = 0;
-
-            // If ECU comms were previously lost, announce restoration
-            if (last_reading.ecuCommsLost)
+            if (last_reading.lowVoltageWarningSent)
             {
-                last_reading.ecuCommsLost = 0;
-                gcs().send_text(MAV_SEVERITY_INFO, "ECU Communication Restored");
+                gcs().send_text(MAV_SEVERITY_WARNING,"GEN VOLTAGE NORMAL");
+                last_reading.lowVoltageWarningSent = 0;
             }
         }
-
-    } // if (get_reading())
+    } // if generatorDetected
 
     if (last_reading.engineDied)
     {
