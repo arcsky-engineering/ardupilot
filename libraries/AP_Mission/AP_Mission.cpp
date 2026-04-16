@@ -119,6 +119,9 @@ void AP_Mission::start()
 {
     _flags.state = MISSION_RUNNING;
 
+    // clear saved resume index since we are starting fresh
+    _last_index.set_and_save(0);
+
     reset(); // reset mission to the first command, resets jump tracking
 
     // advance to the first command
@@ -318,6 +321,10 @@ bool AP_Mission::clear()
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
     _flags.state = MISSION_STOPPED;
+
+    // clear saved resume index so old index doesn't persist into a new mission
+    _last_index.set_and_save(0);
+
     // return success
     return true;
 }
