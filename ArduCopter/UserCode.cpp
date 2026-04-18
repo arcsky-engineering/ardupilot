@@ -712,6 +712,7 @@ void Copter::userhook_MediumLoop()
                 if (last_reading.generatorTimeoutErrorSet)
                 {
                     last_reading.generatorTimeoutErrorSet = 0;
+                    gcs().send_text(MAV_SEVERITY_INFO, "Hybrid Module Communication Restored");
                 }
                 battery.setGenFuel(last_reading.fuelPct);
             }
