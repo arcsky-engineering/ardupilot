@@ -215,6 +215,7 @@ public:
         k_param_gen_fuel_fs_action = 107,
         k_param_gen_fuel_fs_pct = 108,
         k_param_gen_fuel_warn_pct = 109,
+        k_param_gen_baud = 258, // Hybrid Module serial baud rate select
 
         // 110: Telemetry control
         //
@@ -484,6 +485,7 @@ public:
     AP_Int8         gen_fuel_fs_pct;
     AP_Int8         gen_fuel_fs_action;
     AP_Int8         gen_fuel_warn_pct;
+    AP_Int8         gen_baud;
 
     AP_Int8         rfnd_fs_action;
     AP_Float        rfnd_avoid_dist_m;

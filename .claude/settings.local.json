@@ -14,7 +14,15 @@
       "Bash(/c/ProgramData/anaconda3/python.exe -c ':*)",
       "Bash(grep -E \"\\\\.\\(h|cc|cpp\\)$\")",
       "Bash(ls -d /c/qhl/QGCHL-Cstm/src/*/)",
-      "Read(//c/Users/js.LAPTOP-OK5IHI7D/Desktop/**)"
+      "Read(//c/Users/js.LAPTOP-OK5IHI7D/Desktop/**)",
+      "Read(//c/Users/js.LAPTOP-OK5IHI7D/VirtualBox VMs/**)",
+      "Read(//c/Users/js.LAPTOP-OK5IHI7D/**)",
+      "Bash(where VBoxManage.exe)",
+      "Bash(where vboximg-mount.exe)",
+      "Read(//c/Program Files/Oracle/VirtualBox/**)",
+      "Bash(where wsl.exe)",
+      "Bash(wsl.exe --list)",
+      "Bash(time grep *)"
     ]
   }
 }

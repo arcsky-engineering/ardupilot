@@ -759,6 +759,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 1
     GSCALAR(gen_fuel_warn_pct,  "GEN_FUEL_WRN_PCT",  20),
 
+    // @Param: GEN_BAUD
+    // @DisplayName: Hybrid Module serial baud rate
+    // @Description: Baud rate for the Hybrid Module generator serial link. Set to 1 (57600) when pairing with a Hybrid Module rectifier running firmware from before April 2026.
+    // @Values: 0:115200, 1:57600
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(gen_baud,  "GEN_BAUD",  0),
+
     // @Param: RFND_AVOID_DIST
     // @DisplayName: Rangefinder Avoidance Distance
     // @Description: Distance in m for the avoidance algorithm

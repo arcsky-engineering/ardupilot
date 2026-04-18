@@ -256,8 +256,10 @@ void Copter::userhook_init()
     // initialize the serial manager, according to how it's done in RichenPower
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
     if (uart != nullptr) {
-        // 115200 baud to match rectifier board (no more baud switching)
-        uart->begin(115200,256,256);
+        // baud is selected by GEN_BAUD param: 0=115200 (post-Apr-2026
+        // Hybrid Module), 1=57600 (pre-Apr-2026 Hybrid Module)
+        const uint32_t gen_baud = (g.gen_baud == 1) ? 57600 : 115200;
+        uart->begin(gen_baud, 256, 256);
         UART_FOUND = 1;
     }
 
