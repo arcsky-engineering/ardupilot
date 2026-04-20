@@ -731,6 +731,23 @@ void Copter::userhook_MediumLoop()
 } // Medium loop
 #endif
 
+// Arcsky-reserved DATA64 type IDs (u8 namespace — pick high to avoid collisions)
+static constexpr uint8_t ARCSKY_D64_IDENTITY = 200;
+static constexpr uint8_t ARCSKY_D64_HM       = 201;
+
+static void arcsky_send_data64(uint8_t type, const char *str)
+{
+    uint8_t buf[64] = {0};
+    const uint8_t len = MIN((uint8_t)strlen(str), (uint8_t)sizeof(buf));
+    memcpy(buf, str, len);
+    for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
+        const mavlink_channel_t ch = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
+        if (HAVE_PAYLOAD_SPACE(ch, DATA64)) {
+            mavlink_msg_data64_send(ch, type, len, buf);
+        }
+    }
+}
+
 #ifdef USERHOOK_SLOWLOOP
 void Copter::userhook_SlowLoop()
 {
@@ -1380,17 +1397,22 @@ void Copter::userhook_SlowLoop()
 #endif
 
     // --------------------------------------------------------------------------------------------------------
-    //      ARCSKY TELEMETRY METADATA (~ prefix: logged to tlog, hidden from GCS UI)
-    //      Messages are staggered: one message every 30s, alternating between types
+    //      ARCSKY TELEMETRY METADATA
+    //      STATUSTEXT (~ prefix) and/or DATA64 per META_TX bitmask.
+    //      DATA64 is invisible to the GCS text UI but logged to tlog.
+    //      Messages are staggered: one message every 30s, alternating between types.
     // --------------------------------------------------------------------------------------------------------
     static uint8_t metadataCnt;
     static uint8_t metadataSlot; // 0 = drone identity, 1 = hybrid module
-    if (++metadataCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
+    const uint8_t meta_mode = (uint8_t)copter.g.metadata_tx;
+    if (meta_mode != 0 && ++metadataCnt >= 100) // 100 ticks at 3.3 Hz ≈ 30 seconds
     {
+        char line[64];
+
         if (metadataSlot == 0)
         {
-            // --- Drone identity: ~ARCSKY,X55,<serial>,<flight_hours> ---
-            float fltHours = (float)(droneFlightTime) / 3600.0f;
+            // --- Drone identity: ARCSKY,X55,<serial>,<flight_hours> ---
+            const float fltHours = (float)(droneFlightTime) / 3600.0f;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             const char *uas_id = "1924A0123080000"; // test serial for SITL
 #elif AP_OPENDRONEID_ENABLED
@@ -1398,25 +1420,28 @@ void Copter::userhook_SlowLoop()
 #else
             const char *uas_id = nullptr;
 #endif
-            if (uas_id != nullptr) {
-                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,X55,%s,%.1f", uas_id, fltHours);
-            } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "~ARCSKY,X55,NO_SN,%.1f", fltHours);
-            }
+            hal.util->snprintf(line, sizeof(line), "ARCSKY,X55,%s,%.1f",
+                               uas_id != nullptr ? uas_id : "NO_SN", fltHours);
+
+            if (meta_mode & 0x1) { gcs().send_text(MAV_SEVERITY_INFO, "~%s", line); }
+            if (meta_mode & 0x2) { arcsky_send_data64(ARCSKY_D64_IDENTITY, line); }
         }
         else if (metadataSlot == 1)
         {
-            // --- Hybrid Module: ~HM,<serial>,HW<v>,FW<v>,<rt_hours>,<maint_hours> ---
+            // --- Hybrid Module: HM,<serial>,HW<v>,FW<v>,<rt_hours>,<maint_hours> ---
             if (last_reading.generatorDetected || last_reading.efiMsgReceived)
             {
-                float genRtHours = (float)(last_reading.runtime) / 3600.0f;
-                float genMaintHours = (float)(last_reading.seconds_until_maintenance) / 3600.0f;
-                gcs().send_text(MAV_SEVERITY_INFO, "~HM,%u,HW%u,FW%u,%.1f,%.1f",
+                const float genRtHours = (float)(last_reading.runtime) / 3600.0f;
+                const float genMaintHours = (float)(last_reading.seconds_until_maintenance) / 3600.0f;
+                hal.util->snprintf(line, sizeof(line), "HM,%u,HW%u,FW%u,%.1f,%.1f",
                     (unsigned)last_reading.serialNumber,
                     (unsigned)last_reading.hwVersion,
                     (unsigned)last_reading.fwVersion,
                     genRtHours,
                     genMaintHours);
+
+                if (meta_mode & 0x1) { gcs().send_text(MAV_SEVERITY_INFO, "~%s", line); }
+                if (meta_mode & 0x2) { arcsky_send_data64(ARCSKY_D64_HM, line); }
             }
         }
 

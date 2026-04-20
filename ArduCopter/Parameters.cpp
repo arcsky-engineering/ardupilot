@@ -767,6 +767,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @RebootRequired: True
     GSCALAR(gen_baud,  "GEN_BAUD",  0),
 
+    // @Param: META_TX
+    // @DisplayName: Arcsky metadata transmit mode
+    // @Description: Controls how per-unit identity and Hybrid Module metadata is streamed to the GCS. Bit 0 = STATUSTEXT with ~ prefix (visible in some GCS text panels). Bit 1 = DATA64 (invisible to GCS UI but logged to tlog).
+    // @Bitmask: 0:STATUSTEXT,1:DATA64
+    // @User: Standard
+    GSCALAR(metadata_tx,  "META_TX",  2),
+
     // @Param: RFND_AVOID_DIST
     // @DisplayName: Rangefinder Avoidance Distance
     // @Description: Distance in m for the avoidance algorithm
