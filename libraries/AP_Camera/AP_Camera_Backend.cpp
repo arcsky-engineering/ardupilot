@@ -100,8 +100,15 @@ void AP_Camera_Backend::update()
         return;
     }
 
-    // check vehicle has moved at least trigg_dist meters
-    if (current_loc.get_distance(last_location) < _params.trigg_dist) {
+    // check vehicle has moved at least trigg_dist meters. Default is 2D (horizontal)
+    // distance — the historical behavior, suitable for fixed-altitude lawn-mower
+    // surveys. The Use3DTriggerDistance option switches to 3D so vertical motion
+    // counts toward the threshold (e.g. facade / structure scans). Both Locations
+    // come from ahrs.get_location() so their alt frames match.
+    const float moved_m = option_is_enabled(Option::Use3DTriggerDistance)
+        ? current_loc.get_distance_NED(last_location).length()
+        : current_loc.get_distance(last_location);
+    if (moved_m < _params.trigg_dist) {
         return;
     }
 

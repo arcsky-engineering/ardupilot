@@ -569,6 +569,7 @@ public:
     AP_Int16 land_alt_low;
 
     // Rangefinder-based landing speed limiting
+    AP_Int8  land_rng_en;     // 1 = use rangefinder for landing speed limit (independent of RFND_BTN_EN)
     AP_Int16 land_rng_alt;    // altitude threshold for rangefinder speed limiting (cm)
     AP_Int16 land_rng_spd;    // max descent speed when rangefinder below land_rng_alt (cm/s)
 
@@ -700,7 +701,19 @@ public:
     AP_Int8  fwdavd_act_auto;   // action for auto modes (0=None, 1=RTL, 2=SmartRTL, 3=Land)
     AP_Int8  fwdavd_act_man;    // action for manual modes (0=None, 1=RTL, 2=SmartRTL, 3=Land, 4=Stop/Lockout)
     AP_Int8  fwdavd_chan;       // RC channel for master enable (0=always, 1-16=channel)
+    AP_Int8  fwdavd_btn_en;     // GCS soft enable for forward avoidance (0=use RC chan, 1=enable regardless of RC)
+    AP_Int8  rfnd_btn_en;       // GCS soft enable for downward rangefinder (0=disabled by GCS, 1=enabled by GCS)
 #endif
+
+    // Auto-mode camera tilt: when enabled, command gimbal pitch on entering/exiting AUTO mode.
+    AP_Int8  auto_tilt_en;      // 0=disabled, 1=enabled
+    AP_Float auto_tilt_dn_ang;  // pitch angle (deg) commanded on AUTO entry
+    AP_Float auto_tilt_up_ang;  // pitch angle (deg) commanded on AUTO exit
+
+    // Auto-mode resume climb: when enabled, the first WP after AUTO entry triggers a
+    // vertical climb to that WP's altitude before flying horizontally (only if airborne
+    // and below the WP's alt).
+    AP_Int8  auto_rsm_climb_en; // 0=disabled, 1=enabled
 };
 
 extern const AP_Param::Info        var_info[];

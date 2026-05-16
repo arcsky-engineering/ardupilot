@@ -321,6 +321,38 @@ void Copter::gpsglitch_check()
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
         }
     }
+
+    // TEMP DIAGNOSTIC: warn on sudden NSats drop.
+    // Tracks a ~3s rolling max (30 ticks at 10 Hz) and fires a GCS warning when
+    // current sat count drops by >=10 below that max. Cooldown 5 s to avoid spam.
+    // Remove once RF interference root cause is mitigated.
+    {
+        static uint8_t  ring[30] = {0};
+        static uint8_t  ring_idx = 0;
+        static uint32_t last_warn_ms = 0;
+        const uint8_t   DROP_THRESH  = 10;
+        const uint32_t  COOLDOWN_MS  = 5000;
+
+        const uint8_t cur_sats = gps.num_sats();
+        uint8_t recent_max = 0;
+        for (uint8_t i = 0; i < 30; i++) {
+            if (ring[i] > recent_max) recent_max = ring[i];
+        }
+
+        if (recent_max >= DROP_THRESH && cur_sats + DROP_THRESH <= recent_max) {
+            const uint32_t now_ms = AP_HAL::millis();
+            if (now_ms - last_warn_ms >= COOLDOWN_MS) {
+                last_warn_ms = now_ms;
+                gcs().send_text(MAV_SEVERITY_WARNING,
+                                "GPS sat drop: %u -> %u (HDop %.2f)",
+                                (unsigned)recent_max, (unsigned)cur_sats,
+                                (double)gps.get_hdop() * 0.01);
+            }
+        }
+
+        ring[ring_idx] = cur_sats;
+        ring_idx = (ring_idx + 1) % 30;
+    }
 }
 
 // dead reckoning alert and failsafe

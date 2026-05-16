@@ -275,6 +275,12 @@ private:
         float get_dist_for_logging() const;
         void invalidate_for_logging() { valid_for_logging = false; }
 
+        // true when surface tracking has recently pushed a terrain offset to
+        // the position controller (i.e. it's actually engaged). False when
+        // conditions failed for >SURFACE_TRACKING_TIMEOUT_MS or the mode just
+        // changed and hasn't run an update yet.
+        bool is_active() const { return valid_for_logging; }
+
         // surface tracking surface
         enum class Surface {
             NONE = 0,
@@ -433,7 +439,15 @@ private:
         bool terrain_problem;           // true if terrain data unavailable
         uint32_t last_terrain_warn_ms;  // last time we warned about terrain
         Mode::Number prev_mode;         // mode before avoidance was triggered
+        uint8_t last_status_sent;       // last 3-state status broadcast to GCS (0=disabled,1=armed-inactive,2=active)
+        uint32_t last_status_send_ms;   // last time we broadcast NAMED_VALUE_INT status
     } fwdavd_state;
+
+    // downward rangefinder GCS status indicator state
+    struct {
+        uint8_t last_status_sent;       // last 3-state status broadcast (0=disabled,1=enabled-no-data,2=active)
+        uint32_t last_status_send_ms;   // last time we broadcast NAMED_VALUE_INT status
+    } rfnd_status_state;
 #endif
 
     // Motor Output
@@ -760,6 +774,9 @@ private:
     void handle_fwdavd_stop_lockout();
     void check_fwdavd_stick_unlock();
     bool fwdavd_stick_locked() const;
+    uint8_t compute_fwdavd_status();
+    void send_fwdavd_status(int32_t value);
+    void update_fwdavd_status();
 #endif
 
     // baro_ground_effect.cpp
@@ -980,6 +997,11 @@ private:
     bool rangefinder_up_ok() const;
     void update_rangefinder_terrain_offset();
     void update_optical_flow(void);
+#if AP_RANGEFINDER_ENABLED
+    uint8_t compute_rfnd_status();
+    void send_rfnd_status(int32_t value);
+    void update_rfnd_status();
+#endif
 
     // takeoff_check.cpp
     void takeoff_check();

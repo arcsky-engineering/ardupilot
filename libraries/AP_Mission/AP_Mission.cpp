@@ -337,6 +337,24 @@ void AP_Mission::truncate(uint16_t index)
         _cmd_total.set_and_save(index);
         _last_change_time_ms = AP_HAL::millis();
     }
+    // clear saved resume index whenever mission contents may have changed
+    // (handles GCS mission upload, which calls truncate() but not clear())
+    _last_index.set_and_save(0);
+
+    // invalidate the cached nav/do command state so the next start_or_resume()
+    // doesn't keep navigating to a stale index from the previous mission. Without
+    // this, a mid-flight upload leaves _nav_cmd.index pointing at the old WP and
+    // resume() reads whatever lives at that index in the *new* mission.
+    // Note: _flags.state is intentionally left alone so a running mission stays
+    // running; mode_auto's mis_change_detector + advance_current_nav_cmd() will
+    // pick up the first command of the new mission on the next update().
+    _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+    _flags.nav_cmd_loaded = false;
+    _flags.do_cmd_loaded = false;
+    _prev_nav_cmd_id = AP_MISSION_CMD_ID_NONE;
+    _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+    _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
 }
 
 /// update - ensures the command queues are loaded with the next command and calls main programs command_init and command_verify functions to progress the mission

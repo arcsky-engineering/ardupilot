@@ -355,6 +355,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return false;
     }
 
+    // capture the outgoing mode for transition detection below (e.g. AUTO entry/exit gimbal tilt)
+    const Mode::Number prev_mode_number = flightmode->mode_number();
+
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
@@ -381,6 +384,22 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
 #if AP_CAMERA_ENABLED
     camera.set_is_auto_mode(flightmode->mode_number() == Mode::Number::AUTO);
+#endif
+
+#if HAL_MOUNT_ENABLED
+    // Auto-mode camera tilt: command gimbal down on entering AUTO, back up on any AUTO exit.
+    // ModeAuto::do_RTL() and ModeAuto::do_land() also fire the tilt-up command so the gimbal
+    // returns to neutral when the mission begins its RTL/landing leg even though the mode
+    // stays AUTO (those legs run inside the AUTO mode, not as separate flight modes).
+    if (g2.auto_tilt_en) {
+        const bool entering_auto = (mode == Mode::Number::AUTO && prev_mode_number != Mode::Number::AUTO);
+        const bool exiting_auto  = (prev_mode_number == Mode::Number::AUTO && mode != Mode::Number::AUTO);
+        if (entering_auto) {
+            camera_mount.set_angle_target(0.0f, g2.auto_tilt_dn_ang.get(), 0.0f, false);
+        } else if (exiting_auto) {
+            camera_mount.set_angle_target(0.0f, g2.auto_tilt_up_ang.get(), 0.0f, false);
+        }
+    }
 #endif
 
     // set rate shaping time constants
@@ -960,6 +979,80 @@ float Mode::get_avoidance_adjusted_climbrate(float target_rate)
     return target_rate;
 #endif
 }
+
+#if AP_RANGEFINDER_ENABLED
+// Rangefinder-based descent speed limit.
+//
+// Profile (commanded descent speed as a function of rangefinder altitude h):
+//
+//   v
+//   ^
+//   |━━━━━━━━━━━━━━━━━━━┓
+//   |   pilot speed      ╲     ← deceleration happens HERE (decel band just
+//   |                     ╲      above LAND_RNG_ALT — small, ~0.4s for typical
+//   |                      ╲     settings)
+//   |                       ┗━━━━━━━━━━━━━━━━━
+//   |                        LAND_RNG_SPD (constant all the way to ground)
+//   +──────────────────────┴───────────> h
+//                       LAND_RNG_ALT
+//
+// Below LAND_RNG_ALT: descent is hard-clamped at LAND_RNG_SPD (or the 30 cm/s
+// floor, whichever is greater) — constant slow speed all the way to the ground.
+//
+// Above LAND_RNG_ALT: the limit only engages in a small decel band immediately
+// above the threshold. The band size is determined by physics — the distance
+// needed to bleed from pilot speed down to floor speed using the position
+// controller's max accel:
+//
+//   v_safe(h) = sqrt(floor_speed^2 + 2 * a * (h - LAND_RNG_ALT))
+//
+// Above the band v_safe is larger than any pilot speed, so the pilot's request
+// passes through unchanged. As the vehicle enters the band, v_safe drops to
+// meet the pilot's request and then ramps down to floor_speed at h = LAND_RNG_ALT.
+// The deceleration is matched to what the position controller can actually
+// achieve, so the position target never falls behind the vehicle — no
+// "sudden stop" transient from the PSC overshooting to recover.
+//
+// Continuous at h = LAND_RNG_ALT (v_safe equals floor_speed there).
+float Mode::apply_rangefinder_descent_limit(float target_rate)
+{
+    if (g2.land_rng_en == 0 || target_rate >= 0) {
+        return target_rate;
+    }
+
+    // This feature is independent of RFND_BTN_EN (terrain-following enable).
+    // alt_healthy means the rangefinder reported Status::Good this cycle AND
+    // has produced >=3 consecutive valid samples — covers "not out of range,
+    // not stale, not missing". If the sensor degrades mid-descent the gate
+    // releases immediately and the pilot gets full stick authority back.
+    if (!copter.rangefinder_state.alt_healthy) {
+        return target_rate;
+    }
+
+    // Use the current tilt-corrected rangefinder reading directly — this is
+    // what the sensor sees right now, matching the "how far am I from the
+    // ground" mental model. No filter delay, no inertial interpolation.
+    const int32_t rng_alt_cm = (int32_t)copter.rangefinder_state.alt_cm;
+    if (rng_alt_cm <= 0) {
+        return target_rate;
+    }
+
+    const float floor_speed = MAX((float)abs(g2.land_rng_spd), 30.0f);
+
+    // Below threshold: hard clamp at floor speed.
+    if ((float)rng_alt_cm <= (float)g2.land_rng_alt) {
+        return MAX(target_rate, -floor_speed);
+    }
+
+    // Above threshold: bleed from pilot speed down to floor speed across a
+    // small band, sized so the deceleration completes by the time the vehicle
+    // crosses LAND_RNG_ALT. Far above the band, sqrt is large and pilot wins.
+    const float accel_cmss = pos_control->get_max_accel_z_cmss();
+    const float above_thresh_cm = (float)rng_alt_cm - (float)g2.land_rng_alt;
+    const float safe_speed = sqrtf(sq(floor_speed) + 2.0f * accel_cmss * above_thresh_cm);
+    return MAX(target_rate, -safe_speed);
+}
+#endif
 
 // send output to the motors, can be overridden by subclasses
 void Mode::output_to_motors()

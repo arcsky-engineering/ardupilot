@@ -23,6 +23,9 @@
 bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
+    // clear the LOITER fallback on every fresh entry so it can only fire from
+    // conditions observed during this AUTO session
+    post_land_loiter_ms = 0;
     if (mission.num_commands() > 1 || ignore_checks) {
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
@@ -46,6 +49,15 @@ bool ModeAuto::init(bool ignore_checks)
 
         // set flag to start mission
         waiting_to_start = true;
+
+        // arm resume-climb: the first WP after AUTO entry will trigger a vertical climb
+        // to its altitude before flying horizontally, if we are airborne and below it
+        resume_climb_first_wp = true;
+        resume_climb_pending = false;
+
+        // arm resume-trigger-distance restore: we may stash a value on the first do_nav_wp
+        resume_pending_trig_dist = false;
+        resume_pending_trig_dist_m = 0.0f;
 
         // initialise mission change check (ignore results)
         IGNORE_RETURN(mis_change_detector.check_for_mission_change());
@@ -77,6 +89,13 @@ void ModeAuto::exit()
     copter.camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
 
+#if AP_CAMERA_ENABLED
+    // Zero CAM_TRIG_DIST so a breakout to LOITER (or hot-swap transit) doesn't fire the
+    // shutter. The original value, if it was set by a DO_SET_CAM_TRIGG_DIST in the mission
+    // before our resume index, is restored on the first WP reached after AUTO is re-entered.
+    copter.camera.set_trigger_distance(0);
+#endif
+
     auto_RTL = false;
 }
 
@@ -84,6 +103,24 @@ void ModeAuto::exit()
 //      should be called at 100hz or more
 void ModeAuto::run()
 {
+    // if disarmed and on the ground in AUTO, fall back to LOITER after the delay.
+    // Catches a completed mission-land (regardless of which code path disarmed) and
+    // a pilot accidentally selecting AUTO while on the ground. The timestamp is
+    // cleared on every fresh entry to AUTO (see init()), so this can't carry over
+    // from a previous session, and is reset whenever the pilot re-arms.
+    if (!motors->armed() && copter.ap.land_complete) {
+        if (post_land_loiter_ms == 0) {
+            post_land_loiter_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - post_land_loiter_ms > POST_LAND_LOITER_DELAY_MS) {
+            post_land_loiter_ms = 0;
+            if (copter.set_mode(Mode::Number::LOITER, ModeReason::MISSION_END)) {
+                return;
+            }
+        }
+    } else {
+        post_land_loiter_ms = 0;
+    }
+
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
@@ -101,7 +138,13 @@ void ModeAuto::run()
         if (mis_change_detector.check_for_mission_change()) {
             // if mission is running restart the current command if it is a waypoint or spline command
             if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
-                if (mission.restart_current_nav_cmd()) {
+                // A fresh mission upload runs through AP_Mission::truncate(), which
+                // invalidates _nav_cmd so get_current_nav_index() reports 0. In that
+                // case mission.update() will pick up the new mission's first command
+                // on the next tick - this is normal, not a failure.
+                if (mission.get_current_nav_index() == 0) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Auto mission reloaded, starting from beginning");
+                } else if (mission.restart_current_nav_cmd()) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
                 } else {
                     // failed to restart mission for some reason
@@ -1562,7 +1605,53 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // get waypoint's location from command and send to wp_nav
     const Location target_loc = loc_from_cmd(cmd, default_loc);
 
-    if (!wp_start(target_loc)) {
+    // On the first WP after entering AUTO, if we're airborne and below the WP altitude,
+    // climb straight up to the WP altitude before flying horizontally. Without this, a
+    // mission resume can fly the vehicle diagonally toward a higher WP, risking obstacle
+    // strikes since the takeoff WP is no longer being executed.
+    const bool first_wp = resume_climb_first_wp;
+    resume_climb_first_wp = false;
+
+#if AP_CAMERA_ENABLED
+    // On the first WP after entering AUTO, scan the mission backward from this command
+    // for the most recent DO_SET_CAM_TRIGG_DIST. If found, stash its value to be applied
+    // once we reach this WP (the resume target). Camera stays off through the transit.
+    if (first_wp && cmd.index > 1) {
+        AP_Mission::Mission_Command tmp_cmd;
+        for (uint16_t i = cmd.index; i-- > 1;) {
+            if (!mission.read_cmd_from_storage(i, tmp_cmd)) {
+                continue;
+            }
+            if (tmp_cmd.id == MAV_CMD_DO_SET_CAM_TRIGG_DIST) {
+                resume_pending_trig_dist = true;
+                resume_pending_trig_dist_m = tmp_cmd.content.cam_trigg_dist.meters;
+                gcs().send_text(MAV_SEVERITY_INFO,
+                                "Resume: will set CAM_TRIG_DIST=%.1fm at WP %u",
+                                (double)resume_pending_trig_dist_m, (unsigned)cmd.index);
+                break;
+            }
+        }
+    }
+#endif
+
+    Location wp_target = target_loc;
+    if (first_wp && copter.g2.auto_rsm_climb_en && motors->armed() && !copter.ap.land_complete) {
+        int32_t curr_alt_cm;
+        if (copter.current_loc.get_alt_cm(target_loc.get_alt_frame(), curr_alt_cm)) {
+            const int32_t climb_threshold_cm = 100; // ignore differences under 1m
+            if (target_loc.alt > curr_alt_cm + climb_threshold_cm) {
+                // build a vertical-only target: hold current xy, climb to target alt
+                wp_target = copter.current_loc;
+                wp_target.set_alt_cm(target_loc.alt, target_loc.get_alt_frame());
+                resume_climb_dest = target_loc;
+                resume_climb_pending = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: climbing %.1fm before resuming WP",
+                                (double)((target_loc.alt - curr_alt_cm) * 0.01f));
+            }
+        }
+    }
+
+    if (!wp_start(wp_target)) {
         // failure to set next destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -1573,11 +1662,14 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
 
-    // set next destination if necessary
-    if (!set_next_wp(cmd, target_loc)) {
-        // failure to set next destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
+    // set next destination if necessary (skip during resume-climb; we'll set it once the
+    // real destination is loaded after the climb completes)
+    if (!resume_climb_pending) {
+        if (!set_next_wp(cmd, target_loc)) {
+            // failure to set next destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
     }
 }
 
@@ -1637,6 +1729,14 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
 // do_land - initiate landing procedure
 void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_MOUNT_ENABLED
+    // Auto-mode camera tilt: when the mission begins its landing leg, return gimbal pitch
+    // to the configured neutral angle (paired with the tilt-down on AUTO entry).
+    if (copter.g2.auto_tilt_en) {
+        copter.camera_mount.set_angle_target(0.0f, copter.g2.auto_tilt_up_ang.get(), 0.0f, false);
+    }
+#endif
+
     // To-Do: check if we have already landed
 
     // if location provided we fly to that location at current altitude
@@ -2056,6 +2156,14 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 // do_RTL - start Return-to-Launch
 void ModeAuto::do_RTL(void)
 {
+#if HAL_MOUNT_ENABLED
+    // Auto-mode camera tilt: when the mission begins its RTL leg, return gimbal pitch
+    // to the configured neutral angle. Pairs with the tilt-down command issued on AUTO entry.
+    if (copter.g2.auto_tilt_en) {
+        copter.camera_mount.set_angle_target(0.0f, copter.g2.auto_tilt_up_ang.get(), 0.0f, false);
+    }
+#endif
+
     // start rtl in auto flight mode
     rtl_start();
 }
@@ -2230,6 +2338,34 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if ( !copter.wp_nav->reached_wp_destination() ) {
         return false;
     }
+
+    // resume-climb has reached target altitude: now switch to the real WP destination
+    if (resume_climb_pending) {
+        resume_climb_pending = false;
+        if (!wp_start(resume_climb_dest)) {
+            copter.failsafe_terrain_on_event();
+            return false;
+        }
+        // pre-load the next WP for trajectory smoothing now that the real destination is set
+        if (!set_next_wp(cmd, resume_climb_dest)) {
+            copter.failsafe_terrain_on_event();
+            return false;
+        }
+        return false;
+    }
+
+#if AP_CAMERA_ENABLED
+    // We have arrived at the resume WP. If a CAM_TRIG_DIST value was stashed from the
+    // pre-resume portion of the mission, apply it now so capture resumes at the right
+    // point. Done before the loiter-timer logic so triggering starts the moment we arrive.
+    if (resume_pending_trig_dist) {
+        resume_pending_trig_dist = false;
+        copter.camera.set_trigger_distance(resume_pending_trig_dist_m);
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "Resume: CAM_TRIG_DIST restored to %.1fm",
+                        (double)resume_pending_trig_dist_m);
+    }
+#endif
 
     // start timer if necessary
     if (loiter_time == 0) {

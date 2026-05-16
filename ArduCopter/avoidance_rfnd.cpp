@@ -20,6 +20,10 @@
 // update forward rangefinder avoidance - called at 10Hz
 void Copter::avoidance_rfnd_update()
 {
+    // emit QGC status indicator (uses last-cycle fwdavd_state.active so it
+    // runs even when the body below early-returns).
+    update_fwdavd_status();
+
     // check if feature is enabled at all
     if (g2.fwdavd_enable == 0) {
         return;
@@ -168,23 +172,28 @@ bool Copter::is_fwdavd_enabled_for_mode()
     }
 }
 
-// check activation condition (RC master switch AND altitude gating)
+// check activation condition (RC master switch OR GCS button, AND altitude gating)
 bool Copter::check_fwdavd_activation()
 {
-    // Check RC channel master switch - must be configured to valid channel (6-11)
-    const int8_t rc_chan_num = g2.fwdavd_chan.get();
-    if (rc_chan_num < 5 || rc_chan_num > 11) {
-        // No valid RC channel configured - feature disabled
+    // Master gate: FWDAVD_BTN_EN parameter must be on. If 0, feature is OFF
+    // regardless of any RC switch.
+    if (g2.fwdavd_btn_en.get() == 0) {
         return false;
     }
 
-    const RC_Channel *rc_chan = rc().channel(rc_chan_num - 1);
-    if (rc_chan == nullptr || failsafe.radio) {
-        return false;
-    }
-    if (rc_chan->get_radio_in() <= 1500) {
-        // RC switch is low - feature disabled
-        return false;
+    // If an RC channel is configured for the feature (FWDAVD_CHAN != 0), the
+    // switch on that channel must also be high. Without a configured channel,
+    // the parameter alone enables the feature. rc().channel() returns nullptr
+    // for out-of-range indices, so we don't need an upper bound here.
+    const int8_t rc_chan_num = g2.fwdavd_chan.get();
+    if (rc_chan_num != 0) {
+        if (failsafe.radio) {
+            return false;
+        }
+        const RC_Channel *rc_chan = rc().channel(rc_chan_num - 1);
+        if (rc_chan == nullptr || rc_chan->get_radio_in() <= 1500) {
+            return false;
+        }
     }
 
     // Now check altitude condition
@@ -194,8 +203,18 @@ bool Copter::check_fwdavd_activation()
             return true;
 
         case 1: {
-            // altitude above home/EKF origin
-            const float alt_m = inertial_nav.get_position_z_up_cm() * 0.01f;
+            // altitude above home (resets on arm); falls back to alt-above-origin
+            // if home isn't set yet (matches inertia.cpp behaviour).
+            int32_t alt_cm;
+            if (!current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm)) {
+                static uint32_t last_no_home_warn_ms = 0;
+                if (last_no_home_warn_ms == 0 || (AP_HAL::millis() - last_no_home_warn_ms) > 5000) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Forward Avoidance: No home altitude");
+                    last_no_home_warn_ms = AP_HAL::millis();
+                }
+                return false;
+            }
+            const float alt_m = alt_cm * 0.01f;
             const float threshold_m = g2.fwdavd_alt;
             if (alt_m < threshold_m) {
                 // notify periodically when RC is on but altitude is too low
@@ -384,6 +403,135 @@ void Copter::check_fwdavd_stick_unlock()
 bool Copter::fwdavd_stick_locked() const
 {
     return fwdavd_state.stick_locked;
+}
+
+// compute 5-state QGC indicator:
+//   0 = Disabled       — master gate off (param 0 or RC switch low when configured)
+//   1 = Standby        — master on but altitude/mode/health gate not met, or no
+//                        useful sensor reading (NotConnected/NoData/OutOfRange)
+//   2 = Monitoring     — all gates met, sensor Good, distance >= FWDAVD_DIST
+//   3 = Threat         — all gates met, sensor Good, distance < FWDAVD_DIST,
+//                        but no avoidance action firing yet
+//   4 = Blocking       — avoidance action firing (triggered or stick_locked)
+// Idempotent and side-effect free (no GCS messages).
+uint8_t Copter::compute_fwdavd_status()
+{
+    // Disabled if the bitmask is zero (feature unconfigured).
+    if (g2.fwdavd_enable == 0) {
+        return 0;
+    }
+
+    // Master gate: parameter must be on.
+    if (g2.fwdavd_btn_en.get() == 0) {
+        return 0;
+    }
+
+    // If an RC channel is configured, the switch must be high. Without a
+    // configured channel, the parameter alone enables.
+    const int8_t rc_chan_num = g2.fwdavd_chan.get();
+    if (rc_chan_num != 0) {
+        if (failsafe.radio) {
+            return 0;
+        }
+        const RC_Channel *rc_chan = rc().channel(rc_chan_num - 1);
+        if (rc_chan == nullptr || rc_chan->get_radio_in() <= 1500) {
+            return 0;
+        }
+    }
+
+    // Blocking (avoidance action firing) takes priority over the gates below.
+    // If we triggered RTL/Land or locked sticks in response to an obstacle,
+    // the indicator should reflect that even if altitude/mode have since
+    // changed as a result.
+    if (fwdavd_state.triggered || fwdavd_state.stick_locked) {
+        return 4;
+    }
+
+    // Evaluate altitude / terrain gate inline so the indicator works while disarmed
+    // too (avoidance_rfnd_update force-resets fwdavd_state.active when disarmed).
+    bool altitude_ok = false;
+    switch (g2.fwdavd_cond.get()) {
+        case 0:
+            altitude_ok = true;
+            break;
+        case 1: {
+            int32_t alt_cm;
+            if (current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm)) {
+                altitude_ok = (alt_cm * 0.01f) >= g2.fwdavd_alt.get();
+            }
+            break;
+        }
+        case 2: {
+#if AP_TERRAIN_AVAILABLE
+            if (terrain.enabled()) {
+                float terr_alt = 0.0f;
+                if (terrain.height_above_terrain(terr_alt, true)) {
+                    altitude_ok = terr_alt >= g2.fwdavd_alt.get();
+                }
+            }
+#endif
+            break;
+        }
+        default:
+            break;
+    }
+    if (!altitude_ok) {
+        return 1;
+    }
+
+    if (!is_fwdavd_enabled_for_mode()) {
+        return 1;
+    }
+
+    // Forward-facing rangefinder must be present and producing a usable reading.
+    // For the new icon logic: only Status::Good counts as "useful data" — out-of-
+    // range and no-data both mean "nothing to act on", which maps to Standby
+    // (gray icon). When we get a valid Good reading we then split into
+    // Monitoring/Threat by distance.
+    const RangeFinder *rngfnd = RangeFinder::get_singleton();
+    if (rngfnd == nullptr) {
+        return 1;
+    }
+    const RangeFinder::Status rf_status = rngfnd->status_orient(ROTATION_NONE);
+    if (rf_status != RangeFinder::Status::Good) {
+        return 1;
+    }
+
+    // Sensor is producing a valid reading — check against the trigger threshold.
+    const float distance_m = rngfnd->distance_cm_orient(ROTATION_NONE) * 0.01f;
+    const float threshold_m = g2.fwdavd_dist;
+    if (distance_m > 0.0f && distance_m < threshold_m) {
+        return 3;  // threat in band, action may be debouncing toward firing
+    }
+
+    return 2;  // monitoring, clear
+}
+
+// broadcast the FWDAVD_ST status as NAMED_VALUE_INT to all active GCS channels.
+void Copter::send_fwdavd_status(int32_t value)
+{
+    mavlink_named_value_int_t packet {};
+    packet.time_boot_ms = AP_HAL::millis();
+    packet.value = value;
+    const char name[] = "FWDAVD_ST";
+    memcpy(packet.name, name, MIN(sizeof(name) - 1, (size_t)MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN));
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_INT, (const char *)&packet);
+}
+
+// send the QGC status on transition or every ~2s as a heartbeat.
+void Copter::update_fwdavd_status()
+{
+    const uint8_t status = compute_fwdavd_status();
+    const uint32_t now_ms = AP_HAL::millis();
+
+    const bool changed = (status != fwdavd_state.last_status_sent);
+    const bool heartbeat = (now_ms - fwdavd_state.last_status_send_ms) >= 2000;
+
+    if (changed || heartbeat) {
+        send_fwdavd_status(status);
+        fwdavd_state.last_status_sent = status;
+        fwdavd_state.last_status_send_ms = now_ms;
+    }
 }
 
 #endif  // AP_RANGEFINDER_ENABLED

@@ -1309,11 +1309,62 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: FWDAVD_CHAN
     // @DisplayName: Forward Avoidance RC Channel
-    // @Description: RC channel number (6-11) used as master enable/disable switch for forward avoidance. Feature is disabled unless a valid channel (6-11) is configured. When configured, avoidance is only active when that channel PWM > 1500.
-    // @Values: 0:Disabled,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11
+    // @Description: Optional RC channel number used as a runtime gate for forward avoidance. Set to 0 to disable (parameter FWDAVD_BTN_EN alone enables the feature). If non-zero, the switch on that channel must be high (PWM > 1500) for the feature to act, AND FWDAVD_BTN_EN must also be 1. The parameter is the master gate — setting it to 0 turns the feature off regardless of switch position.
+    // @Range: 0 16
     // @User: Standard
     AP_GROUPINFO("FWDAVD_CHAN", 18, ParametersG2, fwdavd_chan, 0),
+
+    // @Param: FWDAVD_BTN_EN
+    // @DisplayName: Forward Avoidance Master Enable
+    // @Description: Master enable for forward rangefinder avoidance, driven by a GCS button or parameter. When 0, the feature is OFF regardless of any RC switch. When 1, the feature is enabled — or, if FWDAVD_CHAN is non-zero, controlled by that RC switch (switch must be high to activate).
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("FWDAVD_BTN_EN", 19, ParametersG2, fwdavd_btn_en, 0),
+
+    // @Param: RFND_BTN_EN
+    // @DisplayName: Downward Rangefinder GCS Button Enable
+    // @Description: Soft enable for the downward rangefinder, driven by a GCS button. When this parameter changes from the GCS, the downward rangefinder enable state is updated to match (1 = enabled, 0 = disabled). On boot the value is recorded but not applied, so hardware-detected enable state from init_rangefinder() is preserved. RC AUX_FUNC RANGEFINDER (option 28) still works in parallel.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("RFND_BTN_EN", 20, ParametersG2, rfnd_btn_en, 1),
 #endif
+
+    // @Param: AUTO_TILT_EN
+    // @DisplayName: Auto-Mode Camera Tilt Enable
+    // @Description: When enabled, the camera gimbal pitch is automatically commanded down (AUTO_TILT_DN) when entering AUTO mode and back to a neutral angle (AUTO_TILT_UP) when leaving AUTO. Mission gimbal commands (MAV_CMD_DO_MOUNT_CONTROL etc.) still take effect after the initial entry command, so mission-driven gimbal control is preserved.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("AUTO_TILT_EN", 21, ParametersG2, auto_tilt_en, 0),
+
+    // @Param: AUTO_TILT_DN
+    // @DisplayName: Auto-Mode Camera Tilt-Down Angle
+    // @Description: Pitch angle in degrees commanded to the camera when AUTO mode is entered. Negative values point the camera down; -90 is straight down (nadir). Has no effect if AUTO_TILT_EN is 0.
+    // @Units: deg
+    // @Range: -90 30
+    // @User: Standard
+    AP_GROUPINFO("AUTO_TILT_DN", 22, ParametersG2, auto_tilt_dn_ang, -90.0f),
+
+    // @Param: AUTO_TILT_UP
+    // @DisplayName: Auto-Mode Camera Tilt-Up Angle
+    // @Description: Pitch angle in degrees commanded to the camera when AUTO mode is exited. 0 is level/forward; positive values angle the camera up. Has no effect if AUTO_TILT_EN is 0.
+    // @Units: deg
+    // @Range: -90 30
+    // @User: Standard
+    AP_GROUPINFO("AUTO_TILT_UP", 23, ParametersG2, auto_tilt_up_ang, 0.0f),
+
+    // @Param: AUTO_RSM_CLIMB
+    // @DisplayName: Auto-Mode Resume Climb Enable
+    // @Description: When enabled, the first waypoint after entering AUTO triggers a vertical climb to that WP's altitude before flying horizontally, but only if the vehicle is airborne and below the WP altitude. This avoids diagonal flight into obstacles when resuming a mission mid-air. The behavior is skipped on the ground (NAV_TAKEOFF handles takeoff) and skipped if the WP is at or below current altitude.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("AUTO_RSM_CLIMB", 24, ParametersG2, auto_rsm_climb_en, 1),
+
+    // @Param: LAND_RNG_EN
+    // @DisplayName: Rangefinder Landing Speed Limit Enable
+    // @Description: When set, the downward rangefinder is used to limit descent speed near the ground (per LAND_RNG_ALT / LAND_RNG_SPD) regardless of whether the rangefinder is enabled for terrain following (RFND_BTN_EN). The rangefinder hardware must still be installed and producing healthy data. Set to 0 to disable the feature entirely.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("LAND_RNG_EN", 25, ParametersG2, land_rng_en, 0),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 

@@ -272,13 +272,8 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
 
 #if AP_RANGEFINDER_ENABLED
         case AUX_FUNC::RANGEFINDER:
-            // enable or disable the rangefinder
-            if ((ch_flag == AuxSwitchPos::HIGH) &&
-                copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
-                copter.rangefinder_state.enabled = true;
-            } else {
-                copter.rangefinder_state.enabled = false;
-            }
+            // No-op: rangefinder enable is re-evaluated every cycle in read_rangefinder()
+            // from RFND_BTN_EN (master gate) and this switch's live position.
             break;
 #endif // AP_RANGEFINDER_ENABLED
 

@@ -194,6 +194,12 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
 {
     WITH_SEMAPHORE(_sem);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL has no real Remote ID module to talk to, so unconditionally pass.
+    // This keeps the production check intact on real flight hardware.
+    return true;
+#endif
+
     if (!option_enabled(Options::EnforceArming)) {
         return true;
     }
@@ -236,6 +242,13 @@ void AP_OpenDroneID::update()
         AP::ahrs().get_location(_takeoff_location);
     }
     _was_armed = armed;
+
+    // Auto-clear pilot emergency if the GCS stops sending SELF_ID (e.g. QGC closed
+    // mid-emergency). Without this we'd broadcast EMERGENCY indefinitely until reboot.
+    if (_pilot_emergency && (AP_HAL::millis() - _last_self_id_ms) > PILOT_EMERGENCY_TIMEOUT_MS) {
+        _pilot_emergency = false;
+        gcs().send_text(MAV_SEVERITY_INFO, "ODID: pilot emergency auto-cleared (GCS link stale)");
+    }
 
     send_dynamic_out();
     send_static_out();
@@ -280,12 +293,14 @@ void AP_OpenDroneID::send_static_out()
 {
     const uint32_t now_ms = AP_HAL::millis();
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     // Suppress warnings during boot grace period (30 seconds) to allow
     // GCS and transmitter time to establish communication
     const uint32_t boot_grace_period_ms = 30000;
     const bool in_grace_period = (now_ms - _init_time_ms) < boot_grace_period_ms;
 
-    // we need to notify user if we lost the transmitter (but not during boot)
+    // we need to notify user if we lost the transmitter (but not during boot).
+    // Skipped on SITL — there is no real DB201 transmitter, so this would spam forever.
     if (!in_grace_period && now_ms - last_arm_status_ms > 5000) {
         if (now_ms - last_lost_tx_ms > 5000) {
             last_lost_tx_ms = now_ms;
@@ -296,6 +311,7 @@ void AP_OpenDroneID::send_static_out()
         last_lost_tx_ms = 0;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Remote ID: regained connection");
     }
+#endif
 
     // Note: "lost operator location" warning removed - DB201 handles this check
     // and reports via ARM_STATUS. Pre-arm will fail with user-friendly message
@@ -381,6 +397,14 @@ void AP_OpenDroneID::send_location_message()
 
     // if we have watchdogged while armed then declare an emergency
     if (hal.util->was_watchdog_armed()) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+
+    // pilot-declared emergency from GCS (latched from incoming OPEN_DRONE_ID_SELF_ID
+    // with description_type == MAV_ODID_DESC_TYPE_EMERGENCY). The SelfID forward path
+    // to the DB201 is disabled in this build, so we mirror the emergency state into
+    // Location.status which is forwarded and broadcast.
+    if (_pilot_emergency) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
 
@@ -770,6 +794,10 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
+        // Pilot emergency piggybacks on Location.status because we don't forward SelfID
+        // to the DB201. Latch on description_type==1 (EMERGENCY), clear on any other type.
+        _pilot_emergency = (pkt_self_id.description_type == MAV_ODID_DESC_TYPE_EMERGENCY);
+        _last_self_id_ms = AP_HAL::millis();
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID: {
         mavlink_open_drone_id_basic_id_t tmp;

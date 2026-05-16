@@ -38,7 +38,8 @@ public:
 
     // camera options parameter values
     enum class Option : uint8_t {
-        RecordWhileArmed = (1 << 0U)
+        RecordWhileArmed     = (1 << 0U),
+        Use3DTriggerDistance = (1 << 1U),
     };
     bool option_is_enabled(Option option) const {
         return ((uint8_t)_params.options.get() & (uint8_t)option) != 0;

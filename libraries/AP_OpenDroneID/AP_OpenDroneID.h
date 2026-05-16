@@ -149,6 +149,14 @@ private:
     mavlink_open_drone_id_self_id_t pkt_self_id;
     mavlink_open_drone_id_operator_id_t pkt_operator_id;
 
+    // Pilot-driven emergency latch: set when GCS sends SELF_ID with description_type
+    // == MAV_ODID_DESC_TYPE_EMERGENCY, cleared when GCS sends SELF_ID with any other
+    // description_type. Mirrored into Location.status so the existing LOCATION->DB201
+    // path carries pilot emergencies (the SelfID forward path is intentionally disabled).
+    bool     _pilot_emergency = false;
+    uint32_t _last_self_id_ms = 0;     // ms timestamp of last SELF_ID receipt (for staleness fail-safe)
+    static constexpr uint32_t PILOT_EMERGENCY_TIMEOUT_MS = 30000;  // auto-clear pilot emergency if SELF_ID stops
+
     // last time we got a SYSTEM message
     uint32_t last_system_ms;
 

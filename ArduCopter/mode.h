@@ -182,6 +182,15 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
+#if AP_RANGEFINDER_ENABLED
+    // returns climb target_rate clamped to a sqrt-stopping-distance profile
+    // when the downward rangefinder reports altitude near the ground. Above
+    // LAND_RNG_ALT the rate is unchanged. The limit smoothly tightens as the
+    // vehicle descends, ending at -LAND_RNG_SPD at the surface — no step
+    // input into the position controller, so no deceleration transient.
+    float apply_rangefinder_descent_limit(float target_rate);
+#endif
+
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
 
@@ -646,6 +655,16 @@ private:
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
+    // ground-in-AUTO LOITER fallback: switch back to LOITER after a delay if the
+    // aircraft is disarmed on the ground in AUTO. Driven by the conditions checked
+    // in run(); cleared on every fresh entry to AUTO (see init()) so it can never
+    // carry into a subsequent AUTO session. Catches both a completed mission-land
+    // and an accidental AUTO mode select on the ground (AUTO can't launch from
+    // the ground without AUTO_OPTIONS bit 0). Pilot re-arming during the window
+    // cancels the fallback. 0 == not pending.
+    uint32_t post_land_loiter_ms;
+    static const uint32_t POST_LAND_LOITER_DELAY_MS = 10000;
+
     bool shift_alt_to_current_alt(Location& target_loc) const;
 
     // subtract position controller offsets from target location
@@ -737,6 +756,20 @@ private:
     State state = State::FlyToLocation;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
+
+    // Resume-climb: on first WP after entering AUTO, if airborne and below the WP altitude,
+    // climb vertically to that altitude before flying horizontally (avoids diagonal flight
+    // into obstacles when resuming a mission mid-air)
+    bool resume_climb_first_wp;     // true on AUTO entry, becomes false after first do_nav_wp processed
+    bool resume_climb_pending;      // true while doing the vertical climb to first WP altitude
+    Location resume_climb_dest;     // the actual WP destination, deferred until climb completes
+
+    // Resume-trigger-distance restore: on AUTO exit we zero CAM_TRIG_DIST so the breakout
+    // / battery-swap transit doesn't fire shutter. On the first do_nav_wp after AUTO entry
+    // we scan the mission backward for the most recent DO_SET_CAM_TRIGG_DIST and stash its
+    // value here. The stashed value is applied to AP_Camera once we reach the resume WP.
+    bool resume_pending_trig_dist;
+    float resume_pending_trig_dist_m;
 
     // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
     bool auto_RTL;
