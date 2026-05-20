@@ -211,6 +211,11 @@ public:
 
 protected:
 
+    // shared delay for ground-in-mode LOITER fallback (AUTO and RTL): how long
+    // the aircraft must sit disarmed and landed before the mode auto-switches
+    // back to LOITER. Same constant used by both modes for consistent UX.
+    static const uint32_t POST_LAND_LOITER_DELAY_MS = 10000;
+
     // helper functions
     bool is_disarmed_or_landed() const;
     void zero_throttle_and_relax_ac(bool spool_up = false);
@@ -663,7 +668,6 @@ private:
     // the ground without AUTO_OPTIONS bit 0). Pilot re-arming during the window
     // cancels the fallback. 0 == not pending.
     uint32_t post_land_loiter_ms;
-    static const uint32_t POST_LAND_LOITER_DELAY_MS = 10000;
 
     bool shift_alt_to_current_alt(Location& target_loc) const;
 
@@ -1526,6 +1530,13 @@ private:
 
     SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
+
+    // ground-in-RTL LOITER fallback: switch back to LOITER after a delay if the
+    // aircraft is disarmed on the ground in RTL. Catches a completed RTL-land
+    // sitting unattended. Cleared on every fresh entry to RTL (see init()) so it
+    // can't carry over from a previous session, and is reset whenever the pilot
+    // re-arms. 0 == not pending. Shares POST_LAND_LOITER_DELAY_MS with AUTO.
+    uint32_t post_land_loiter_ms;
 
     struct {
         // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain

@@ -21,6 +21,9 @@ bool ModeRTL::init(bool ignore_checks)
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
+    // clear the LOITER fallback on every fresh entry so it can only fire from
+    // conditions observed during this RTL session
+    post_land_loiter_ms = 0;
     terrain_following_allowed = !copter.failsafe.terrain;
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
@@ -63,6 +66,24 @@ ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 // should be called at 100hz or more
 void ModeRTL::run(bool disarm_on_land)
 {
+    // if disarmed and on the ground in RTL, fall back to LOITER after the delay.
+    // Catches a completed RTL-land sitting unattended (regardless of which code
+    // path disarmed). The timestamp is cleared on every fresh entry to RTL (see
+    // init()), so this can't carry over from a previous session, and is reset
+    // whenever the pilot re-arms.
+    if (!motors->armed() && copter.ap.land_complete) {
+        if (post_land_loiter_ms == 0) {
+            post_land_loiter_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - post_land_loiter_ms > POST_LAND_LOITER_DELAY_MS) {
+            post_land_loiter_ms = 0;
+            if (copter.set_mode(Mode::Number::LOITER, ModeReason::MISSION_END)) {
+                return;
+            }
+        }
+    } else {
+        post_land_loiter_ms = 0;
+    }
+
     if (!motors->armed()) {
         return;
     }
