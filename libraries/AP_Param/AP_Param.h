@@ -171,6 +171,16 @@
 #define GOBJECTPTR(v, name, class)           { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      AP_PARAM_FLAG_POINTER,                              Parameters::k_param_ ## v,          AP_PARAM_GROUP }
 #define GOBJECTVARPTR(v, name, var_info_ptr) { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info_ptr : var_info_ptr},     AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, Parameters::k_param_ ## v,          AP_PARAM_GROUP }
 #define GOBJECTN(v, pname, name, class)      { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## pname,      AP_PARAM_GROUP }
+
+// Xplorer: HIDDEN variants. Apply to top-level group entries in the vehicle's
+// var_info[] to hide an entire subsystem from MAVLink param enumeration. The
+// HIDDEN flag is consulted in check_frame_type() — params still exist in EEPROM
+// and are usable by firmware code, but never appear in PARAM_REQUEST_LIST,
+// param.pck, or count_parameters().
+#define GOBJECT_HIDDEN(v, name, class)       { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      AP_PARAM_FLAG_HIDDEN,                               Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTPTR_HIDDEN(v, name, class)    { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_HIDDEN,       Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GGROUP_HIDDEN(v, name, class)        { name, &AP_PARAM_VEHICLE_NAME.g.v,                   {group_info : class::var_info},      AP_PARAM_FLAG_HIDDEN,                               Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+
 #define PARAM_VEHICLE_INFO                   { "",   (const void *)&AP_PARAM_VEHICLE_NAME,         {group_info : AP_Vehicle::var_info}, 0,                                                  Parameters::k_param_vehicle,        AP_PARAM_GROUP }
 #define AP_VAREND                            { "",   nullptr,                                      {group_info : nullptr },             0,                                                  0,                                  AP_PARAM_NONE }
 

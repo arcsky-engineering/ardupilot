@@ -456,13 +456,13 @@ const AP_Param::Info Copter::var_info[] = {
 #if HAL_PARACHUTE_ENABLED
     // @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
-    GOBJECT(parachute, "CHUTE_", AP_Parachute),
+    GOBJECT_HIDDEN(parachute, "CHUTE_", AP_Parachute),
 #endif
 
 #if AP_LANDINGGEAR_ENABLED
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
-    GOBJECT(landinggear,    "LGR_", AP_LandingGear),
+    GOBJECT_HIDDEN(landinggear,    "LGR_", AP_LandingGear),
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -477,7 +477,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT(ins,            "INS", AP_InertialSensor),
+    GOBJECT_HIDDEN(ins,            "INS", AP_InertialSensor),
 
     // @Group: WPNAV_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
@@ -490,7 +490,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_CIRCLE_ENABLED
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
-    GOBJECTPTR(circle_nav, "CIRCLE_",  AC_Circle),
+    GOBJECTPTR_HIDDEN(circle_nav, "CIRCLE_",  AC_Circle),
 #endif
 
     // @Group: ATC_
@@ -499,7 +499,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    GOBJECTPTR(pos_control, "PSC", AC_PosControl),
+    GOBJECTPTR_HIDDEN(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -543,7 +543,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
-    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+    GOBJECT_HIDDEN(ahrs,                   "AHRS_",    AP_AHRS),
 
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
@@ -579,7 +579,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    GOBJECT_HIDDEN(barometer, "BARO", AP_Baro),
 
     // GPS driver
     // @Group: GPS
@@ -588,12 +588,12 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
-    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+    GOBJECT_HIDDEN(scheduler, "SCHED_", AP_Scheduler),
 
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
 #if AP_AVOIDANCE_ENABLED
-    GOBJECT(avoid,      "AVOID_",   AC_Avoid),
+    GOBJECT_HIDDEN(avoid,      "AVOID_",   AC_Avoid),
 #endif
 
 #if HAL_RALLY_ENABLED
@@ -614,7 +614,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
+    GOBJECT_HIDDEN(rcmap, "RCMAP_",        RCMapper),
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -637,7 +637,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if AP_RSSI_ENABLED
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
-    GOBJECT(rssi, "RSSI_",  AP_RSSI),
+    GOBJECT_HIDDEN(rssi, "RSSI_",  AP_RSSI),
 #endif
 
 #if AP_RANGEFINDER_ENABLED
@@ -661,28 +661,29 @@ const AP_Param::Info Copter::var_info[] = {
 #if AC_PRECLAND_ENABLED
     // @Group: PLND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
-    GOBJECT(precland, "PLND_", AC_PrecLand),
+    GOBJECT_HIDDEN(precland, "PLND_", AC_PrecLand),
 #endif
 
 #if AP_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
-    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+    GOBJECT_HIDDEN(rpm_sensor, "RPM", AP_RPM),
 #endif
 
 #if HAL_ADSB_ENABLED
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
-    GOBJECT(adsb,                "ADSB_", AP_ADSB),
+    // Xplorer: HIDDEN — operators don't configure ADSB params (factory-locked)
+    GOBJECT_HIDDEN(adsb,                "ADSB_", AP_ADSB),
 
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
-    GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
+    GOBJECT_HIDDEN(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
 #endif
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
-    GOBJECT(notify, "NTF_",  AP_Notify),
+    GOBJECT_HIDDEN(notify, "NTF_",  AP_Notify),
 
 #if MODE_THROW_ENABLED
     // @Param: THROW_MOT_START
@@ -710,13 +711,13 @@ const AP_Param::Info Copter::var_info[] = {
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     // @Group: OSD
     // @Path: ../libraries/AP_OSD/AP_OSD.cpp
-    GOBJECT(osd, "OSD", AP_OSD),
+    GOBJECT_HIDDEN(osd, "OSD", AP_OSD),
 #endif
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     // @Group: CC
     // @Path: ../libraries/AC_CustomControl/AC_CustomControl.cpp
-    GOBJECT(custom_control, "CC", AC_CustomControl),
+    GOBJECT_HIDDEN(custom_control, "CC", AC_CustomControl),
 #endif
 
     // @Group:

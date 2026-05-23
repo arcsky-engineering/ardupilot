@@ -15,8 +15,8 @@ undef USB_PRODUCT
 
 # USB setup
 USB_PRODUCT 0x1058
-USB_STRING_MANUFACTURER "CubePilot"
-USB_STRING_PRODUCT "CubeOrange+"
+USB_STRING_MANUFACTURER "Arcsky"
+USB_STRING_PRODUCT "Xplorer"
 
 APJ_BOARD_ID 1063
 
@@ -117,4 +117,19 @@ define MODE_ZIGZAG_ENABLED 0
 define MODE_AUTOROTATE_ENABLED 0
 define MODE_GUIDED_NOGPS_ENABLED 0
 
+# Xplorer feature disables (replaces command-line --disable-X flags)
+define HAL_GENERATOR_ENABLED 0
+define HAL_EFI_ENABLED 0
+define AP_ICENGINE_ENABLED 0
+define AP_OPTICALFLOW_ENABLED 0
+define AP_VOLZ_ENABLED 0
+define AP_GRIPPER_ENABLED 0
+define AP_WINCH_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
 define AP_CUSTOM_FIRMWARE_STRING "Xplorer v1.0.0"
+
+# Embed the LiDAR pattern (figure-8) Lua script directly into firmware ROMFS.
+# Scripts in @ROMFS/scripts/ are auto-loaded by AP_Scripting at boot, no SD
+# card copy required. The PTRN_* params register at script init.
+ROMFS scripts/copter-fly-figure-8-v2.lua libraries/AP_Scripting/applets/copter-fly-figure-8-v2.lua

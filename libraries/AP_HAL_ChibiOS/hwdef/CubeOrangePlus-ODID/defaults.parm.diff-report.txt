@@ -1,0 +1,3 @@
+# Discrepancies between existing defaults.parm and the new generated file
+# Review these before replacing — XLSX values may have data-entry errors.
+
