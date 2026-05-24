@@ -179,3 +179,4 @@ Arcsky_private_key.dat
 Arcsky_public_key.dat
 .claude/settings.local.json
 nul
+*.out

@@ -23,6 +23,7 @@
 
 #include "GCS.h"
 #include "GCS_Param_Whitelist.h"
+#include "GCS_Param_Clamps.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
@@ -311,15 +312,18 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         return;
     }
 
-    // === INSERT CLAMP HERE: prevent LOIT_SPEED > 20 m/s ===
-    if (strncmp(key, "LOIT_SPEED", AP_MAX_NAME_SIZE) == 0) {
-        const float MAX_LOIT_SPEED = 2000.0f;
-        if (packet.param_value > MAX_LOIT_SPEED) {
-            packet.param_value = MAX_LOIT_SPEED;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "LOIT_SPEED limited to 20 m/s");
-        }
+    // Xplorer: enforce per-parameter hard bounds (reject semantics).
+    // Out-of-range writes are refused; GCS receives the current stored value
+    // so the operator can see their input did not take effect.
+    if (!xplorer_param_clamp_in_range(key, packet.param_value)) {
+        const XplorerParamClamp *c = xplorer_param_clamp_lookup(key);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                      "%s rejected: %.3f outside [%.3f, %.3f]",
+                      key, (double)packet.param_value,
+                      (double)c->min_val, (double)c->max_val);
+        send_parameter_value(key, var_type, old_value);
+        return;
     }
-    // === end clamp ===    
 
     // set the value
     vp->set_float(packet.param_value, var_type);

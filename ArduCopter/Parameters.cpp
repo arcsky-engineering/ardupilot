@@ -408,7 +408,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 490
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
+    GSCALAR_HIDDEN(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     // @Param: ACRO_BAL_ROLL
@@ -477,7 +477,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT_HIDDEN(ins,            "INS", AP_InertialSensor),
+    GOBJECT(ins,            "INS", AP_InertialSensor),
 
     // @Group: WPNAV_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
@@ -499,7 +499,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    GOBJECTPTR_HIDDEN(pos_control, "PSC", AC_PosControl),
+    GOBJECTPTR(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -543,7 +543,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
-    GOBJECT_HIDDEN(ahrs,                   "AHRS_",    AP_AHRS),
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
@@ -579,7 +579,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT_HIDDEN(barometer, "BARO", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
     // @Group: GPS
@@ -614,7 +614,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT_HIDDEN(rcmap, "RCMAP_",        RCMapper),
+    GOBJECT(rcmap, "RCMAP_",        RCMapper),
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -643,7 +643,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
-    GOBJECT(rangefinder,   "RNGFND", RangeFinder),
+    GOBJECT_HIDDEN(rangefinder,   "RNGFND", RangeFinder),
 #endif
 
 #if AP_TERRAIN_AVAILABLE
@@ -1016,7 +1016,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 0.05
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("RNGFND_FILT", 45, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT),
+    AP_GROUPINFO_FLAGS("RNGFND_FILT", 45, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT, AP_PARAM_FLAG_HIDDEN),
 #endif
 
 #if MODE_GUIDED_ENABLED

@@ -1,5 +1,6 @@
 #include "Copter.h"
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <GCS_MAVLink/GCS_Param_Clamps.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -201,6 +202,10 @@ void Copter::init_ardupilot()
     pos_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     vel_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
     hgt_variance_filt.set_cutoff_frequency(g2.fs_ekf_filt_hz);
+
+    // Xplorer: scrub any persisted parameter values that fall outside their
+    // declared hard bounds. Runs once per boot after parameter storage is up.
+    xplorer_param_clamp_boot_scrub();
 
     // flag that initialisation has completed
     ap.initialised = true;
