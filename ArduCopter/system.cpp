@@ -1,6 +1,7 @@
 #include "Copter.h"
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <GCS_MAVLink/GCS_Param_Clamps.h>
+#include "xplorer_compass_mot_pinning.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -206,6 +207,11 @@ void Copter::init_ardupilot()
     // Xplorer: scrub any persisted parameter values that fall outside their
     // declared hard bounds. Runs once per boot after parameter storage is up.
     xplorer_param_clamp_boot_scrub();
+
+    // Xplorer: align compass-motor compensation values to the device currently
+    // in each compass slot. Defends against slot shuffling silently mis-applying
+    // MOT compensation to the wrong physical sensor.
+    xplorer_compass_mot_boot_align();
 
     // flag that initialisation has completed
     ap.initialised = true;
