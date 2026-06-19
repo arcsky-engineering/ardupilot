@@ -94,6 +94,10 @@ public:
 
     void set_basic_id();
 
+    // populate generic SelfID/OperatorID defaults so modules that require them
+    // (e.g. Cube ID) operate out of the box; overridden by GCS-sent messages
+    void set_self_id_operator_id_defaults();
+
     void get_persistent_params(ExpandingString &str) const;
 
     void load_UAS_ID_from_persistent_memory();
@@ -154,6 +158,15 @@ private:
     mavlink_open_drone_id_system_t pkt_system;
     mavlink_open_drone_id_self_id_t pkt_self_id;
     mavlink_open_drone_id_operator_id_t pkt_operator_id;
+
+    // Pilot-driven emergency latch: set when the GCS sends SELF_ID with
+    // description_type == MAV_ODID_DESC_TYPE_EMERGENCY, cleared when the GCS
+    // sends SELF_ID with any other description_type. Mirrored into
+    // Location.status so the existing LOCATION->RemoteID-module path carries
+    // pilot emergencies (the SelfID forward path is intentionally disabled).
+    bool     _pilot_emergency = false;
+    uint32_t _last_self_id_ms = 0;     // ms timestamp of last SELF_ID receipt
+    static constexpr uint32_t PILOT_EMERGENCY_TIMEOUT_MS = 30000;
 
     // last time we got a SYSTEM message
     uint32_t last_system_ms;

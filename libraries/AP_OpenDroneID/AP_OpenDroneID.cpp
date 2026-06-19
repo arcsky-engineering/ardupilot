@@ -146,6 +146,41 @@ void AP_OpenDroneID::set_basic_id() {
     }
 }
 
+// Generic placeholder SelfID/OperatorID values originated by ArduPilot. These
+// are intended to be overridden by the GCS (see handle_msg). Build-overridable.
+#ifndef OPENDRONEID_SELF_ID_DEFAULT
+#define OPENDRONEID_SELF_ID_DEFAULT "X55"
+#endif
+#ifndef OPENDRONEID_OPERATOR_ID_DEFAULT
+#define OPENDRONEID_OPERATOR_ID_DEFAULT "001"
+#endif
+
+// Some Remote ID modules (e.g. Cube ID) refuse to operate until they have
+// received both a SelfID and an OperatorID. ArduPilot originates generic
+// placeholders so such modules work out of the box. A GCS can override these at
+// any time by sending OPEN_DRONE_ID_SELF_ID / OPEN_DRONE_ID_OPERATOR_ID, which
+// handle_msg() decodes straight into these same structs - so once a real value
+// arrives the (non-empty) field is left untouched here.
+void AP_OpenDroneID::set_self_id_operator_id_defaults()
+{
+    WITH_SEMAPHORE(_sem);
+    const uint8_t sysid = gcs().sysid_this_mav();
+
+    if (pkt_self_id.description[0] == '\0') {
+        pkt_self_id.target_system = sysid;
+        pkt_self_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
+        pkt_self_id.description_type = MAV_ODID_DESC_TYPE_TEXT;
+        strncpy(pkt_self_id.description, OPENDRONEID_SELF_ID_DEFAULT, sizeof(pkt_self_id.description) - 1);
+    }
+
+    if (pkt_operator_id.operator_id[0] == '\0') {
+        pkt_operator_id.target_system = sysid;
+        pkt_operator_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
+        pkt_operator_id.operator_id_type = MAV_ODID_OPERATOR_ID_TYPE_CAA;
+        strncpy(pkt_operator_id.operator_id, OPENDRONEID_OPERATOR_ID_DEFAULT, sizeof(pkt_operator_id.operator_id) - 1);
+    }
+}
+
 void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
 {
     if (id_len > 0) {
@@ -153,10 +188,50 @@ void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
     }
 }
 
-// Translate DB201 error codes into user-friendly messages
-// DB201 sends codes like "LOC ID SYS OP_LOC" which are cryptic
+// Translate Remote ID module error strings into user-friendly messages.
+// The DB201 sends text tokens like "LOC ID SYS OP_LOC". The DB300 (and other
+// ArduRemoteID-style modules) instead report a numeric bitmask in the error
+// field, e.g. "err 8". Both are cryptic to the operator, so decode either form.
 static void translate_arm_status_error(const char* error, char* failmsg, uint8_t failmsg_len)
 {
+    // DB300 numeric bitmask path: pull the first integer out of the error
+    // string (robust to "err 8", "8", "ERR 8", etc.). See the db300 manual
+    // v1.3 section 1.8 "Status codes":
+    //   1  = transmission disabled        2  = no BasicID received/configured
+    //   4  = no OperatorID received       8  = no drone Location msg / no GPS fix
+    //   16 = no System msg / no GPS info
+    // Codes combine (e.g. 10 = 2 | 8). Surface configuration faults first as
+    // they won't clear on their own, then the GPS/timing-dependent ones.
+    long code = -1;
+    for (const char *p = error; *p != '\0'; p++) {
+        if (*p >= '0' && *p <= '9') {
+            code = 0;
+            while (*p >= '0' && *p <= '9') {
+                code = (code * 10) + (*p - '0');
+                p++;
+            }
+            break;
+        }
+    }
+    if (code > 0) {
+        if (code & 2) {
+            strncpy(failmsg, "Basic I D not Configured", failmsg_len);
+        } else if (code & 4) {
+            strncpy(failmsg, "No Operator Location", failmsg_len);
+        } else if (code & 8) {
+            strncpy(failmsg, "No Drone Location or GPS fix", failmsg_len);
+        } else if (code & 16) {
+            strncpy(failmsg, "No System Message or GPS info", failmsg_len);
+        } else if (code & 1) {
+            strncpy(failmsg, "Remote I D Tx Disabled", failmsg_len);
+        } else {
+            strncpy(failmsg, "Remote ID module not ready", failmsg_len);
+        }
+        failmsg[failmsg_len - 1] = '\0';
+        return;
+    }
+
+    // DB201 text-token path
     // Check for specific error codes from DB201 and translate them
     if (strstr(error, "OP_LOC") != nullptr) {
         strncpy(failmsg, "No Operator Location", failmsg_len);
@@ -216,6 +291,14 @@ void AP_OpenDroneID::update()
     }
 
     set_basic_id();
+    set_self_id_operator_id_defaults();
+
+    // Auto-clear pilot emergency if the GCS stops sending SELF_ID (e.g. QGC closed
+    // mid-emergency). Without this we'd broadcast EMERGENCY indefinitely until reboot.
+    if (_pilot_emergency && (AP_HAL::millis() - _last_self_id_ms) > PILOT_EMERGENCY_TIMEOUT_MS) {
+        _pilot_emergency = false;
+        gcs().send_text(MAV_SEVERITY_INFO, "ODID: pilot emergency auto-cleared (GCS link stale)");
+    }
 
     const bool armed = hal.util->get_soft_armed();
     if (armed && !_was_armed) {
@@ -296,12 +379,14 @@ void AP_OpenDroneID::send_static_out()
             }
             break;
         case NEXT_MSG_SELF_ID:
-            // SelfID not sent - DB201 is pre-programmed
-            sent_ok = true;  // skip to next message
+            // forwarded so modules that require a SelfID (e.g. Cube ID) are happy
+            send_self_id_message();
+            sent_ok = true;
             break;
         case NEXT_MSG_OPERATOR_ID:
-            // OperatorID not sent - DB201 is pre-programmed
-            sent_ok = true;  // skip to next message
+            // forwarded so modules that require an OperatorID (e.g. Cube ID) are happy
+            send_operator_id_message();
+            sent_ok = true;
             break;
         case NEXT_MSG_ENUM_END:
             break;
@@ -358,6 +443,15 @@ void AP_OpenDroneID::send_location_message()
 
     // if we have watchdogged while armed then declare an emergency
     if (hal.util->was_watchdog_armed()) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+
+    // pilot-declared emergency from the GCS (latched from incoming
+    // OPEN_DRONE_ID_SELF_ID with description_type == MAV_ODID_DESC_TYPE_EMERGENCY).
+    // The SelfID forward path to the RemoteID module is disabled in this build, so
+    // we mirror the emergency state into Location.status which is forwarded and
+    // broadcast.
+    if (_pilot_emergency) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
 
@@ -750,7 +844,12 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
-        //gcs().send_text(MAV_SEVERITY_INFO, "DETECTED GCS SELF ID");
+        // A GCS-sent SelfID overrides the generic default and is forwarded on to
+        // the module. We additionally mirror a pilot emergency into Location.status
+        // (latch on description_type==1 EMERGENCY, clear on any other type) so the
+        // emergency is also carried for modules that key off operational status.
+        _pilot_emergency = (pkt_self_id.description_type == MAV_ODID_DESC_TYPE_EMERGENCY);
+        _last_self_id_ms = AP_HAL::millis();
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID: {
         mavlink_open_drone_id_basic_id_t tmp;
