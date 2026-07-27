@@ -131,8 +131,8 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
 {
     const uint32_t now = AP_HAL::millis();
 
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity, low_soc, critical_soc;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity, low_soc, critical_soc);
 
     if (critical_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
@@ -151,6 +151,19 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         return AP_BattMonitor::Failsafe::Critical;
     }
 
+    if (critical_soc) {
+        // this is the first time the state of charge has dropped below critical so start timer
+        if (_state.critical_soc_start_ms == 0) {
+            _state.critical_soc_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.critical_soc_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::Failsafe::Critical;
+        }
+    } else {
+        // acceptable state of charge so reset timer
+        _state.critical_soc_start_ms = 0;
+    }
+
     if (low_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.low_voltage_start_ms == 0) {
@@ -166,6 +179,19 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
 
     if (low_capacity) {
         return AP_BattMonitor::Failsafe::Low;
+    }
+
+    if (low_soc) {
+        // this is the first time the state of charge has dropped below the low threshold so start timer
+        if (_state.low_soc_start_ms == 0) {
+            _state.low_soc_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.low_soc_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::Failsafe::Low;
+        }
+    } else {
+        // acceptable state of charge so reset timer
+        _state.low_soc_start_ms = 0;
     }
 
     // 5 second health timeout
@@ -188,34 +214,45 @@ static bool update_check(size_t buflen, char *buffer, bool failed, const char *m
 
 bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
 {
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity, low_soc, critical_soc;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity, low_soc, critical_soc);
 
     bool below_arming_voltage = is_positive(_params._arming_minimum_voltage) &&
                                 (_state.voltage < _params._arming_minimum_voltage);
     bool below_arming_capacity = (_params._arming_minimum_capacity > 0) &&
                                  ((_params._pack_capacity - _state.consumed_mah) < _params._arming_minimum_capacity);
+    uint8_t soc_pct;
+    bool below_arming_soc = (_params._arming_minimum_soc > 0) &&
+                            capacity_remaining_pct(soc_pct) &&
+                            (soc_pct < _params._arming_minimum_soc);
     bool fs_capacity_inversion = is_positive(_params._critical_capacity) &&
                                  is_positive(_params._low_capacity) &&
                                  !(_params._low_capacity > _params._critical_capacity);
     bool fs_voltage_inversion = is_positive(_params._critical_voltage) &&
                                 is_positive(_params._low_voltage) &&
                                 !(_params._low_voltage > _params._critical_voltage);
+    bool fs_soc_inversion = (_params._critical_soc > 0) &&
+                            (_params._low_soc > 0) &&
+                            !(_params._low_soc > _params._critical_soc);
 
     bool result = update_check(buflen, buffer, !_state.healthy, "unhealthy");
     result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+    result = result && update_check(buflen, buffer, below_arming_soc, "below minimum arming state of charge");
     result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
     result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
     result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
+    result = result && update_check(buflen, buffer, low_soc, "low state of charge failsafe");
+    result = result && update_check(buflen, buffer, critical_soc, "critical state of charge failsafe");
     result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical >= low");
     result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical >= low");
+    result = result && update_check(buflen, buffer, fs_soc_inversion, "soc failsafe critical >= low");
 
     return result;
 }
 
-void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
+void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity, bool &low_soc, bool &critical_soc) const
 {
     // use voltage or sag compensated voltage
     float voltage_used;
@@ -256,6 +293,18 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
         low_capacity = true;
     } else {
         low_capacity = false;
+    }
+
+    // check state of charge failsafe if the monitor reports a valid percentage
+    // (eg. smart batteries over DroneCAN). The debounce timing is applied by
+    // the caller using the BATT_LOW_TIMER parameter.
+    uint8_t soc_pct;
+    if (capacity_remaining_pct(soc_pct)) {
+        critical_soc = (_params._critical_soc > 0) && (soc_pct < _params._critical_soc);
+        low_soc = (_params._low_soc > 0) && (soc_pct < _params._low_soc);
+    } else {
+        critical_soc = false;
+        low_soc = false;
     }
 }
 

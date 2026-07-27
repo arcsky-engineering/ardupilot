@@ -109,6 +109,24 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CRT_MAH", 15, AP_BattMonitor_Params, _critical_capacity, 0),
 
+    // @Param: LOW_SOC
+    // @DisplayName: Low battery state of charge
+    // @Description: State of charge (percentage remaining) that triggers a low battery failsafe. Set to 0 to disable. Only functions with battery monitors that report a state of charge (eg. smart batteries over DroneCAN). If the state of charge drops below this level continuously for more than the period specified by the @PREFIX@LOW_TIMER parameter then the vehicle will perform the failsafe specified by the @PREFIX@FS_LOW_ACT parameter.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOW_SOC", 23, AP_BattMonitor_Params, _low_soc, 0),
+
+    // @Param: CRT_SOC
+    // @DisplayName: Critical battery state of charge
+    // @Description: State of charge (percentage remaining) that triggers a critical battery failsafe. Set to 0 to disable. Only functions with battery monitors that report a state of charge (eg. smart batteries over DroneCAN). If the state of charge drops below this level continuously for more than the period specified by the @PREFIX@LOW_TIMER parameter then the vehicle will perform the failsafe specified by the @PREFIX@FS_CRT_ACT parameter.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRT_SOC", 24, AP_BattMonitor_Params, _critical_soc, 0),
+
     // @Param: FS_LOW_ACT
     // @DisplayName: Low battery failsafe action
     // @Description: What action the vehicle should perform if it hits a low battery failsafe
@@ -150,6 +168,15 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
 
     // 20 was BUS
+
+    // @Param: ARM_SOC
+    // @DisplayName: Required arming state of charge
+    // @Description: Minimum battery state of charge (percentage remaining) required to arm the aircraft. Set to 0 to disable the check. Only functions with battery monitors that report a state of charge (eg. smart batteries over DroneCAN). Unlike the arming voltage and capacity checks this reflects the battery's own charge estimate, so it is not reset by rebooting the vehicle.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ARM_SOC", 25, AP_BattMonitor_Params, _arming_minimum_soc, 0),
 
     // @Param: OPTIONS
     // @DisplayName: Battery monitor options

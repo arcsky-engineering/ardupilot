@@ -39,7 +39,7 @@ static const XplorerParamClamp xplorer_param_clamps[] = {
     { "LOIT_ACC_MAX",      300.0f,   800.0f },
     { "LOIT_BRK_ACCEL",    200.0f,   400.0f },
     { "LOIT_BRK_JERK",     300.0f,   600.0f },
-    { "LOIT_SPEED",         50.0f,  1800.0f },
+    { "LOIT_SPEED",         50.0f,  2000.0f },
     { "PILOT_ACCEL_Z",     100.0f,   400.0f },
     { "PILOT_SPEED_DN",     50.0f,   300.0f },
     { "PILOT_SPEED_UP",     50.0f,   350.0f },
