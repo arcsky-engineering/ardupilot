@@ -466,6 +466,7 @@ AP_BattMonitor::init()
     }
 
     _highest_failsafe_priority = INT8_MAX;
+    _announced_failsafe = Failsafe::None;
 
 #ifdef HAL_BATT_MONITOR_DEFAULT
     _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
@@ -866,8 +867,16 @@ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
 
 void AP_BattMonitor::check_failsafes(void)
 {
-    const bool dominated = hal.util->get_soft_armed();
+    const bool armed = hal.util->get_soft_armed();
 
+    // Pass 1: update each battery's own failsafe state, and find the worst
+    // level across the whole pack along with the first battery that reached it.
+    // The two batteries are treated as a single logical system: when armed a
+    // battery only ever escalates; when disarmed it may recover (e.g. after a
+    // battery swap). Per-instance state is still maintained so each battery
+    // reports its own charge state to the GCS.
+    Failsafe worst = Failsafe::None;
+    uint8_t worst_instance = 0;
     for (uint8_t i = 0; i < _num_instances; i++) {
         if (drivers[i] == nullptr) {
             continue;
@@ -879,80 +888,108 @@ void AP_BattMonitor::check_failsafes(void)
         }
 
         const Failsafe type = drivers[i]->update_failsafes();
-
-        // when disarmed, allow failsafe state to recover (e.g., after battery swap)
-        if (!dominated) {
+        if (armed) {
+            // armed: only escalate failsafe, never recover
+            if (type > state[i].failsafe) {
+                state[i].failsafe = type;
+            }
+        } else {
+            // disarmed: allow failsafe state to recover
             if (type < state[i].failsafe) {
                 state[i].failsafe = type;
-                // check if all batteries have recovered
-                Failsafe highest = Failsafe::None;
-                for (uint8_t j = 0; j < _num_instances; j++) {
-                    if (state[j].failsafe > highest) {
-                        highest = state[j].failsafe;
-                    }
-                }
-                if (highest == Failsafe::None) {
-                    _has_triggered_failsafe = false;
-                    _highest_failsafe_priority = INT8_MAX;
-#ifndef HAL_BUILD_AP_PERIPH
-                    AP_Notify::flags.failsafe_battery = false;
-#endif
-                }
             }
-            continue;
         }
 
-        // armed: only escalate failsafe, never recover
-        if (type <= state[i].failsafe) {
-            continue;
+        if (state[i].failsafe > worst) {
+            worst = state[i].failsafe;
+            worst_instance = i;
         }
+    }
 
-        int8_t action = 0;
-        const char *type_str = nullptr;
-        switch (type) {
-            case Failsafe::None:
-                continue; // should not have been called in this case
-            case Failsafe::Unhealthy:
-                // Report only for unhealthy, could add action param in the future
-                action = 0;
-                type_str = "missing, last:";
-                break;
-            case Failsafe::Low:
-                action = _params[i]._failsafe_low_action;
-                type_str = "low";
-                break;
-            case Failsafe::Critical:
-                action = _params[i]._failsafe_critical_action;
-                type_str = "critical";
-                break;
+    // Pass 2: act on the pack as a whole. We only announce / act when the
+    // aggregate level crosses to a new, higher stage. A second battery reaching
+    // a level that has already been announced does nothing - that is what keeps
+    // the twin-battery case from double-triggering.
+    if (!armed) {
+        // let the pack-level latch follow the batteries back down as they recover
+        if (worst < _announced_failsafe) {
+            _announced_failsafe = worst;
         }
-
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", user_display_number(i), type_str,
-                        (double)voltage(i), (double)state[i].consumed_mah);
-        _has_triggered_failsafe = true;
+        if (worst == Failsafe::None) {
+            _has_triggered_failsafe = false;
+            _highest_failsafe_priority = INT8_MAX;
 #ifndef HAL_BUILD_AP_PERIPH
+            AP_Notify::flags.failsafe_battery = false;
+#endif
+        }
+        return;
+    }
+
+    // armed: nothing new to announce unless the pack has reached a higher stage
+    if (worst <= _announced_failsafe) {
+        return;
+    }
+    _announced_failsafe = worst;
+
+    int8_t action = 0;
+    const char *type_str = nullptr;
+    switch (worst) {
+        case Failsafe::None:
+            return; // not reachable: worst > _announced_failsafe >= None
+        case Failsafe::Unhealthy:
+            // Report only for unhealthy, could add action param in the future
+            action = 0;
+            type_str = "missing, last:";
+            break;
+        case Failsafe::Low:
+            action = _params[worst_instance]._failsafe_low_action;
+            type_str = "low";
+            break;
+        case Failsafe::Critical:
+            action = _params[worst_instance]._failsafe_critical_action;
+            type_str = "critical";
+            break;
+    }
+
+    // Calm, clear annunciation: report volts and remaining percent rather than a
+    // scary "used NNNN mAh" (mAh consumed is meaningless for a voltage/SoC event).
+    uint8_t soc;
+    if (capacity_remaining_pct(soc, worst_instance)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d %s: %d%% %.1fV",
+                      user_display_number(worst_instance), type_str,
+                      (int)soc, (double)voltage(worst_instance));
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d %s: %.1fV",
+                      user_display_number(worst_instance), type_str,
+                      (double)voltage(worst_instance));
+    }
+    _has_triggered_failsafe = true;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    // Buzzer/LED failsafe indication is reserved for the critical stage. A low
+    // battery is a routine, expected event and is announced by the GCS message
+    // alone so the flight controller doesn't sound the alarm every flight.
+    if (worst == Failsafe::Critical) {
         AP_Notify::flags.failsafe_battery = true;
+    }
 #endif
-        state[i].failsafe = type;
 
-        // map the desired failsafe action to a priority level
-        int8_t priority = 0;
-        if (_failsafe_priorities != nullptr) {
-            while (_failsafe_priorities[priority] != -1) {
-                if (_failsafe_priorities[priority] == action) {
-                    break;
-                }
-                priority++;
+    // map the desired failsafe action to a priority level
+    int8_t priority = 0;
+    if (_failsafe_priorities != nullptr) {
+        while (_failsafe_priorities[priority] != -1) {
+            if (_failsafe_priorities[priority] == action) {
+                break;
             }
-
+            priority++;
         }
 
-        // trigger failsafe if the action was equal or higher priority
-        // It's valid to retrigger the same action if a different battery provoked the event
-        if (priority <= _highest_failsafe_priority) {
-            _battery_failsafe_handler_fn(type_str, action);
-            _highest_failsafe_priority = priority;
-        }
+    }
+
+    // trigger failsafe if the action was equal or higher priority
+    if (priority <= _highest_failsafe_priority) {
+        _battery_failsafe_handler_fn(type_str, action);
+        _highest_failsafe_priority = priority;
     }
 }
 

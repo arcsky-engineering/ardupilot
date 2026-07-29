@@ -336,6 +336,7 @@ private:
 
     int8_t      _highest_failsafe_priority; // highest selected failsafe action level (used to restrict what actions we move into)
     bool        _has_triggered_failsafe;  // true after a battery failsafe has been triggered for the first time
+    Failsafe    _announced_failsafe;      // highest failsafe level already announced across all batteries (treats the pack as one unified system)
 
 };
 
