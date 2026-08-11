@@ -68,8 +68,17 @@ echo
 # GIT_VERSION is a bare short hash (Tools/ardupilotwaf/boards.py) with no dirty
 # marker, so a binary built from an uncommitted tree reports a hash whose code it
 # is not. That is the single easiest way to lose traceability, so block it.
+#
+# The '-c core.autocrlf=true' is load-bearing, not decoration. This tree is
+# checked out by Windows Git, whose system config
+# (C:/Program Files/Git/etc/gitconfig) sets core.autocrlf=true, so every text
+# file is CRLF on disk. Cygwin ships its own git at /usr/bin/git which never
+# reads that config, defaults to autocrlf=false, and therefore reports all ~4500
+# text files as modified -- and this script is normally run from Cygwin, because
+# that is where waf is configured. Forcing the setting for this one call makes
+# the answer identical from either git, and it propagates into submodules too.
 
-DIRTY=$(git status --porcelain)
+DIRTY=$(git -c core.autocrlf=true status --porcelain)
 if [ -n "$DIRTY" ]; then
     if [ "$ALLOW_DIRTY" = "1" ]; then
         warn "working tree is dirty; ($HASH) in the version string will NOT match the built code"
