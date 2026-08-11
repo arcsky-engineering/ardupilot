@@ -21,8 +21,11 @@ cd "$(dirname "$0")/../.."
 
 VERSION_INC=libraries/AP_HAL_ChibiOS/hwdef/include/x55_version.inc
 CHANGELOG=doc/X55-FIRMWARE-CHANGELOG.md
+NOTES_GEN=Tools/x55/gen_release_notes.py
+NOTES_TXT=X55_ArduCopter_Release_Notes.txt
 BOARDS="CubeOrange CubeOrangePlus"
 CONFIGURE_OPTS="--enable-opendroneid"
+PYTHON="${PYTHON:-python}"
 
 CHECK_ONLY=0
 ALLOW_DIRTY=0
@@ -99,11 +102,23 @@ Or pass --dev for an engineering build."
 fi
 
 # ------------------------------------------------------------ gate: changelog -
+# A hard failure, not a warning. Undocumented firmware is how 77e5940f (the DB300
+# Remote ID work) reached a release with nothing written up anywhere. The notes
+# are also generated from this file, so a missing entry means a missing release
+# note, not just a missing line in a changelog.
 
-if [ -f "$CHANGELOG" ]; then
-    grep -q "v$VERSION" "$CHANGELOG" || warn "$CHANGELOG has no entry for v$VERSION"
+if [ ! -f "$CHANGELOG" ]; then
+    fail "$CHANGELOG is missing -- it is the source of the release notes"
+fi
+
+if [ "$CHECK_TAG" = "1" ]; then
+    $PYTHON "$NOTES_GEN" --changelog "$CHANGELOG" --check --version "$VERSION" \
+        || fail "changelog gate failed (see above). Pass --dev to bypass for an engineering build."
 else
-    warn "$CHANGELOG is missing"
+    # engineering build: still confirm the changelog parses, but do not demand an
+    # entry for a version that may not exist yet
+    $PYTHON "$NOTES_GEN" --changelog "$CHANGELOG" --check \
+        || fail "$CHANGELOG does not parse (see above)"
 fi
 
 if [ "$CHECK_ONLY" = "1" ]; then
@@ -155,8 +170,19 @@ for BOARD in $BOARDS; do
     echo >> "$MANIFEST"
 done
 
+# ---------------------------------------------------------- release notes -----
+# Generated last, because it stamps in the sha256 sums that only exist once the
+# artifacts do. Source is $CHANGELOG; this file is never hand-edited.
+
+$PYTHON "$NOTES_GEN" --changelog "$CHANGELOG" --manifest "$MANIFEST" \
+                     --out "$RELDIR/$NOTES_TXT" \
+    || fail "failed to generate $NOTES_TXT"
+
 echo
 echo "Staged in $RELDIR:"
 ls -1 "$RELDIR"
 echo
 cat "$MANIFEST"
+echo
+echo "Release notes: $RELDIR/$NOTES_TXT"
+echo "Copy the .apj files and that .txt to the Dropbox release folder by hand."

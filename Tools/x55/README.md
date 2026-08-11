@@ -20,11 +20,74 @@ git tag -a x55-fw-v1.0.1 -m "X55 firmware v1.0.1"
 Tools/x55/build_release.sh
 ```
 
-Output lands in `release/x55-v1.0.1/` (gitignored) as
-`x55-v1.0.1-<board>-<hash>.apj` plus a `MANIFEST.txt` recording the version
-string, the upstream baseline, the full commit, the tag, the tree state, the
-configure options, and a sha256 per artifact. **Keep the manifest with whatever
-you ship** — it is the record that lets a unit's firmware be identified later.
+Output lands in `release/x55-v1.0.1/` (gitignored):
+
+| File | What it is |
+|---|---|
+| `x55-v1.0.1-<board>-<hash>.apj` | flash this (Mission Planner / QGC) |
+| `x55-v1.0.1-<board>-<hash>.bin` / `.abin` | direct-flash / flash-from-bootloader |
+| `MANIFEST.txt` | version, baseline, full commit, tag, tree state, configure opts, sha256 per artifact |
+| `X55_ArduCopter_Release_Notes.txt` | **generated** customer-facing notes |
+
+**Ship the manifest and the notes alongside the binaries.** They are what lets a
+unit's firmware be identified six months from now.
+
+Copy them into the Dropbox release folder **by hand** — the script deliberately
+never writes outside the repo, so a release build can't sync outward before
+you've flown it.
+
+## Release notes
+
+`doc/X55-FIRMWARE-CHANGELOG.md` is the single source of truth.
+`gen_release_notes.py` reformats it into the plain-text layout techs already
+read, and stamps in the build facts from `MANIFEST.txt`:
+
+```
+doc/X55-FIRMWARE-CHANGELOG.md   ← you write here, in the same commit as the code
+         │
+         │  gen_release_notes.py  (run automatically by build_release.sh)
+         ▼
+release/x55-v1.0.1/X55_ArduCopter_Release_Notes.txt   ← generated, never edited
+```
+
+**Never hand-edit the `.txt`.** It is overwritten on every release build. Edit
+the changelog and rebuild.
+
+Writing an entry — one `##` heading per release, an optional `###` headline, then
+prose with `**Changes:**` / `**Compatibility:**` / `**Files:**` sections:
+
+```markdown
+## v1.0.1 — Build 16 — 2026-09-02
+
+### SHORT HEADLINE
+
+**Commit:** `abc12345`
+
+**Changes:**
+
+- what changed
+
+**Compatibility:**
+
+- what an operator or tech has to know before flashing this
+
+**Files:** Foo.cpp, Bar.h
+```
+
+The `Build N` numbers continue the historical sequence so techs who know
+"Build 13" can still navigate. Newest entry goes at the top; the generator
+enforces descending order and rejects duplicate build numbers.
+
+The build **fails** if there is no changelog entry for the version being
+released. That is deliberate: `77e5940f` (the DB300 Remote ID work, 135 lines
+across three files) shipped with no write-up anywhere, and nothing caught it.
+
+You can regenerate or preview the notes without building:
+
+```bash
+python Tools/x55/gen_release_notes.py --out /tmp/notes.txt   # no build facts
+python Tools/x55/gen_release_notes.py --check --version 1.0.1
+```
 
 Other modes:
 
@@ -45,6 +108,9 @@ is not, which is the fastest way to lose traceability on a fielded unit. Use
 
 **Missing tag.** Without a tag, `X55 v1.0.1` is a claim rather than a pointer.
 The tag is what makes a banner resolvable back to source.
+
+**No changelog entry for this version.** See Release notes above. Undocumented
+firmware is how DB300 support reached a release with nothing written up.
 
 **Version string absent from `hwdef.h`.** After each board builds, the script
 greps the generated `build/<board>/hwdef.h` to confirm the string actually
