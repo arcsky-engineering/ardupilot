@@ -97,3 +97,13 @@ CHECK_IMU2_PRESENT      $CHECK_ICM42688_EXT || $CHECK_ICM45686_EXT
 BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
 
 define HAL_SPI_SCK_SAVE_RESTORE TRUE
+
+# Arcsky X55 branding: this board includes CubeOrange/hwdef.inc rather than
+# CubeOrange/hwdef.dat, so it does not inherit the branding set there.
+undef USB_STRING_MANUFACTURER
+undef USB_STRING_PRODUCT
+USB_STRING_MANUFACTURER "Arcsky"
+USB_STRING_PRODUCT "X55"
+
+# Arcsky X55 firmware version string (AP_CUSTOM_FIRMWARE_STRING)
+include ../include/x55_version.inc

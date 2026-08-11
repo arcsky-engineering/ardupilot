@@ -7,3 +7,12 @@ include hwdef.inc
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
+
+# Arcsky X55 branding: what the host OS shows for the USB device
+undef USB_STRING_MANUFACTURER
+undef USB_STRING_PRODUCT
+USB_STRING_MANUFACTURER "Arcsky"
+USB_STRING_PRODUCT "X55"
+
+# Arcsky X55 firmware version string (AP_CUSTOM_FIRMWARE_STRING)
+include ../include/x55_version.inc
