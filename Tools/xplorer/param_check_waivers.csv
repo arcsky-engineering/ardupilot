@@ -1,0 +1,2 @@
+name,reason
+PSC_VELZ_IMAX,"Upstream metadata bug: value 1000 matches ArduPilot's own code default POSCONTROL_VEL_Z_IMAX (AC_PosControl.cpp), but the upstream @Range says 1.000-8.000. The range annotation is stale, not the default. Re-check when rebasing onto a newer ArduPilot."

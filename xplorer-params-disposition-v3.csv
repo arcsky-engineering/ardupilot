@@ -1,0 +1,1233 @@
+name,group,default value,readonly,user_visible,notes,Range min,Range max,v2_user_visible (intent),v2_readonly (intent),changed_vs_v2
+ADSB_EMIT_TYPE,ADSB,14,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_ICAO_ID,ADSB,0,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_ICAO_SPECL,ADSB,0,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_LEN_WIDTH,ADSB,1,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_LIST_ALT,ADSB,0,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_LIST_MAX,ADSB,25,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_LIST_RADIUS,ADSB,10000,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_LOG,ADSB,1,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_OFFSET_LAT,ADSB,4,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_OFFSET_LON,ADSB,1,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_OPTIONS,ADSB,0,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_RF_CAPABLE,ADSB,0,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_RF_SELECT,ADSB,1,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_SQUAWK,ADSB,1200,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+ADSB_TYPE,ADSB,1,True,False,"hidden (GOBJECT_HIDDEN group ""ADSB_"")",,,False,True,
+AHRS_COMP_BETA,AHRS,0.1,True,True,,,,False,True,user_visible False->True
+AHRS_EKF_TYPE,AHRS,3,True,True,,,,False,True,user_visible False->True
+AHRS_GPS_GAIN,AHRS,1,True,True,,,,False,True,user_visible False->True
+AHRS_GPS_MINSATS,AHRS,6,True,True,,,,False,True,user_visible False->True
+AHRS_GPS_USE,AHRS,1,True,True,,,,False,True,user_visible False->True
+AHRS_OPTIONS,AHRS,0,True,True,,,,False,True,user_visible False->True
+AHRS_ORIENTATION,AHRS,8,True,True,,,,False,True,user_visible False->True
+AHRS_RP_P,AHRS,0.2,True,True,,,,False,True,user_visible False->True
+AHRS_TRIM_X,AHRS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00383982->(blank, not seeded); readonly True->False; user_visible False->True"
+AHRS_TRIM_Y,AHRS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00364908->(blank, not seeded); readonly True->False; user_visible False->True"
+AHRS_TRIM_Z,AHRS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+AHRS_WIND_MAX,AHRS,0,True,True,,,,False,True,user_visible False->True
+AHRS_YAW_P,AHRS,0.2,True,True,,,,False,True,user_visible False->True
+ANGLE_MAX,ANGLE,3500,False,True,"HARD CLAMPED 2000..3500 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",2000,3500,False,False,user_visible False->True
+ARMING_ACCTHRESH,ARMING,0.75,True,True,,,,False,True,user_visible False->True
+ARMING_CHECK,ARMING,540146,False,True,,,,False,False,user_visible False->True
+ARMING_CRSDP_IGN,ARMING,0,True,True,,,,False,True,user_visible False->True
+ARMING_MAGTHRESH,ARMING,100,True,True,,,,False,True,user_visible False->True
+ARMING_MIS_ITEMS,ARMING,0,True,True,,,,False,True,user_visible False->True
+ARMING_NEED_LOC,ARMING,0,True,True,,,,False,True,user_visible False->True
+ARMING_OPTIONS,ARMING,0,True,True,,,,False,True,user_visible False->True
+ARMING_RUDDER,ARMING,2,True,True,,,,False,True,user_visible False->True
+ARSPD_ENABLE,ARSPD,0,True,True,,,,False,True,user_visible False->True
+ATC_ACCEL_P_MAX,ATC,70000,True,True,,,,False,True,user_visible False->True
+ATC_ACCEL_R_MAX,ATC,70000,True,True,,,,False,True,user_visible False->True
+ATC_ACCEL_Y_MAX,ATC,16000,True,True,,,,False,True,user_visible False->True
+ATC_ANGLE_BOOST,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_ANG_LIM_TC,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_ANG_PIT_P,ATC,6.5,True,True,,,,False,True,user_visible False->True
+ATC_ANG_RLL_P,ATC,6.5,True,True,,,,False,True,user_visible False->True
+ATC_ANG_YAW_P,ATC,6.5,True,True,,,,False,True,user_visible False->True
+ATC_INPUT_TC,ATC,0.15,True,True,,,,False,True,user_visible False->True
+ATC_LAND_P_MULT,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_LAND_R_MULT,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_LAND_Y_MULT,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_RATE_FF_ENAB,ATC,1,True,True,,,,False,True,user_visible False->True
+ATC_RATE_P_MAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RATE_R_MAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RATE_Y_MAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_D,ATC,0.0115,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_D_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_FLTD,ATC,12.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_FLTE,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_FLTT,ATC,12.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_I,ATC,0.08,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_IMAX,ATC,0.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_NEF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_NTF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_P,ATC,0.08,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_PDMX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_PIT_SMAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_D,ATC,0.0115,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_D_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_FLTD,ATC,12.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_FLTE,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_FLTT,ATC,12.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_I,ATC,0.08,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_IMAX,ATC,0.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_NEF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_NTF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_P,ATC,0.08,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_PDMX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_RLL_SMAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_D,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_D_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_FF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_FLTD,ATC,20,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_FLTE,ATC,2.993685,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_FLTT,ATC,12.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_I,ATC,0.0365,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_IMAX,ATC,0.5,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_NEF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_NTF,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_P,ATC,0.365,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_PDMX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_RAT_YAW_SMAX,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_SLEW_YAW,ATC,6000,False,True,"HARD CLAMPED 3000..7000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",3000,7000,False,False,user_visible False->True
+ATC_THR_G_BOOST,ATC,0,True,True,,,,False,True,user_visible False->True
+ATC_THR_MIX_MAN,ATC,0.1,True,True,,,,False,True,user_visible False->True
+ATC_THR_MIX_MAX,ATC,0.5,True,True,,,,False,True,user_visible False->True
+ATC_THR_MIX_MIN,ATC,0.1,True,True,,,,False,True,user_visible False->True
+AUTOTUNE_AGGR,AUTOTUNE,0.075,True,True,,,,False,True,user_visible False->True
+AUTOTUNE_AXES,AUTOTUNE,4,True,True,,,,False,True,user_visible False->True
+AUTOTUNE_MIN_D,AUTOTUNE,0.0005,True,True,,,,False,True,user_visible False->True
+AUTO_OPTIONS,AUTO,0,False,True,,,,True,False,
+AUTO_RSM_CLIMB,AUTO,1,False,True,,,,True,False,
+AUTO_TILT_DN,AUTO,-90,False,True,"HARD CLAMPED -90..0 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",-90,0,True,False,
+AUTO_TILT_EN,AUTO,1,False,True,"HARD CLAMPED 0..1 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",0,1,True,False,
+AUTO_TILT_UP,AUTO,0,False,True,"HARD CLAMPED -45..20 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",-45,20,True,False,
+AVD_ENABLE,AVD,0,True,False,"hidden (GOBJECT_HIDDEN group ""AVD_"")",,,False,True,
+AVOID_ENABLE,AVOID,0,True,False,"hidden (GOBJECT_HIDDEN group ""AVOID_"")",,,False,True,
+BARO1_DEVID,BARO,721442,True,True,,,,False,True,user_visible False->True
+BARO1_GND_PRESS,BARO,98307.42,True,True,,,,False,True,user_visible False->True
+BARO1_WCF_ENABLE,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO2_DEVID,BARO,721674,True,True,,,,False,True,user_visible False->True
+BARO2_GND_PRESS,BARO,98251.39,True,True,,,,False,True,user_visible False->True
+BARO2_WCF_ENABLE,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO3_DEVID,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO3_GND_PRESS,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO3_WCF_ENABLE,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_ALTERR_MAX,BARO,2000,True,True,,,,False,True,user_visible False->True
+BARO_ALT_OFFSET,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_EXT_BUS,BARO,-1,True,True,,,,False,True,user_visible False->True
+BARO_FIELD_ELV,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_FLTR_RNG,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_GND_TEMP,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_OPTIONS,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_PRIMARY,BARO,0,True,True,,,,False,True,user_visible False->True
+BARO_PROBE_EXT,BARO,0,True,True,,,,False,True,user_visible False->True
+BATT2_ARM_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT2_ARM_SOC,BATT,0,False,True,"Minimum SOC %% required to arm. 0=disabled. Not reset by reboot (uses the pack SOC estimate, unlike ARM_VOLT/ARM_MAH).",,,,,NEW ROW
+BATT2_ARM_VOLT,BATT,20,False,True,,,,True,False,
+BATT2_CAPACITY,BATT,10000,False,True,"HARD CLAMPED 8000..20000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",8000,20000,False,False,user_visible False->True
+BATT2_CRT_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT2_CRT_SOC,BATT,20,False,True,"Critical-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_CRT_ACT after BATT_LOW_TIMER. 0=disabled. Must be < LOW_SOC or arming fails (soc failsafe critical >= low).",,,,,NEW ROW
+BATT2_CRT_VOLT,BATT,18.5,False,True,,,,True,False,
+BATT2_CURR_MULT,BATT,1,True,True,,,,False,True,user_visible False->True
+BATT2_FS_CRT_ACT,BATT,1,False,True,,,,True,False,
+BATT2_FS_LOW_ACT,BATT,2,False,True,,,,True,False,
+BATT2_FS_VOLTSRC,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT2_LOW_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT2_LOW_SOC,BATT,30,False,True,"Low-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_LOW_ACT after BATT_LOW_TIMER. 0=disabled. Added in 5fab6c5e26; Seeded in defaults.parm.",,,,,NEW ROW
+BATT2_LOW_TIMER,BATT,10,True,True,,,,False,True,user_visible False->True
+BATT2_LOW_VOLT,BATT,19,False,True,,,,True,False,
+BATT2_MONITOR,BATT,8,True,True,,,,False,True,user_visible False->True
+BATT2_OPTIONS,BATT,128,True,True,,,,False,True,user_visible False->True
+BATT2_SERIAL_NUM,BATT,1,True,True,,,,False,True,user_visible False->True
+BATT3_ARM_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT3_ARM_SOC,BATT,0,False,True,"Minimum SOC %% required to arm. 0=disabled. Not reset by reboot (uses the pack SOC estimate, unlike ARM_VOLT/ARM_MAH).",,,,,NEW ROW
+BATT3_ARM_VOLT,BATT,20,False,True,,,,True,False,
+BATT3_CAPACITY,BATT,10000,False,True,"HARD CLAMPED 8000..20000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",8000,20000,False,False,user_visible False->True
+BATT3_CRT_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT3_CRT_SOC,BATT,20,False,True,"Critical-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_CRT_ACT after BATT_LOW_TIMER. 0=disabled. Must be < LOW_SOC or arming fails (soc failsafe critical >= low).",,,,,NEW ROW
+BATT3_CRT_VOLT,BATT,18.5,False,True,,,,True,False,
+BATT3_CURR_MULT,BATT,1,True,True,,,,False,True,user_visible False->True
+BATT3_FS_CRT_ACT,BATT,1,False,True,,,,True,False,
+BATT3_FS_LOW_ACT,BATT,2,False,True,,,,True,False,
+BATT3_FS_VOLTSRC,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT3_LOW_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT3_LOW_SOC,BATT,30,False,True,"Low-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_LOW_ACT after BATT_LOW_TIMER. 0=disabled. Added in 5fab6c5e26; Seeded in defaults.parm.",,,,,NEW ROW
+BATT3_LOW_TIMER,BATT,10,True,True,,,,False,True,user_visible False->True
+BATT3_LOW_VOLT,BATT,19,False,True,,,,True,False,
+BATT3_MONITOR,BATT,8,True,True,,,,False,True,user_visible False->True
+BATT3_OPTIONS,BATT,128,True,True,,,,False,True,user_visible False->True
+BATT3_SERIAL_NUM,BATT,2,True,True,,,,False,True,user_visible False->True
+BATT4_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT5_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT6_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT7_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT8_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT9_MONITOR,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_AMP_OFFSET,BATT,1.645,True,True,,,,False,True,user_visible False->True
+BATT_AMP_PERVLT,BATT,41.6666,True,True,,,,False,True,user_visible False->True
+BATT_ARM_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_ARM_SOC,BATT,0,False,True,"Minimum SOC %% required to arm. 0=disabled. Not reset by reboot (uses the pack SOC estimate, unlike ARM_VOLT/ARM_MAH).",,,,,NEW ROW
+BATT_ARM_VOLT,BATT,0,False,True,,,,True,False,
+BATT_CAPACITY,BATT,20000,False,True,"HARD CLAMPED 8000..30000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",8000,30000,False,False,user_visible False->True
+BATT_CRT_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_CRT_SOC,BATT,0,False,True,"Critical-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_CRT_ACT after BATT_LOW_TIMER. 0=disabled. Must be < LOW_SOC or arming fails (soc failsafe critical >= low).",,,,,NEW ROW
+BATT_CRT_VOLT,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_CURR_PIN,BATT,15,True,True,,,,False,True,user_visible False->True
+BATT_FS_CRT_ACT,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_FS_LOW_ACT,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_FS_VOLTSRC,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_LOW_MAH,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_LOW_SOC,BATT,0,False,True,"Low-battery SOC failsafe threshold, %% remaining; triggers BATT_FS_LOW_ACT after BATT_LOW_TIMER. 0=disabled. Added in 5fab6c5e26; NOT seeded in defaults.parm so code default 0 applies.",,,,,NEW ROW
+BATT_LOW_TIMER,BATT,10,True,True,,,,False,True,user_visible False->True
+BATT_LOW_VOLT,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_MONITOR,BATT,4,True,True,,,,False,True,user_visible False->True
+BATT_OPTIONS,BATT,256,True,True,,,,False,True,user_visible False->True
+BATT_SERIAL_NUM,BATT,1,True,True,,,,False,True,user_visible False->True
+BATT_VLT_OFFSET,BATT,0,True,True,,,,False,True,user_visible False->True
+BATT_VOLT_MULT,BATT,19,True,True,,,,False,True,user_visible False->True
+BATT_VOLT_PIN,BATT,14,True,True,,,,False,True,user_visible False->True
+BCN_TYPE,BCN,0,True,True,,,,False,True,user_visible False->True
+BRD_ALT_CONFIG,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_BOOT_DELAY,BRD,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+BRD_HEAT_I,BRD,0.07,True,True,,,,False,True,user_visible False->True
+BRD_HEAT_IMAX,BRD,70,True,True,,,,False,True,user_visible False->True
+BRD_HEAT_LOWMGN,BRD,5,True,True,,,,False,True,user_visible False->True
+BRD_HEAT_P,BRD,50,True,True,,,,False,True,user_visible False->True
+BRD_HEAT_TARG,BRD,45,True,True,,,,False,True,user_visible False->True
+BRD_IO_DSHOT,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_IO_ENABLE,BRD,1,True,True,,,,False,True,user_visible False->True
+BRD_OPTIONS,BRD,1,True,True,,,,False,True,user_visible False->True
+BRD_PWM_VOLT_SEL,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_RTC_TYPES,BRD,1,True,True,,,,False,True,user_visible False->True
+BRD_RTC_TZ_MIN,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SAFETYOPTION,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SAFETY_DEFLT,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SAFETY_MASK,BRD,16368,True,True,,,,False,True,user_visible False->True
+BRD_SBUS_OUT,BRD,0,False,True,,,,True,False,
+BRD_SD_FENCE,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SD_MISSION,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SD_SLOWDOWN,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_SER1_RTSCTS,BRD,2,True,True,,,,False,True,user_visible False->True
+BRD_SER2_RTSCTS,BRD,2,True,True,,,,False,True,user_visible False->True
+BRD_SERIAL_NUM,BRD,0,True,True,,,,False,True,user_visible False->True
+BRD_TYPE,BRD,3,True,True,,,,False,True,user_visible False->True
+BRD_VBUS_MIN,BRD,4.3,True,True,,,,False,True,user_visible False->True
+BRD_VSERVO_MIN,BRD,0,True,True,,,,False,True,user_visible False->True
+BTN_ENABLE,BTN,0,True,True,,,,False,True,user_visible False->True
+CAM1_DURATION,CAM,0.1,False,True,,,,False,False,user_visible False->True
+CAM1_FEEDBAK_PIN,CAM,-1,True,True,,,,False,True,user_visible False->True
+CAM1_FEEDBAK_POL,CAM,1,True,True,,,,False,True,user_visible False->True
+CAM1_HFOV,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM1_INTRVAL_MIN,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM1_MNT_INST,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM1_OPTIONS,CAM,0,False,True,,,,True,False,
+CAM1_RELAY_ON,CAM,1,True,True,,,,False,True,user_visible False->True
+CAM1_SERVO_OFF,CAM,1100,True,True,,,,False,True,user_visible False->True
+CAM1_SERVO_ON,CAM,1300,True,True,,,,False,True,user_visible False->True
+CAM1_TRIGG_DIST,CAM,0,False,True,,,,False,False,user_visible False->True
+CAM1_TYPE,CAM,5,False,True,,,,False,False,user_visible False->True
+CAM1_VFOV,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM2_TYPE,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM_AUTO_ONLY,CAM,1,True,True,,,,False,True,user_visible False->True
+CAM_MAX_ROLL,CAM,0,True,True,,,,False,True,user_visible False->True
+CAM_RC_TYPE,CAM,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_PROTOCOL,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_D1_PROTOCOL2,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_ESC_BM,CAN,15,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_ESC_OF,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_ESC_RV,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_NODE,CAN,10,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_NTF_RT,CAN,20,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_OPTION,CAN,2,False,True,,,,True,False,
+CAN_D1_UC_POOL,CAN,16384,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_RLY_RT,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_SER_EN,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_SRV_BM,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_D1_UC_SRV_RT,CAN,50,True,True,,,,False,True,user_visible False->True
+CAN_D2_PROTOCOL,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_D2_PROTOCOL2,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_LOGLEVEL,CAN,3,False,True,,,,False,False,user_visible False->True
+CAN_P1_BITRATE,CAN,1000000,True,True,,,,False,True,user_visible False->True
+CAN_P1_DRIVER,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_P1_FDBITRATE,CAN,8,True,True,,,,False,True,user_visible False->True
+CAN_P1_OPTIONS,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_P2_BITRATE,CAN,1000000,True,True,,,,False,True,user_visible False->True
+CAN_P2_DRIVER,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_P2_FDBITRATE,CAN,8,True,True,,,,False,True,user_visible False->True
+CAN_P2_OPTIONS,CAN,0,True,True,,,,False,True,user_visible False->True
+CAN_SLCAN_CPORT,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_SLCAN_SDELAY,CAN,1,True,True,,,,False,True,user_visible False->True
+CAN_SLCAN_SERNUM,CAN,-1,True,True,,,,False,True,user_visible False->True
+CAN_SLCAN_TIMOUT,CAN,2,True,True,,,,False,True,user_visible False->True
+CHUTE_ENABLED,CHUTE,0,True,False,"hidden (GOBJECT_HIDDEN group ""CHUTE_"")",,,False,True,
+CIRCLE_OPTIONS,CIRCLE,1,True,False,"hidden (GOBJECT_HIDDEN group ""CIRCLE_"")",,,False,True,
+CIRCLE_RADIUS,CIRCLE,1000,True,False,"hidden (GOBJECT_HIDDEN group ""CIRCLE_"")",,,False,True,
+CIRCLE_RATE,CIRCLE,20,True,False,"hidden (GOBJECT_HIDDEN group ""CIRCLE_"")",,,False,True,
+COMPASS_AUTODEC,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_AUTO_ROT,COMPASS,2,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_CAL_FIT,COMPASS,16,False,True,,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEC,COMPASS,0,True,True,,,,False,True,user_visible False->True
+COMPASS_DEV_ID,COMPASS,96515,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID2,COMPASS,162051,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID3,COMPASS,1313809,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID4,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID5,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID6,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID7,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DEV_ID8,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_DIA2_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA2_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA2_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA3_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.06968->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA3_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.966183->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA3_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.873541->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.989752->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.02105->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DIA_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.04047->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_DISBLMSK,COMPASS,0,True,True,,,,False,True,user_visible False->True
+COMPASS_ENABLE,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_EXTERN2,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_EXTERN3,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_EXTERNAL,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_FLTR_RNG,COMPASS,0,True,True,,,,False,True,user_visible False->True
+COMPASS_LEARN,COMPASS,0,False,True,,,,False,True,readonly True->False; user_visible False->True
+COMPASS_MOT2_X,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 4.9->(blank, not seeded)"
+COMPASS_MOT2_Y,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 0.2->(blank, not seeded)"
+COMPASS_MOT2_Z,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default -2.8->(blank, not seeded)"
+COMPASS_MOT3_X,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 0->(blank, not seeded)"
+COMPASS_MOT3_Y,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 0->(blank, not seeded)"
+COMPASS_MOT3_Z,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 0->(blank, not seeded)"
+COMPASS_MOTCT,COMPASS,2,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_MOT_X,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default 5.4->(blank, not seeded)"
+COMPASS_MOT_Y,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default -0.6->(blank, not seeded)"
+COMPASS_MOT_Z,COMPASS,,False,True,NOT SEEDED - compassmot compensation. Device-ID pinning table exists (ArduCopter/xplorer_compass_mot_pinning.h) but xplorer_compass_mot_boot_align() is CURRENTLY COMMENTED OUT in system.cpp (TEMP-COMPASS-EXPERIMENT) | [v2 note] should make false once we fix this on a lower level,,,True,False,"default -3.2->(blank, not seeded)"
+COMPASS_ODI2_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI2_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI2_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI3_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.0295737->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI3_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.0304869->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI3_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.00523252->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00598376->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0656187->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_ODI_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00464728->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFFS_MAX,COMPASS,1800,False,True,,,,False,True,readonly True->False; user_visible False->True
+COMPASS_OFS2_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 79.7379->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS2_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -20.6794->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS2_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 154.723->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS3_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 88.0349->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS3_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 711.893->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS3_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 544.816->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS_X,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 15.7597->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS_Y,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -23.1253->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OFS_Z,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 42.5939->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_OPTIONS,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_ORIENT,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_ORIENT2,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_ORIENT3,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_PMOT_EN,COMPASS,0,True,True,,,,False,True,user_visible False->True
+COMPASS_PRIO1_ID,COMPASS,96515,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_PRIO2_ID,COMPASS,162051,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_PRIO3_ID,COMPASS,1313809,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_SCALE,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.08746->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_SCALE2,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.913768->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_SCALE3,COMPASS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.04841->(blank, not seeded); readonly True->False; user_visible False->True"
+COMPASS_USE,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_USE2,COMPASS,1,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+COMPASS_USE3,COMPASS,0,False,True,defaults.parm: # TEMP-COMPASS-EXPERIMENT unlocked,,,False,True,readonly True->False; user_visible False->True
+CUST_ROT_ENABLE,CUST,0,True,True,,,,False,True,user_visible False->True
+DEV_OPTIONS,DEV,0,True,True,,,,False,True,user_visible False->True
+DID_BARO_ACC,DID,-1,True,True,,,,False,True,user_visible False->True
+DID_CANDRIVER,DID,1,True,True,,,,False,True,user_visible False->True
+DID_ENABLE,DID,1,True,True,,,,False,True,user_visible False->True
+DID_MAVPORT,DID,-1,True,True,,,,False,True,user_visible False->True
+DID_OPTIONS,DID,1,True,True,,,,False,True,user_visible False->True
+DISARM_DELAY,DISARM,10,False,True,,,,True,False,
+EAHRS_TYPE,EAHRS,0,True,True,,,,False,True,user_visible False->True
+EK3_ABIAS_P_NSE,EK,0.02,True,True,,,,False,True,user_visible False->True
+EK3_ACC_BIAS_LIM,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_ACC_P_NSE,EK,0.35,True,True,,,,False,True,user_visible False->True
+EK3_AFFINITY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_ALT_M_NSE,EK,2,True,True,,,,False,True,user_visible False->True
+EK3_BCN_DELAY,EK,50,True,True,,,,False,True,user_visible False->True
+EK3_BCN_I_GTE,EK,500,True,True,,,,False,True,user_visible False->True
+EK3_BCN_M_NSE,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_BETA_MASK,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_CHECK_SCALE,EK,100,True,True,,,,False,True,user_visible False->True
+EK3_DRAG_BCOEF_X,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_DRAG_BCOEF_Y,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_DRAG_MCOEF,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_DRAG_M_NSE,EK,0.5,True,True,,,,False,True,user_visible False->True
+EK3_EAS_I_GATE,EK,400,True,True,,,,False,True,user_visible False->True
+EK3_EAS_M_NSE,EK,1.4,True,True,,,,False,True,user_visible False->True
+EK3_ENABLE,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_ERR_THRESH,EK,0.2,True,True,,,,False,True,user_visible False->True
+EK3_FLOW_DELAY,EK,10,True,True,,,,False,True,user_visible False->True
+EK3_FLOW_I_GATE,EK,300,True,True,,,,False,True,user_visible False->True
+EK3_FLOW_M_NSE,EK,0.25,True,True,,,,False,True,user_visible False->True
+EK3_FLOW_USE,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_GBIAS_P_NSE,EK,0.001,True,True,,,,False,True,user_visible False->True
+EK3_GLITCH_RAD,EK,25,True,True,,,,False,True,user_visible False->True
+EK3_GND_EFF_DZ,EK,4,True,True,,,,False,True,user_visible False->True
+EK3_GPS_CHECK,EK,31,True,True,,,,False,True,user_visible False->True
+EK3_GPS_VACC_MAX,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_GSF_RST_MAX,EK,2,True,True,,,,False,True,user_visible False->True
+EK3_GSF_RUN_MASK,EK,3,True,True,,,,False,True,user_visible False->True
+EK3_GSF_USE_MASK,EK,3,True,True,,,,False,True,user_visible False->True
+EK3_GYRO_P_NSE,EK,0.015,True,True,,,,False,True,user_visible False->True
+EK3_HGT_DELAY,EK,60,True,True,,,,False,True,user_visible False->True
+EK3_HGT_I_GATE,EK,500,True,True,,,,False,True,user_visible False->True
+EK3_HRT_FILT,EK,2,True,True,,,,False,True,user_visible False->True
+EK3_IMU_MASK,EK,7,True,True,,,,False,True,user_visible False->True
+EK3_LOG_LEVEL,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_MAGB_P_NSE,EK,0.0001,True,True,,,,False,True,default 0.0002->0.0001; user_visible False->True
+EK3_MAGE_P_NSE,EK,0.001,True,True,,,,False,True,user_visible False->True
+EK3_MAG_CAL,EK,3,False,True,,,,False,True,readonly True->False; user_visible False->True
+EK3_MAG_EF_LIM,EK,50,True,True,,,,False,True,user_visible False->True
+EK3_MAG_I_GATE,EK,300,True,True,,,,False,True,user_visible False->True
+EK3_MAG_MASK,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_MAG_M_NSE,EK,0.05,True,True,,,,False,True,default 0.08->0.05; user_visible False->True
+EK3_MAX_FLOW,EK,2.5,True,True,,,,False,True,user_visible False->True
+EK3_NOAID_M_NSE,EK,10,True,True,,,,False,True,user_visible False->True
+EK3_OGNM_TEST_SF,EK,2,True,True,,,,False,True,user_visible False->True
+EK3_OGN_HGT_MASK,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_OPTIONS,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_POSNE_M_NSE,EK,0.5,True,True,,,,False,True,user_visible False->True
+EK3_POS_I_GATE,EK,500,True,True,,,,False,True,user_visible False->True
+EK3_PRIMARY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_RNG_I_GATE,EK,500,True,True,,,,False,True,user_visible False->True
+EK3_RNG_M_NSE,EK,0.5,True,True,,,,False,True,user_visible False->True
+EK3_RNG_USE_HGT,EK,-1,True,True,,,,False,True,user_visible False->True
+EK3_RNG_USE_SPD,EK,2,True,True,,,,False,True,user_visible False->True
+EK3_SRC1_POSXY,EK,3,True,True,,,,False,True,user_visible False->True
+EK3_SRC1_POSZ,EK,3,False,True,,,,False,False,user_visible False->True
+EK3_SRC1_VELXY,EK,3,True,True,,,,False,True,user_visible False->True
+EK3_SRC1_VELZ,EK,3,True,True,,,,False,True,user_visible False->True
+EK3_SRC1_YAW,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_SRC2_POSXY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC2_POSZ,EK,1,False,True,,,,False,False,user_visible False->True
+EK3_SRC2_VELXY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC2_VELZ,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC2_YAW,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC3_POSXY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC3_POSZ,EK,1,False,True,,,,False,False,user_visible False->True
+EK3_SRC3_VELXY,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC3_VELZ,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC3_YAW,EK,0,True,True,,,,False,True,user_visible False->True
+EK3_SRC_OPTIONS,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_TAU_OUTPUT,EK,25,True,True,,,,False,True,user_visible False->True
+EK3_TERR_GRAD,EK,0.1,True,True,,,,False,True,user_visible False->True
+EK3_VELD_M_NSE,EK,0.5,True,True,,,,False,True,user_visible False->True
+EK3_VELNE_M_NSE,EK,0.3,True,True,,,,False,True,user_visible False->True
+EK3_VEL_I_GATE,EK,500,True,True,,,,False,True,user_visible False->True
+EK3_VIS_VERR_MAX,EK,0.9,True,True,,,,False,True,user_visible False->True
+EK3_VIS_VERR_MIN,EK,0.1,True,True,,,,False,True,user_visible False->True
+EK3_WENC_VERR,EK,0.1,True,True,,,,False,True,user_visible False->True
+EK3_WIND_PSCALE,EK,1,True,True,,,,False,True,user_visible False->True
+EK3_WIND_P_NSE,EK,0.2,True,True,,,,False,True,user_visible False->True
+EK3_YAW_I_GATE,EK,300,True,True,,,,False,True,user_visible False->True
+EK3_YAW_M_NSE,EK,0.5,True,True,,,,False,True,user_visible False->True
+ESC_CALIBRATION,ESC,0,True,True,,,,False,True,user_visible False->True
+ESC_TLM_MAV_OFS,ESC,0,True,True,,,,False,True,user_visible False->True
+FENCE_ACTION,FENCE,1,False,True,,,,True,False,
+FENCE_ALT_MAX,FENCE,140,False,True,,,,True,False,
+FENCE_ALT_MIN,FENCE,-10,False,True,,,,True,False,
+FENCE_AUTOENABLE,FENCE,0,False,True,,,,True,False,
+FENCE_ENABLE,FENCE,1,False,True,,,,True,False,
+FENCE_MARGIN,FENCE,2,False,True,,,,True,False,
+FENCE_OPTIONS,FENCE,0,False,True,,,,True,False,
+FENCE_RADIUS,FENCE,3000,False,True,,,,True,False,
+FENCE_TOTAL,FENCE,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,False,"default 0->(blank, not seeded)"
+FENCE_TYPE,FENCE,3,False,True,,,,True,False,
+FFT_ENABLE,FFT,0,True,True,,,,False,True,user_visible False->True
+FILT1_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT2_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT3_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT4_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT5_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT6_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT7_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FILT8_TYPE,FILT,0,True,True,,,,False,True,user_visible False->True
+FLIGHT_OPTIONS,FLIGHT,0,True,True,,,,False,True,user_visible False->True
+FLOW_TYPE,FLOW,0,True,True,,,,False,True,user_visible False->True
+FLTMODE1,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE2,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE3,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE4,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE5,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE6,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE_CH,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FLTMODE_GCSBLOCK,FLTMODE,0,True,True,,,,False,True,user_visible False->True
+FORMAT_VERSION,FORMAT,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,False,True,"default 120->(blank, not seeded); readonly True->False; user_visible False->True"
+FRAME_CLASS,FRAME,1,True,True,,,,False,True,user_visible False->True
+FRAME_TYPE,FRAME,1,True,True,,,,False,True,user_visible False->True
+FRSKY_DNLINK1_ID,FRSKY,20,True,True,,,,False,True,user_visible False->True
+FRSKY_DNLINK2_ID,FRSKY,7,True,True,,,,False,True,user_visible False->True
+FRSKY_DNLINK_ID,FRSKY,27,True,True,,,,False,True,user_visible False->True
+FRSKY_OPTIONS,FRSKY,0,True,True,,,,False,True,user_visible False->True
+FRSKY_UPLINK_ID,FRSKY,13,True,True,,,,False,True,user_visible False->True
+FS_CRASH_CHECK,FS,1,True,True,,,,False,True,user_visible False->True
+FS_DR_ENABLE,FS,2,True,True,,,,False,True,user_visible False->True
+FS_DR_TIMEOUT,FS,30,True,True,,,,False,True,user_visible False->True
+FS_EKF_ACTION,FS,1,False,True,,,,True,False,
+FS_EKF_FILT,FS,5,False,True,,,,False,False,user_visible False->True
+FS_EKF_THRESH,FS,0.8,False,True,,,,False,False,user_visible False->True
+FS_GCS_ENABLE,FS,0,False,True,,,,True,False,
+FS_GCS_TIMEOUT,FS,5,False,True,,,,True,False,
+FS_OPTIONS,FS,8,False,True,,,,True,False,
+FS_THR_ENABLE,FS,1,False,True,,,,True,False,
+FS_THR_VALUE,FS,950,False,True,,,,False,False,user_visible False->True
+FS_VIBE_ENABLE,FS,1,False,True,,,,False,False,user_visible False->True
+FWDAVD_ACT_AUTO,FWDAVD,2,False,True,,,,True,False,
+FWDAVD_ACT_MAN,FWDAVD,4,False,True,,,,True,False,
+FWDAVD_ALT,FWDAVD,5,False,True,,,,True,False,
+FWDAVD_BTN_EN,FWDAVD,1,False,True,,,,True,False,
+FWDAVD_CHAN,FWDAVD,0,False,True,,,,True,False,
+FWDAVD_COND,FWDAVD,0,False,True,,,,True,False,
+FWDAVD_DIST,FWDAVD,15,False,True,"HARD CLAMPED 3..40 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",3,40,True,False,
+FWDAVD_EN,FWDAVD,3,False,True,,,,True,False,
+FWDAVD_SAMP,FWDAVD,3,False,True,"HARD CLAMPED 1..20 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",1,20,True,False,
+GCS_PID_MASK,GCS,0,True,True,,,,False,True,user_visible False->True
+GND_EFFECT_COMP,GND,1,True,True,,,,False,True,user_visible False->True
+GPS1_CAN_NODEID,GPS,121,True,True,,,,False,True,user_visible False->True
+GPS1_CAN_OVRIDE,GPS,121,False,True,,,,False,False,user_visible False->True
+GPS1_COM_PORT,GPS,1,True,True,,,,False,True,user_visible False->True
+GPS1_DELAY_MS,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS1_GNSS_MODE,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS1_MB_TYPE,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS1_POS_X,GPS,0.05681,True,True,,,,False,True,user_visible False->True
+GPS1_POS_Y,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS1_POS_Z,GPS,-0.1217,True,True,,,,False,True,user_visible False->True
+GPS1_RATE_MS,GPS,200,True,True,,,,False,True,user_visible False->True
+GPS1_TYPE,GPS,9,True,True,,,,False,True,user_visible False->True
+GPS2_TYPE,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS_AUTO_CONFIG,GPS,1,False,True,,,,False,False,user_visible False->True
+GPS_AUTO_SWITCH,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS_BLEND_MASK,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS_DRV_OPTIONS,GPS,0,False,True,,,,False,False,user_visible False->True
+GPS_HDOP_GOOD,GPS,140,True,True,,,,False,True,user_visible False->True
+GPS_INJECT_TO,GPS,127,True,True,,,,False,True,user_visible False->True
+GPS_MIN_ELEV,GPS,-100,True,True,,,,False,True,user_visible False->True
+GPS_NAVFILTER,GPS,8,True,True,,,,False,True,user_visible False->True
+GPS_PRIMARY,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS_RAW_DATA,GPS,0,True,True,,,,False,True,user_visible False->True
+GPS_SAVE_CFG,GPS,2,True,True,,,,False,True,user_visible False->True
+GPS_SBAS_MODE,GPS,2,True,True,,,,False,True,user_visible False->True
+GPS_SBP_LOGMASK,GPS,-256,True,True,,,,False,True,user_visible False->True
+GRIP_ENABLE,GRIP,0,True,True,,,,False,True,user_visible False->True
+GUID_OPTIONS,GUID,0,True,True,,,,False,True,user_visible False->True
+GUID_TIMEOUT,GUID,3,True,True,,,,False,True,user_visible False->True
+INITIAL_MODE,INITIAL,5,True,True,,,,False,True,user_visible False->True
+INS4_ACCOFFS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACCOFFS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACCOFFS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACCSCAL_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACCSCAL_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACCSCAL_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACC_CALTEMP,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default -300->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_ACC_ID,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_GYROFFS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_GYROFFS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_GYROFFS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_GYR_CALTEMP,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default -300->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_GYR_ID,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_POS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_POS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_POS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_TCAL_ENABLE,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS4_USE,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 1->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCOFFS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCOFFS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCOFFS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCSCAL_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCSCAL_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACCSCAL_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACC_CALTEMP,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default -300->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_ACC_ID,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_GYROFFS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_GYROFFS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_GYROFFS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_GYR_CALTEMP,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default -300->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_GYR_ID,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_POS_X,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_POS_Y,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_POS_Z,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_TCAL_ENABLE,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 0->(blank, not seeded); readonly True->False; user_visible False->True"
+INS5_USE,INS,,False,True,"NOT SEEDED - aux IMU instance slot (hwdef sets INS_AUX_INSTANCES 2, so INS_MAX_INSTANCES=5). Param exists but no 4th/5th IMU is fitted",,,False,True,"default 1->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC1_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 44.5->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2OFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0172006->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2OFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00337014->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2OFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.0860483->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2SCAL_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.999522->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2SCAL_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.999354->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2SCAL_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.999774->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 44.0625->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC2_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86794e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3OFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.00354793->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3OFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.025209->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3OFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0127306->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3SCAL_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 1.00051->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3SCAL_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.99886->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3SCAL_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.998544->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 39.5->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC3_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86766e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCEL_FILTER,INS,10,True,True,,,,False,True,user_visible False->True
+INS_ACCOFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0506426->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCOFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0281159->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCOFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0100078->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCSCAL_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.998854->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCSCAL_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.999702->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACCSCAL_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.999772->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ACC_BODYFIX,INS,2,True,True,,,,False,True,user_visible False->True
+INS_ACC_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86768e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_ENABLE_MASK,INS,127,True,True,,,,False,True,user_visible False->True
+INS_FAST_SAMPLE,INS,7,True,True,,,,False,True,user_visible False->True
+INS_GYR1_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 45.75->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR2OFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.0011042->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR2OFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.000992602->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR2OFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.000519828->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR2_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 45->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR2_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86794e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR3OFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00119589->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR3OFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00246371->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR3OFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00162684->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR3_CALTEMP,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 52.0312->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYR3_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86766e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYROFFS_X,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.000112233->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYROFFS_Y,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 0.0101088->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYROFFS_Z,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default -0.00300753->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_GYRO_FILTER,INS,25,True,True,,,,False,True,user_visible False->True
+INS_GYRO_RATE,INS,1,True,True,,,,False,True,user_visible False->True
+INS_GYR_CAL,INS,1,True,True,,,,False,True,user_visible False->True
+INS_GYR_ID,INS,,False,True,NOT SEEDED - per-unit calibration value; stripped from defaults.parm in 6f1d594 so each airframe keeps its own cal,,,False,True,"default 3.86768e+06->(blank, not seeded); readonly True->False; user_visible False->True"
+INS_HNTC2_ENABLE,INS,0,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_ATT,INS,40,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_BW,INS,40,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_ENABLE,INS,1,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_FM_RAT,INS,0.7,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_FREQ,INS,50,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_HMNCS,INS,3,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_MODE,INS,1,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_OPTS,INS,0,True,True,,,,False,True,user_visible False->True
+INS_HNTCH_REF,INS,0.2,True,True,,,,False,True,user_visible False->True
+INS_LOG_BAT_CNT,INS,1024,True,True,,,,False,True,user_visible False->True
+INS_LOG_BAT_LGCT,INS,32,True,True,,,,False,True,user_visible False->True
+INS_LOG_BAT_LGIN,INS,20,True,True,,,,False,True,user_visible False->True
+INS_LOG_BAT_MASK,INS,0,True,True,,,,False,True,user_visible False->True
+INS_LOG_BAT_OPT,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS1_X,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS1_Y,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS1_Z,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS2_X,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS2_Y,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS2_Z,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS3_X,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS3_Y,INS,0,True,True,,,,False,True,user_visible False->True
+INS_POS3_Z,INS,0,True,True,,,,False,True,user_visible False->True
+INS_RAW_LOG_OPT,INS,0,True,True,,,,False,True,user_visible False->True
+INS_STILL_THRESH,INS,2.5,True,True,,,,False,True,user_visible False->True
+INS_TCAL1_ENABLE,INS,0,True,True,,,,False,True,user_visible False->True
+INS_TCAL2_ENABLE,INS,0,True,True,,,,False,True,user_visible False->True
+INS_TCAL3_ENABLE,INS,0,True,True,,,,False,True,user_visible False->True
+INS_TCAL_OPTIONS,INS,0,True,True,,,,False,True,user_visible False->True
+INS_TRIM_OPTION,INS,1,True,True,,,,False,True,user_visible False->True
+INS_USE,INS,1,True,True,,,,False,True,user_visible False->True
+INS_USE2,INS,1,True,True,,,,False,True,user_visible False->True
+INS_USE3,INS,1,True,True,,,,False,True,user_visible False->True
+KDE_NPOLE,KDE,14,True,True,,,,False,True,user_visible False->True
+LAND_ALT_LOW,LAND,1000,False,True,,,,True,False,
+LAND_REPOSITION,LAND,1,False,True,,,,True,False,
+LAND_RNG_ALT,LAND,800,False,True,"HARD CLAMPED 600..2000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",600,2000,True,False,
+LAND_RNG_EN,LAND,1,False,True,,,,True,False,
+LAND_RNG_SPD,LAND,45,False,True,"HARD CLAMPED 30..200 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",30,200,True,False,
+LAND_SPEED,LAND,50,False,True,"HARD CLAMPED 20..200 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",20,200,True,False,
+LAND_SPEED_HIGH,LAND,0,False,True,"HARD CLAMPED 0..200 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",0,200,True,False,
+LGR_ENABLE,LGR,0,True,False,"hidden (GOBJECT_HIDDEN group ""LGR_"")",,,False,True,
+LOG_BACKEND_TYPE,LOG,1,True,True,,,,False,True,user_visible False->True
+LOG_BITMASK,LOG,178174,False,True,,,,False,False,user_visible False->True
+LOG_DARM_RATEMAX,LOG,0,True,True,,,,False,True,user_visible False->True
+LOG_DISARMED,LOG,0,False,True,,,,True,False,
+LOG_FILE_BUFSIZE,LOG,200,True,True,,,,False,True,user_visible False->True
+LOG_FILE_DSRMROT,LOG,1,False,True,,,,True,False,
+LOG_FILE_MB_FREE,LOG,500,True,True,,,,False,True,user_visible False->True
+LOG_FILE_RATEMAX,LOG,0,False,True,,,,True,False,
+LOG_FILE_TIMEOUT,LOG,5,True,True,,,,False,True,user_visible False->True
+LOG_MAV_BUFSIZE,LOG,8,True,True,,,,False,True,user_visible False->True
+LOG_MAV_RATEMAX,LOG,0,True,True,,,,False,True,user_visible False->True
+LOG_MAX_FILES,LOG,500,False,True,,,,False,False,user_visible False->True
+LOG_REPLAY,LOG,0,True,True,,,,False,True,user_visible False->True
+LOIT_ACC_MAX,LOIT,500,False,True,"HARD CLAMPED 300..800 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",300,800,False,False,user_visible False->True
+LOIT_ANG_MAX,LOIT,0,False,True,,,,False,False,user_visible False->True
+LOIT_BRK_ACCEL,LOIT,250,False,True,"HARD CLAMPED 200..400 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",200,400,False,False,user_visible False->True
+LOIT_BRK_DELAY,LOIT,1,False,True,,,,False,False,user_visible False->True
+LOIT_BRK_JERK,LOIT,500,False,True,"HARD CLAMPED 300..600 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",300,600,False,False,user_visible False->True
+LOIT_SPEED,LOIT,800,False,True,"HARD CLAMPED 50..2000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",50,2000,True,False,range 50..1800->50..2000
+MIS_LAST_INDEX,MIS,0,False,True,,,,True,False,
+MIS_OPTIONS,MIS,0,False,True,,,,True,False,
+MIS_RESTART,MIS,0,False,True,,,,True,False,
+MIS_TOTAL,MIS,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,True,"default 0->(blank, not seeded); readonly True->False"
+MNT1_DEFLT_MODE,MNT,3,False,True,,,,False,False,user_visible False->True
+MNT1_DEVID,MNT,0,True,True,,,,False,True,user_visible False->True
+MNT1_LEAD_PTCH,MNT,0,True,True,,,,False,True,user_visible False->True
+MNT1_LEAD_RLL,MNT,0,True,True,,,,False,True,user_visible False->True
+MNT1_NEUTRAL_X,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_NEUTRAL_Y,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_NEUTRAL_Z,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_OPTIONS,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_PITCH_MAX,MNT,20,False,True,,,,False,False,user_visible False->True
+MNT1_PITCH_MIN,MNT,-90,False,True,,,,False,False,user_visible False->True
+MNT1_RC_RATE,MNT,90,False,True,,,,True,False,
+MNT1_RETRACT_X,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_RETRACT_Y,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_RETRACT_Z,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_ROLL_MAX,MNT,30,False,True,,,,False,False,user_visible False->True
+MNT1_ROLL_MIN,MNT,-30,False,True,,,,False,False,user_visible False->True
+MNT1_SYSID_DFLT,MNT,0,False,True,,,,False,False,user_visible False->True
+MNT1_TYPE,MNT,6,False,True,,,,True,False,
+MNT1_YAW_MAX,MNT,180,False,True,,,,False,False,user_visible False->True
+MNT1_YAW_MIN,MNT,-180,False,True,,,,False,False,user_visible False->True
+MNT2_TYPE,MNT,0,True,True,,,,False,True,user_visible False->True
+MOT_BAT_CURR_MAX,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_BAT_CURR_TC,MOT,5,True,True,,,,False,True,user_visible False->True
+MOT_BAT_IDX,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_BAT_VOLT_MAX,MOT,25.2,True,True,,,,False,True,user_visible False->True
+MOT_BAT_VOLT_MIN,MOT,19.8,True,True,,,,False,True,user_visible False->True
+MOT_BOOST_SCALE,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_HOVER_LEARN,MOT,2,False,True,,,,False,False,user_visible False->True
+MOT_OPTIONS,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_PWM_MAX,MOT,1900,True,True,,,,False,True,user_visible False->True
+MOT_PWM_MIN,MOT,1050,True,True,,,,False,True,user_visible False->True
+MOT_PWM_TYPE,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_SAFE_DISARM,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_SAFE_TIME,MOT,1,True,True,,,,False,True,user_visible False->True
+MOT_SLEW_DN_TIME,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_SLEW_UP_TIME,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_SPIN_ARM,MOT,0.11,True,True,,,,False,True,user_visible False->True
+MOT_SPIN_MAX,MOT,0.95,True,True,,,,False,True,user_visible False->True
+MOT_SPIN_MIN,MOT,0.14,True,True,,,,False,True,user_visible False->True
+MOT_SPOOL_TIME,MOT,0.5,True,True,,,,False,True,user_visible False->True
+MOT_SPOOL_TIM_DN,MOT,0,True,True,,,,False,True,user_visible False->True
+MOT_THST_EXPO,MOT,0.7,True,True,,,,False,True,user_visible False->True
+MOT_THST_HOVER,MOT,0.201434,True,True,,,,False,True,user_visible False->True
+MOT_YAW_HEADROOM,MOT,200,True,True,,,,False,True,user_visible False->True
+MSP_OPTIONS,MSP,0,True,True,,,,False,True,user_visible False->True
+MSP_OSD_NCELLS,MSP,0,True,True,,,,False,True,user_visible False->True
+NET_ENABLE,NET,0,True,True,,,,False,True,user_visible False->True
+NET_P1_TYPE,NET,0,True,True,,,,False,True,user_visible False->True
+NET_P2_TYPE,NET,0,True,True,,,,False,True,user_visible False->True
+NET_P3_TYPE,NET,0,True,True,,,,False,True,user_visible False->True
+NET_P4_TYPE,NET,0,True,True,,,,False,True,user_visible False->True
+NMEA_MSG_EN,NMEA,3,False,True,,,,True,False,
+NMEA_RATE_MS,NMEA,100,False,True,,,,True,False,
+NTF_BUZZ_ON_LVL,NTF,1,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_BUZZ_PIN,NTF,0,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_BUZZ_TYPES,NTF,5,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_BUZZ_VOLUME,NTF,100,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_DISPLAY_TYPE,NTF,0,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_LED_BRIGHT,NTF,3,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_LED_LEN,NTF,1,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_LED_OVERRIDE,NTF,0,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_LED_TYPES,NTF,231,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+NTF_OREO_THEME,NTF,0,True,False,"hidden (GOBJECT_HIDDEN group ""NTF_"")",,,False,True,
+OA_TYPE,OA,0,True,True,,,,False,True,user_visible False->True
+OSD_TYPE,OSD,0,True,False,"hidden (GOBJECT_HIDDEN group ""OSD"")",,,False,True,
+PILOT_ACCEL_Z,PILOT,250,False,True,"HARD CLAMPED 100..400 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",100,400,True,False,
+PILOT_SPEED_DN,PILOT,200,False,True,"HARD CLAMPED 50..300 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",50,300,True,False,
+PILOT_SPEED_UP,PILOT,300,False,True,"HARD CLAMPED 50..350 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",50,350,True,False,
+PILOT_THR_BHV,PILOT,0,True,True,,,,False,True,user_visible False->True
+PILOT_THR_FILT,PILOT,0,True,True,,,,False,True,user_visible False->True
+PILOT_TKOFF_ALT,PILOT,0,True,True,,,,False,True,user_visible False->True
+PILOT_Y_EXPO,PILOT,0,True,True,,,,False,True,user_visible False->True
+PILOT_Y_RATE,PILOT,60,False,True,"HARD CLAMPED 30..90 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",30,90,True,False,
+PILOT_Y_RATE_TC,PILOT,0.25,False,True,,,,True,False,
+PLDP_DELAY,PLDP,0,True,True,,,,False,True,user_visible False->True
+PLDP_RNG_MAX,PLDP,0,True,True,,,,False,True,user_visible False->True
+PLDP_SPEED_DN,PLDP,0,True,True,,,,False,True,user_visible False->True
+PLDP_THRESH,PLDP,0.9,True,True,,,,False,True,user_visible False->True
+PLND_ENABLED,PLND,0,True,False,"hidden (GOBJECT_HIDDEN group ""PLND_"")",,,False,True,
+PRX1_TYPE,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX2_TYPE,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX3_TYPE,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX4_TYPE,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX5_TYPE,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX_ALT_MIN,PRX,1,True,True,,,,False,True,user_visible False->True
+PRX_FILT,PRX,0.25,True,True,,,,False,True,user_visible False->True
+PRX_IGN_GND,PRX,0,True,True,,,,False,True,user_visible False->True
+PRX_LOG_RAW,PRX,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_D,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_D_FF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_FF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_FLTD,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_FLTE,PSC,20,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_FLTT,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_I,PSC,0.44,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_IMAX,PSC,800,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_NEF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_NTF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_P,PSC,0.22,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_PDMX,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ACCZ_SMAX,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_ANGLE_MAX,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_JERK_XY,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_JERK_Z,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_POSXY_P,PSC,0.75,True,True,,,,False,True,user_visible False->True
+PSC_POSZ_P,PSC,1,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_D,PSC,0.5,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_FF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_FLTD,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_FLTE,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_I,PSC,0.75,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_IMAX,PSC,1000,True,True,,,,False,True,user_visible False->True
+PSC_VELXY_P,PSC,1.5,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_D,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_FF,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_FLTD,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_FLTE,PSC,5,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_I,PSC,0,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_IMAX,PSC,1000,True,True,,,,False,True,user_visible False->True
+PSC_VELZ_P,PSC,8,True,True,,,,False,True,user_visible False->True
+PTRN_ATIME,PTRN,6,False,True,,,,True,False,
+PTRN_CHN1,PTRN,11,False,True,,,,True,False,
+PTRN_CHN2,PTRN,16,False,True,,,,True,False,
+PTRN_ENABLE,PTRN,1,False,True,,,,True,False,
+PTRN_PNUM,PTRN,1,False,True,,,,True,False,
+PTRN_RADIUS,PTRN,25,False,True,,,,True,False,
+PTRN_SHAPE,PTRN,0,False,True,,,,True,False,
+PTRN_SLSPD,PTRN,6,False,True,,,,True,False,
+PTRN_SLTIME,PTRN,6,False,True,,,,True,False,
+PTRN_SPEED,PTRN,5,False,True,,,,True,False,
+PTRN_TOAUTO,PTRN,0,False,True,,,,True,False,
+PTRN_TRIGGER,PTRN,0,False,True,,,,True,False,
+RALLY_INCL_HOME,RALLY,1,False,True,,,,True,False,
+RALLY_LIMIT_KM,RALLY,0.3,False,True,,,,True,False,
+RALLY_TOTAL,RALLY,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,False,"default 0->(blank, not seeded)"
+RC10_DZ,RC,50,False,True,,,,True,False,
+RC10_MAX,RC,2000,False,True,,,,True,False,
+RC10_MIN,RC,1000,False,True,,,,True,False,
+RC10_OPTION,RC,213,False,True,defaults.parm: # wheel pitch | [v2 note] wheel pitch,,,True,False,
+RC10_REVERSED,RC,0,False,True,,,,True,False,
+RC10_TRIM,RC,1500,False,True,,,,True,False,
+RC11_DZ,RC,0,False,True,,,,True,False,
+RC11_MAX,RC,2000,False,True,,,,True,False,
+RC11_MIN,RC,1000,False,True,,,,True,False,
+RC11_OPTION,RC,9,False,True,defaults.parm: # camera trigger | [v2 note] camera trigger,,,True,False,
+RC11_REVERSED,RC,0,False,True,,,,True,False,
+RC11_TRIM,RC,1500,False,True,,,,True,False,
+RC12_DZ,RC,0,False,True,,,,True,False,
+RC12_MAX,RC,2000,False,True,,,,True,False,
+RC12_MIN,RC,1000,False,True,,,,True,False,
+RC12_OPTION,RC,163,False,True,defaults.parm: # mount lock | [v2 note] mount lock,,,True,False,
+RC12_REVERSED,RC,0,False,True,,,,True,False,
+RC12_TRIM,RC,1500,False,True,,,,True,False,
+RC13_DZ,RC,0,False,True,,,,True,False,
+RC13_MAX,RC,2000,False,True,,,,True,False,
+RC13_MIN,RC,1000,False,True,,,,True,False,
+RC13_OPTION,RC,0,False,True,,,,True,False,
+RC13_REVERSED,RC,0,False,True,,,,True,False,
+RC13_TRIM,RC,1500,False,True,,,,True,False,
+RC14_DZ,RC,0,False,True,,,,True,False,
+RC14_MAX,RC,2000,False,True,,,,True,False,
+RC14_MIN,RC,1000,False,True,,,,True,False,
+RC14_OPTION,RC,0,False,True,,,,True,False,
+RC14_REVERSED,RC,0,False,True,,,,True,False,
+RC14_TRIM,RC,1500,False,True,,,,True,False,
+RC15_DZ,RC,0,False,True,,,,True,False,
+RC15_MAX,RC,2000,False,True,,,,True,False,
+RC15_MIN,RC,1000,False,True,,,,True,False,
+RC15_OPTION,RC,0,False,True,,,,True,False,
+RC15_REVERSED,RC,0,False,True,,,,True,False,
+RC15_TRIM,RC,1500,False,True,,,,True,False,
+RC16_DZ,RC,0,False,True,,,,True,False,
+RC16_MAX,RC,2000,False,True,,,,True,False,
+RC16_MIN,RC,1000,False,True,,,,True,False,
+RC16_OPTION,RC,0,False,True,,,,True,False,
+RC16_REVERSED,RC,0,False,True,,,,True,False,
+RC16_TRIM,RC,1500,False,True,,,,True,False,
+RC1_DZ,RC,50,False,True,,,,False,False,user_visible False->True
+RC1_MAX,RC,1927,False,True,,,,False,False,user_visible False->True
+RC1_MIN,RC,1102,False,True,,,,False,False,user_visible False->True
+RC1_OPTION,RC,0,True,True,,,,False,True,user_visible False->True
+RC1_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC1_TRIM,RC,1515,False,True,,,,False,False,user_visible False->True
+RC2_DZ,RC,20,False,True,,,,False,False,user_visible False->True
+RC2_MAX,RC,1927,False,True,,,,False,False,user_visible False->True
+RC2_MIN,RC,1102,False,True,,,,False,False,user_visible False->True
+RC2_OPTION,RC,0,True,True,,,,False,True,user_visible False->True
+RC2_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC2_TRIM,RC,1515,False,True,,,,False,False,user_visible False->True
+RC3_DZ,RC,30,False,True,,,,False,False,user_visible False->True
+RC3_MAX,RC,1927,False,True,,,,False,False,user_visible False->True
+RC3_MIN,RC,1102,False,True,,,,False,False,user_visible False->True
+RC3_OPTION,RC,0,True,True,,,,False,True,user_visible False->True
+RC3_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC3_TRIM,RC,1515,False,True,,,,False,False,user_visible False->True
+RC4_DZ,RC,20,False,True,,,,False,False,user_visible False->True
+RC4_MAX,RC,1927,False,True,,,,False,False,user_visible False->True
+RC4_MIN,RC,1102,False,True,,,,False,False,user_visible False->True
+RC4_OPTION,RC,0,True,True,,,,False,True,user_visible False->True
+RC4_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC4_TRIM,RC,1515,False,True,,,,False,False,user_visible False->True
+RC5_DZ,RC,0,False,True,,,,False,False,user_visible False->True
+RC5_MAX,RC,1927,False,True,,,,False,False,user_visible False->True
+RC5_MIN,RC,1102,False,True,,,,False,False,user_visible False->True
+RC5_OPTION,RC,70,True,True,defaults.parm: # now alt hold | [v2 note] now alt hold,,,False,True,user_visible False->True
+RC5_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC5_TRIM,RC,1515,False,True,,,,False,False,user_visible False->True
+RC6_DZ,RC,30,False,True,,,,False,False,user_visible False->True
+RC6_MAX,RC,2000,False,True,,,,False,False,user_visible False->True
+RC6_MIN,RC,1000,False,True,,,,False,False,user_visible False->True
+RC6_OPTION,RC,56,True,True,defaults.parm: # now loiter | [v2 note] now loiter,,,False,True,user_visible False->True
+RC6_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC6_TRIM,RC,1500,False,True,,,,False,False,user_visible False->True
+RC7_DZ,RC,50,False,True,,,,False,False,user_visible False->True
+RC7_MAX,RC,2000,False,True,,,,False,False,user_visible False->True
+RC7_MIN,RC,1000,False,True,,,,False,False,user_visible False->True
+RC7_OPTION,RC,4,True,True,defaults.parm: # now RTL | [v2 note] now RTL,,,False,True,user_visible False->True
+RC7_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC7_TRIM,RC,1500,False,True,,,,False,False,user_visible False->True
+RC8_DZ,RC,50,False,True,,,,False,False,user_visible False->True
+RC8_MAX,RC,2000,False,True,,,,False,False,user_visible False->True
+RC8_MIN,RC,1000,False,True,,,,False,False,user_visible False->True
+RC8_OPTION,RC,16,True,True,defaults.parm: # now Auto | [v2 note] now Auto,,,False,True,user_visible False->True
+RC8_REVERSED,RC,0,False,True,,,,False,False,user_visible False->True
+RC8_TRIM,RC,1500,False,True,,,,False,False,user_visible False->True
+RC9_DZ,RC,50,False,True,,,,True,False,
+RC9_MAX,RC,2000,False,True,,,,True,False,
+RC9_MIN,RC,1000,False,True,,,,True,False,
+RC9_OPTION,RC,214,False,True,defaults.parm: # wheel - yaw | [v2 note] wheel - yaw,,,True,False,
+RC9_REVERSED,RC,0,False,True,,,,True,False,
+RC9_TRIM,RC,1500,False,True,,,,True,False,
+RCMAP_PITCH,RCMAP,2,True,True,,,,False,True,user_visible False->True
+RCMAP_ROLL,RCMAP,1,True,True,,,,False,True,user_visible False->True
+RCMAP_THROTTLE,RCMAP,3,True,True,,,,False,True,user_visible False->True
+RCMAP_YAW,RCMAP,4,True,True,,,,False,True,user_visible False->True
+RC_FS_TIMEOUT,RC,1,False,True,,,,True,False,
+RC_OPTIONS,RC,32,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+RC_OVERRIDE_TIME,RC,3,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+RC_PROTOCOLS,RC,1,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+RC_SPEED,RC,490,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+RELAY1_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RELAY2_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RELAY3_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RELAY4_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RELAY5_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RELAY6_FUNCTION,RELAY,0,False,True,,,,False,False,user_visible False->True
+RFND_BTN_EN,RFND,1,False,True,,,,True,False,
+RNGFND1_ADDR,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_FUNCTION,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_GNDCLEAR,RNGFND,30,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND1_MAX_CM,RNGFND,9500,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND1_MIN_CM,RNGFND,5,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND1_OFFSET,RNGFND,0,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND1_ORIENT,RNGFND,25,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND1_PIN,RNGFND,-1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_POS_X,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_POS_Y,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_POS_Z,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_PWRRNG,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_RMETRIC,RNGFND,1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_SCALING,RNGFND,1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_STOP_PIN,RNGFND,-1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND1_TYPE,RNGFND,8,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND2_ADDR,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_FUNCTION,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_GNDCLEAR,RNGFND,10,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND2_MAX_CM,RNGFND,4500,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND2_MIN_CM,RNGFND,20,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND2_OFFSET,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_ORIENT,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_PIN,RNGFND,-1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_POS_X,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_POS_Y,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_POS_Z,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_PWRRNG,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_RMETRIC,RNGFND,1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_SCALING,RNGFND,1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_STOP_PIN,RNGFND,-1,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND2_TYPE,RNGFND,24,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND3_TYPE,RNGFND,0,False,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,False,
+RNGFND4_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND5_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND6_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND7_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND8_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND9_TYPE,RNGFND,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFNDA_TYPE,RNGFNDA,0,True,False,"hidden (GOBJECT_HIDDEN group ""RNGFND"")",,,False,True,
+RNGFND_FILT,RNGFND,0.5,False,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,False,
+RPM1_TYPE,RPM,0,True,False,"hidden (GOBJECT_HIDDEN group ""RPM"")",,,False,True,
+RPM2_TYPE,RPM,0,True,False,"hidden (GOBJECT_HIDDEN group ""RPM"")",,,False,True,
+RSSI_TYPE,RSSI,0,True,False,"hidden (GOBJECT_HIDDEN group ""RSSI_"")",,,False,True,
+RTL_ALT,RTL,5000,False,True,,,,True,False,
+RTL_ALT_FINAL,RTL,0,False,True,,,,True,False,
+RTL_ALT_TYPE,RTL,0,False,True,,,,True,False,
+RTL_CLIMB_MIN,RTL,0,False,True,,,,True,False,
+RTL_CONE_SLOPE,RTL,0,False,True,,,,True,False,
+RTL_LOIT_TIME,RTL,1000,False,True,,,,True,False,
+RTL_OPTIONS,RTL,0,False,True,,,,True,False,
+RTL_SPEED,RTL,0,False,True,,,,True,False,
+SCHED_DEBUG,SCHED,0,True,False,"hidden (GOBJECT_HIDDEN group ""SCHED_"")",,,False,True,
+SCHED_LOOP_RATE,SCHED,400,True,False,"hidden (GOBJECT_HIDDEN group ""SCHED_"")",,,False,True,
+SCHED_OPTIONS,SCHED,0,True,False,"hidden (GOBJECT_HIDDEN group ""SCHED_"")",,,False,True,
+SCR_DEBUG_OPTS,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_DIR_DISABLE,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_ENABLE,SCR,1,True,True,,,,False,True,user_visible False->True
+SCR_HEAP_SIZE,SCR,204800,False,True,,,,False,False,user_visible False->True
+SCR_LD_CHECKSUM,SCR,-1,True,True,,,,False,True,user_visible False->True
+SCR_RUN_CHECKSUM,SCR,-1,True,True,,,,False,True,user_visible False->True
+SCR_SDEV_EN,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_THD_PRIORITY,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER1,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER2,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER3,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER4,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER5,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_USER6,SCR,0,True,True,,,,False,True,user_visible False->True
+SCR_VM_I_COUNT,SCR,10000,True,True,,,,False,True,user_visible False->True
+SERIAL0_BAUD,SERIAL,115,True,True,,,,False,True,user_visible False->True
+SERIAL0_PROTOCOL,SERIAL,2,True,True,,,,False,True,user_visible False->True
+SERIAL1_BAUD,SERIAL,115,True,True,,,,False,True,user_visible False->True
+SERIAL1_OPTIONS,SERIAL,0,True,True,,,,False,True,user_visible False->True
+SERIAL1_PROTOCOL,SERIAL,2,True,True,,,,False,True,user_visible False->True
+SERIAL2_BAUD,SERIAL,500,False,True,,,,True,False,
+SERIAL2_OPTIONS,SERIAL,0,False,True,,,,True,False,
+SERIAL2_PROTOCOL,SERIAL,2,False,True,,,,True,False,
+SERIAL3_BAUD,SERIAL,115,False,True,,,,True,False,
+SERIAL3_OPTIONS,SERIAL,0,False,True,,,,True,False,
+SERIAL3_PROTOCOL,SERIAL,-1,False,True,,,,True,False,
+SERIAL4_BAUD,SERIAL,115,False,True,,,,False,False,user_visible False->True
+SERIAL4_OPTIONS,SERIAL,0,False,True,,,,False,False,user_visible False->True
+SERIAL4_PROTOCOL,SERIAL,9,False,True,,,,False,False,user_visible False->True
+SERIAL5_BAUD,SERIAL,115,False,True,,,,False,False,user_visible False->True
+SERIAL5_OPTIONS,SERIAL,0,False,True,,,,False,False,user_visible False->True
+SERIAL5_PROTOCOL,SERIAL,-1,False,True,,,,False,False,user_visible False->True
+SERIAL6_BAUD,SERIAL,115200,True,True,,,,False,True,user_visible False->True
+SERIAL6_OPTIONS,SERIAL,0,True,True,,,,False,True,user_visible False->True
+SERIAL6_PROTOCOL,SERIAL,22,True,True,,,,False,True,user_visible False->True
+SERIAL_PASS1,SERIAL,0,True,True,,,,False,True,user_visible False->True
+SERIAL_PASS2,SERIAL,-1,True,True,,,,False,True,user_visible False->True
+SERIAL_PASSTIMO,SERIAL,15,True,True,,,,False,True,user_visible False->True
+SERVO10_FUNCTION,SERVO,0,False,True,,,,True,False,
+SERVO10_MAX,SERVO,1900,False,True,,,,True,False,
+SERVO10_MIN,SERVO,1100,False,True,,,,True,False,
+SERVO10_REVERSED,SERVO,0,False,True,,,,True,False,
+SERVO10_TRIM,SERVO,1500,False,True,,,,True,False,
+SERVO11_FUNCTION,SERVO,0,False,True,,,,True,False,
+SERVO11_MAX,SERVO,1900,False,True,,,,True,False,
+SERVO11_MIN,SERVO,1100,False,True,,,,True,False,
+SERVO11_REVERSED,SERVO,0,False,True,,,,True,False,
+SERVO11_TRIM,SERVO,1500,False,True,,,,True,False,
+SERVO12_FUNCTION,SERVO,0,True,False,hidden (SERVO12_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO12_MAX,SERVO,1900,True,False,hidden (SERVO12_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO12_MIN,SERVO,1100,True,False,hidden (SERVO12_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO12_REVERSED,SERVO,0,True,False,hidden (SERVO12_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO12_TRIM,SERVO,1500,True,False,hidden (SERVO12_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO13_FUNCTION,SERVO,0,True,False,hidden (SERVO13_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO13_MAX,SERVO,1900,True,False,hidden (SERVO13_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO13_MIN,SERVO,1100,True,False,hidden (SERVO13_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO13_REVERSED,SERVO,0,True,False,hidden (SERVO13_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO13_TRIM,SERVO,1500,True,False,hidden (SERVO13_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO14_FUNCTION,SERVO,0,True,False,hidden (SERVO14_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO14_MAX,SERVO,1900,True,False,hidden (SERVO14_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO14_MIN,SERVO,1100,True,False,hidden (SERVO14_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO14_REVERSED,SERVO,0,True,False,hidden (SERVO14_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO14_TRIM,SERVO,1500,True,False,hidden (SERVO14_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO15_FUNCTION,SERVO,0,True,False,hidden (SERVO15_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO15_MAX,SERVO,1900,True,False,hidden (SERVO15_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO15_MIN,SERVO,1100,True,False,hidden (SERVO15_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO15_REVERSED,SERVO,0,True,False,hidden (SERVO15_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO15_TRIM,SERVO,1500,True,False,hidden (SERVO15_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO16_FUNCTION,SERVO,0,True,False,hidden (SERVO16_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO16_MAX,SERVO,1900,True,False,hidden (SERVO16_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO16_MIN,SERVO,1100,True,False,hidden (SERVO16_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO16_REVERSED,SERVO,0,True,False,hidden (SERVO16_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO16_TRIM,SERVO,1500,True,False,hidden (SERVO16_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO1_FUNCTION,SERVO,33,True,False,hidden (SERVO1_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO1_MAX,SERVO,1900,True,False,hidden (SERVO1_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO1_MIN,SERVO,1100,True,False,hidden (SERVO1_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO1_REVERSED,SERVO,0,True,False,hidden (SERVO1_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO1_TRIM,SERVO,1500,True,False,hidden (SERVO1_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO2_FUNCTION,SERVO,34,True,False,hidden (SERVO2_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO2_MAX,SERVO,1900,True,False,hidden (SERVO2_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO2_MIN,SERVO,1100,True,False,hidden (SERVO2_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO2_REVERSED,SERVO,0,True,False,hidden (SERVO2_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO2_TRIM,SERVO,1500,True,False,hidden (SERVO2_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO3_FUNCTION,SERVO,35,True,False,hidden (SERVO3_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO3_MAX,SERVO,1900,True,False,hidden (SERVO3_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO3_MIN,SERVO,1100,True,False,hidden (SERVO3_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO3_REVERSED,SERVO,0,True,False,hidden (SERVO3_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO3_TRIM,SERVO,1500,True,False,hidden (SERVO3_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO4_FUNCTION,SERVO,36,True,False,hidden (SERVO4_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO4_MAX,SERVO,1900,True,False,hidden (SERVO4_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO4_MIN,SERVO,1100,True,False,hidden (SERVO4_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO4_REVERSED,SERVO,0,True,False,hidden (SERVO4_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO4_TRIM,SERVO,1500,True,False,hidden (SERVO4_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO5_FUNCTION,SERVO,0,True,False,hidden (SERVO5_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO5_MAX,SERVO,1900,True,False,hidden (SERVO5_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO5_MIN,SERVO,1100,True,False,hidden (SERVO5_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO5_REVERSED,SERVO,0,True,False,hidden (SERVO5_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO5_TRIM,SERVO,1500,True,False,hidden (SERVO5_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO6_FUNCTION,SERVO,0,True,False,hidden (SERVO6_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO6_MAX,SERVO,1900,True,False,hidden (SERVO6_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO6_MIN,SERVO,1100,True,False,hidden (SERVO6_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO6_REVERSED,SERVO,0,True,False,hidden (SERVO6_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO6_TRIM,SERVO,1500,True,False,hidden (SERVO6_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO7_FUNCTION,SERVO,0,True,False,hidden (SERVO7_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO7_MAX,SERVO,1900,True,False,hidden (SERVO7_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO7_MIN,SERVO,1100,True,False,hidden (SERVO7_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO7_REVERSED,SERVO,0,True,False,hidden (SERVO7_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO7_TRIM,SERVO,1500,True,False,hidden (SERVO7_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO8_FUNCTION,SERVO,0,True,False,hidden (SERVO8_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO8_MAX,SERVO,1900,True,False,hidden (SERVO8_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO8_MIN,SERVO,1100,True,False,hidden (SERVO8_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO8_REVERSED,SERVO,0,True,False,hidden (SERVO8_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO8_TRIM,SERVO,1500,True,False,hidden (SERVO8_ subgroup; SERVO9/10/11 remain visible),,,False,True,
+SERVO9_FUNCTION,SERVO,0,False,True,,,,True,False,
+SERVO9_MAX,SERVO,2100,False,True,,,,True,False,
+SERVO9_MIN,SERVO,900,False,True,,,,True,False,
+SERVO9_REVERSED,SERVO,0,False,True,,,,True,False,
+SERVO9_TRIM,SERVO,1500,False,True,,,,True,False,
+SERVO_32_ENABLE,SERVO,0,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_BLH_3DMASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_AUTO,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_DEBUG,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_MASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_OTYPE,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_POLES,SERVO,14,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_PORT,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_RVMASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_TEST,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_TMOUT,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_BLH_TRATE,SERVO,10,True,False,hidden (SRV_Channels subgroup SERVO_BLH_),,,False,True,
+SERVO_DSHOT_ESC,SERVO,0,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_DSHOT_RATE,SERVO,0,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_FTW_MASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_FTW_),,,False,True,
+SERVO_FTW_POLES,SERVO,14,True,False,hidden (SRV_Channels subgroup SERVO_FTW_),,,False,True,
+SERVO_FTW_RVMASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_FTW_),,,False,True,
+SERVO_GPIO_MASK,SERVO,0,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_RATE,SERVO,50,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_RC_FS_MSK,SERVO,0,True,False,hidden (AP_PARAM_FLAG_HIDDEN on this param),,,False,True,
+SERVO_ROB_POSMAX,SERVO,4095,True,False,hidden (SRV_Channels subgroup SERVO_ROB_),,,False,True,
+SERVO_ROB_POSMIN,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_ROB_),,,False,True,
+SERVO_SBUS_RATE,SERVO,50,True,False,hidden (SRV_Channels subgroup SERVO_SBUS_),,,False,True,
+SERVO_VOLZ_MASK,SERVO,0,True,False,hidden (SRV_Channels subgroup SERVO_VOLZ_),,,False,True,
+SERVO_VOLZ_RANGE,SERVO,200,True,False,hidden (SRV_Channels subgroup SERVO_VOLZ_),,,False,True,
+SIMPLE,SIMPLE,0,True,True,,,,False,True,user_visible False->True
+SPRAY_ENABLE,SPRAY,0,True,True,,,,False,True,user_visible False->True
+SR0_ADSB,SR,2,False,True,,,,False,False,user_visible False->True
+SR0_EXTRA1,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_EXTRA2,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_EXTRA3,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_EXT_STAT,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_PARAMS,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_POSITION,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_RAW_CTRL,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_RAW_SENS,SR,0,False,True,,,,False,False,user_visible False->True
+SR0_RC_CHAN,SR,0,False,True,,,,False,False,user_visible False->True
+SR1_ADSB,SR,0,False,True,,,,False,False,user_visible False->True
+SR1_EXTRA1,SR,4,False,True,,,,False,False,user_visible False->True
+SR1_EXTRA2,SR,4,False,True,,,,False,False,user_visible False->True
+SR1_EXTRA3,SR,2,False,True,,,,False,False,user_visible False->True
+SR1_EXT_STAT,SR,2,False,True,,,,False,False,user_visible False->True
+SR1_PARAMS,SR,0,False,True,,,,False,False,user_visible False->True
+SR1_POSITION,SR,2,False,True,,,,False,False,user_visible False->True
+SR1_RAW_CTRL,SR,0,False,True,,,,False,False,user_visible False->True
+SR1_RAW_SENS,SR,2,False,True,,,,False,False,user_visible False->True
+SR1_RC_CHAN,SR,2,False,True,,,,False,False,user_visible False->True
+SR2_ADSB,SR,0,False,True,,,,True,False,
+SR2_EXTRA1,SR,0,False,True,,,,True,False,
+SR2_EXTRA2,SR,0,False,True,,,,True,False,
+SR2_EXTRA3,SR,0,False,True,,,,True,False,
+SR2_EXT_STAT,SR,0,False,True,,,,True,False,
+SR2_PARAMS,SR,0,False,True,,,,True,False,
+SR2_POSITION,SR,0,False,True,,,,True,False,
+SR2_RAW_CTRL,SR,0,False,True,,,,True,False,
+SR2_RAW_SENS,SR,0,False,True,,,,True,False,
+SR2_RC_CHAN,SR,0,False,True,,,,True,False,
+SR3_ADSB,SR,0,False,True,,,,True,False,
+SR3_EXTRA1,SR,0,False,True,,,,True,False,
+SR3_EXTRA2,SR,0,False,True,,,,True,False,
+SR3_EXTRA3,SR,0,False,True,,,,True,False,
+SR3_EXT_STAT,SR,0,False,True,,,,True,False,
+SR3_PARAMS,SR,0,False,True,,,,True,False,
+SR3_POSITION,SR,0,False,True,,,,True,False,
+SR3_RAW_CTRL,SR,0,False,True,,,,True,False,
+SR3_RAW_SENS,SR,0,False,True,,,,True,False,
+SR3_RC_CHAN,SR,0,False,True,,,,True,False,
+SR4_ADSB,SR,0,False,True,,,,True,False,
+SR4_EXTRA1,SR,4,False,True,,,,True,False,
+SR4_EXTRA2,SR,4,False,True,,,,True,False,
+SR4_EXTRA3,SR,2,False,True,,,,True,False,
+SR4_EXT_STAT,SR,2,False,True,,,,True,False,
+SR4_PARAMS,SR,0,False,True,,,,True,False,
+SR4_POSITION,SR,2,False,True,,,,True,False,
+SR4_RAW_CTRL,SR,0,False,True,,,,True,False,
+SR4_RAW_SENS,SR,0,False,True,,,,True,False,
+SR4_RC_CHAN,SR,0,False,True,,,,True,False,
+SR5_ADSB,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_EXTRA1,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_EXTRA2,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_EXTRA3,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_EXT_STAT,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_PARAMS,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_POSITION,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_RAW_CTRL,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_RAW_SENS,SR,0,True,True,,,,False,True,user_visible False->True
+SR5_RC_CHAN,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_ADSB,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_EXTRA1,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_EXTRA2,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_EXTRA3,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_EXT_STAT,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_PARAMS,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_POSITION,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_RAW_CTRL,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_RAW_SENS,SR,0,True,True,,,,False,True,user_visible False->True
+SR6_RC_CHAN,SR,0,True,True,,,,False,True,user_visible False->True
+SRTL_ACCURACY,SRTL,2,False,True,,,,True,False,
+SRTL_OPTIONS,SRTL,0,False,True,,,,True,False,
+SRTL_POINTS,SRTL,300,False,True,,,,True,False,
+STAT_BOOTCNT,STAT,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,True,"default 366->(blank, not seeded); readonly True->False"
+STAT_FLTTIME,STAT,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,True,"default 25901->(blank, not seeded); readonly True->False"
+STAT_RESET,STAT,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,False,"default 1->(blank, not seeded)"
+STAT_RUNTIME,STAT,,False,True,NOT SEEDED - runtime-managed; deliberately omitted from defaults.parm so a fresh board does not inherit stale state,,,True,True,"default 245410->(blank, not seeded); readonly True->False"
+SUPER_SIMPLE,SUPER,0,True,True,,,,False,True,user_visible False->True
+SURFTRAK_MODE,SURFTRAK,1,False,True,,,,False,False,user_visible False->True
+SURFTRAK_TC,SURFTRAK,1,False,True,,,,False,False,user_visible False->True
+SYSID_ENFORCE,SYSID,0,True,True,,,,False,True,user_visible False->True
+SYSID_MYGCS,SYSID,255,True,True,,,,False,True,user_visible False->True
+SYSID_THISMAV,SYSID,1,True,True,,,,False,True,user_visible False->True
+TCAL_ENABLED,TCAL,0,True,True,,,,False,True,user_visible False->True
+TELEM_DELAY,TELEM,0,True,True,,,,False,True,user_visible False->True
+TERRAIN_CACHE_SZ,TERRAIN,12,False,True,,,,True,False,
+TERRAIN_ENABLE,TERRAIN,1,False,True,,,,True,False,
+TERRAIN_MARGIN,TERRAIN,0.05,False,True,,,,True,False,
+TERRAIN_OFS_MAX,TERRAIN,30,False,True,,,,True,False,
+TERRAIN_OPTIONS,TERRAIN,0,False,True,,,,True,False,
+TERRAIN_SPACING,TERRAIN,100,False,True,,,,True,False,
+THR_DZ,THR,100,True,True,,,,False,True,user_visible False->True
+TKOFF_RPM_MAX,TKOFF,0,True,True,,,,False,True,user_visible False->True
+TKOFF_RPM_MIN,TKOFF,0,True,True,,,,False,True,user_visible False->True
+TKOFF_SLEW_TIME,TKOFF,3,True,True,,,,False,True,user_visible False->True
+TKOFF_THR_MAX,TKOFF,0.9,True,True,,,,False,True,user_visible False->True
+TUNE,TUNE,0,True,True,,,,False,True,user_visible False->True
+TUNE_MAX,TUNE,0,True,True,,,,False,True,user_visible False->True
+TUNE_MIN,TUNE,0,True,True,,,,False,True,user_visible False->True
+VISO_TYPE,VISO,0,True,True,,,,False,True,user_visible False->True
+VTX_ENABLE,VTX,0,True,True,,,,False,True,user_visible False->True
+WINCH_TYPE,WINCH,0,True,True,,,,False,True,user_visible False->True
+WPNAV_ACCEL,WPNAV,250,False,True,"HARD CLAMPED 100..350 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",100,350,True,False,
+WPNAV_ACCEL_C,WPNAV,220,False,True,"HARD CLAMPED 100..300 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",100,300,True,False,
+WPNAV_ACCEL_Z,WPNAV,100,False,True,"HARD CLAMPED 50..200 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",50,200,True,False,
+WPNAV_JERK,WPNAV,1,False,True,,,,True,False,
+WPNAV_RADIUS,WPNAV,400,False,True,"HARD CLAMPED 5..1000 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",5,1000,True,False,
+WPNAV_RFND_USE,WPNAV,0,False,True,,,,True,False,
+WPNAV_SPEED,WPNAV,800,False,True,"HARD CLAMPED 30..1800 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",30,1800,True,False,
+WPNAV_SPEED_DN,WPNAV,150,False,True,"HARD CLAMPED 30..300 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",30,300,True,False,
+WPNAV_SPEED_UP,WPNAV,200,False,True,"HARD CLAMPED 30..300 - out-of-range PARAM_SET rejected, stored value scrubbed at boot",30,300,True,False,
+WPNAV_TER_MARGIN,WPNAV,10,False,True,,,,True,False,
+WP_NAVALT_MIN,WP,0,False,True,,,,True,False,
+WP_YAW_BEHAVIOR,WP,1,False,True,,,,True,False,
+WVANE_ENABLE,WVANE,0,True,True,,,,False,True,user_visible False->True

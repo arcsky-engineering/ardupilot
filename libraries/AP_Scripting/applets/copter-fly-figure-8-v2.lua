@@ -71,8 +71,126 @@ local function add_params(key, prefix, tbl)
 end
 add_params(PARAM_TABLE_KEY, PARAM_PREFIX .. '_', PARAM_TABLE)
 
+-- Parameter documentation. Picked up by Tools/autotest/param_metadata so these
+-- appear in apm.pdef.xml/json alongside the C++ params, which is what feeds the
+-- GCS parameter descriptions and Tools/xplorer/gen_param_docs.py.
+-- Ranges below are enforced by read_and_clamp_params() at read time, NOT by the
+-- firmware clamp table, so an out-of-range value is stored and clamped on use.
+
+--[[
+  // @Param: PTRN_ENABLE
+  // @DisplayName: Pattern script enable
+  // @Description: Master enable for the LiDAR calibration pattern script.
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_RADIUS
+  // @DisplayName: Figure-8 lobe radius
+  // @Description: Radius of each figure-8 lobe. Values outside the range are clamped by the script at read time.
+  // @Units: m
+  // @Range: 25 150
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_SLTIME
+  // @DisplayName: Straight line cruise time
+  // @Description: Cruise duration of the straight-line segment, excluding the acceleration and deceleration ramps. Values outside the range are clamped by the script at read time.
+  // @Units: s
+  // @Range: 3 20
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_SPEED
+  // @DisplayName: Figure-8 speed
+  // @Description: Target ground speed during the figure-8 and U-turn segments. Values outside the range are clamped by the script at read time.
+  // @Units: m/s
+  // @Range: 2 8
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_PNUM
+  // @DisplayName: Vendor calibration pattern
+  // @Description: Selects the vendor calibration routine. Phoenix runs a straight line to figure-8 on CHN1 and figure-8 to straight line on CHN2, both transitioning seamlessly at speed. Inertial Labs runs a straight line with accel/cruise/decel, then a dwell, then a figure-8 on CHN1 only. YellowScan runs a straight line then a U-turn on CHN1 only.
+  // @Values: 1:Phoenix LiDAR,2:Inertial Labs,3:YellowScan
+  // @Range: 1 3
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_SLSPD
+  // @DisplayName: Straight line speed
+  // @Description: Target ground speed during the straight-line segment. Values outside the range are clamped by the script at read time.
+  // @Units: m/s
+  // @Range: 2 12
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_CHN1
+  // @DisplayName: Primary pattern RC trigger channel
+  // @Description: RC channel that starts the primary pattern when held above 1800us for 1 second. Set to 0 to disable RC triggering and use the GCS only (PTRN_TRIGGER), which is the default because RC 1-12 carry primary flight controls. Only 5-16 are accepted; any other value is treated as 0 rather than snapped to a real channel.
+  // @Range: 0 16
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_CHN2
+  // @DisplayName: Secondary pattern RC trigger channel
+  // @Description: RC channel that starts the secondary pattern when held above 1800us for 1 second. Only used when PTRN_PNUM selects a vendor routine that defines a second pattern. Set to 0 to disable RC triggering and use the GCS only (PTRN_TRIGGER). Only 5-16 are accepted; any other value is treated as 0.
+  // @Range: 0 16
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_SHAPE
+  // @DisplayName: Figure-8 shape
+  // @Description: Figure-8 curve type. The lemniscate gives smooth continuously varying curvature. Two tangential circles give constant curvature per lobe with a curvature reversal at the centre crossing. Any other value is treated as 0.
+  // @Values: 0:Lemniscate of Bernoulli,1:Two tangential circles
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_ATIME
+  // @DisplayName: Accel/decel ramp time
+  // @Description: Time allowed to ramp up to and down from the target speed on segments that accelerate and decelerate. Values outside the range are clamped by the script at read time.
+  // @Units: s
+  // @Range: 4 20
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_TRIGGER
+  // @DisplayName: GCS pattern trigger
+  // @Description: Starts a pattern from the GCS, and is the primary trigger mechanism. Set to 1 for the vendor's primary sequence or 2 for its secondary sequence, as selected by PTRN_PNUM. This does not read any RC channel, so it works with PTRN_CHN1 and PTRN_CHN2 set to 0. The script resets this to 0 once the pattern starts, or immediately if the sequence does not exist or the aircraft is too low. Requires Loiter mode.
+  // @Values: 0:Idle,1:Start primary sequence,2:Start secondary sequence
+  // @User: Standard
+--]]
+
+--[[
+  // @Param: PTRN_TOAUTO
+  // @DisplayName: Exit mode on completion
+  // @Description: Flight mode entered when the pattern completes. Loiter holds position and awaits pilot input. Auto resumes the mission. Any other value is treated as 0.
+  // @Values: 0:Loiter,1:Auto
+  // @User: Standard
+--]]
+
 -- Parameter clamping
 local function clamp(val, lo, hi) return math.max(lo, math.min(hi, val)) end
+
+-- Trigger channel validation. 0 disables RC triggering for that pattern, which
+-- is the default: RC 1-12 carry primary flight controls, and a stray >1800us on
+-- a control channel would arm a pattern. Valid channels are 5-16; anything else
+-- is treated as disabled rather than silently snapped to a real channel.
+local function trig_chan(val)
+  local c = math.floor(val or 0)
+  if c >= 5 and c <= 16 then return c end
+  return 0
+end
 
 local function read_and_clamp_params()
   local e  = param_get(('%s_ENABLE'):format(PARAM_PREFIX))
@@ -81,8 +199,8 @@ local function read_and_clamp_params()
   local sp = clamp(param_get(('%s_SPEED'):format(PARAM_PREFIX)),    2,   8)
   local pn = clamp(math.floor(param_get(('%s_PNUM'):format(PARAM_PREFIX))),  1, 3)
   local ss = clamp(param_get(('%s_SLSPD'):format(PARAM_PREFIX)),    2,  12)
-  local c1 = clamp(math.floor(param_get(('%s_CHN1'):format(PARAM_PREFIX))),  5, 12)
-  local c2 = clamp(math.floor(param_get(('%s_CHN2'):format(PARAM_PREFIX))),  5, 12)
+  local c1 = trig_chan(param_get(('%s_CHN1'):format(PARAM_PREFIX)))
+  local c2 = trig_chan(param_get(('%s_CHN2'):format(PARAM_PREFIX)))
   local sh = math.floor(param_get(('%s_SHAPE'):format(PARAM_PREFIX)))
   if sh ~= 0 and sh ~= 1 then sh = 0 end
   local at = clamp(param_get(('%s_ATIME'):format(PARAM_PREFIX)),    4,  20)
@@ -107,12 +225,8 @@ local seq_idx        = 0       -- current index into seq
 -- Pattern flags
 local pattern_complete  = false
 local pattern_triggered = false
--- Trigger counters: -1 = disarmed (waiting for switch release before
--- the counter can start arming again); 0..9 = counting up while high;
--- 10+ = ready to trigger.  Start disarmed to prevent an initial trigger
--- if the switch happens to be high when the script starts.
-local trigger_cnt       = -1
-local trigger_cnt_2     = -1
+local trigger_cnt       = 0
+local trigger_cnt_2     = 0
 local active_channel    = 0    -- 1 or 2 (which RC channel triggered)
 
 -- Heading captured at init
@@ -284,8 +398,8 @@ local function is_active()
   -- Re-read trigger-relevant params every cycle so GCS changes take effect
   ptrn_enabled = param_get(('%s_ENABLE'):format(PARAM_PREFIX))
   ptrn_pnum    = clamp(math.floor(param_get(('%s_PNUM'):format(PARAM_PREFIX))),  1, 3)
-  ptrn_chn1    = clamp(math.floor(param_get(('%s_CHN1'):format(PARAM_PREFIX))),  5, 12)
-  ptrn_chn2    = clamp(math.floor(param_get(('%s_CHN2'):format(PARAM_PREFIX))),  5, 12)
+  ptrn_chn1    = trig_chan(param_get(('%s_CHN1'):format(PARAM_PREFIX)))
+  ptrn_chn2    = trig_chan(param_get(('%s_CHN2'):format(PARAM_PREFIX)))
 
   if ptrn_enabled <= 0 then return false end
 
@@ -294,9 +408,8 @@ local function is_active()
     if current_state ~= "idle" and current_state ~= "init"
        and vehicle:get_mode() ~= copter_guided_mode_num then
       pattern_triggered = false
-      -- Disarm trigger counters: require switch release before re-arming
-      trigger_cnt = -1
-      trigger_cnt_2 = -1
+      trigger_cnt = 0
+      trigger_cnt_2 = 0
       return false
     end
     return true
@@ -305,11 +418,9 @@ local function is_active()
   -- Only allow new activations when in LOITER mode.  This prevents the
   -- pattern from taking over during AUTO missions or other active flight
   -- modes.  Mid-pattern mode changes are handled by the block above.
-  -- Disarm counters while out of LOITER so the switch must cycle
-  -- low -> high after returning to LOITER before a trigger can arm.
   if vehicle:get_mode() ~= copter_loiter_mode_num then
-    trigger_cnt = -1
-    trigger_cnt_2 = -1
+    trigger_cnt = 0
+    trigger_cnt_2 = 0
     return false
   end
 
@@ -317,14 +428,14 @@ local function is_active()
   local vendor = vendor_sequences[ptrn_pnum]
   if not vendor then return false end
 
-  -- CHN1 check (edge-triggered: must release switch between triggers)
+  -- CHN1 check (skipped entirely when PTRN_CHN1 is 0 / RC triggering disabled)
   local chn1_seq = vendor[1]
-  if chn1_seq then
+  if chn1_seq and ptrn_chn1 > 0 then
     local pwm1 = rc:get_pwm(ptrn_chn1)
     if pwm1 and pwm1 > 1800 then
-      if trigger_cnt >= 0 and trigger_cnt < 10 then
+      if trigger_cnt < 10 then
         trigger_cnt = trigger_cnt + 1
-      elseif trigger_cnt >= 10 then
+      else
         if check_altitude() then
           active_channel = 1
           pattern_triggered = true
@@ -333,24 +444,22 @@ local function is_active()
           seq_idx = 0
           current_state = "idle"
           state_entered = false
-          trigger_cnt = -1  -- disarm until switch released
         end
       end
-      -- trigger_cnt == -1: disarmed, ignore until switch goes low
     else
-      trigger_cnt = 0  -- switch released, re-arm
+      trigger_cnt = 0
     end
   end
 
-  -- CHN2 check (edge-triggered: must release switch between triggers)
+  -- CHN2 check
   if not pattern_triggered then
     local chn2_seq = vendor[2]
-    if chn2_seq then
+    if chn2_seq and ptrn_chn2 > 0 then
       local pwm2 = rc:get_pwm(ptrn_chn2)
       if pwm2 and pwm2 > 1800 then
-        if trigger_cnt_2 >= 0 and trigger_cnt_2 < 10 then
+        if trigger_cnt_2 < 10 then
           trigger_cnt_2 = trigger_cnt_2 + 1
-        elseif trigger_cnt_2 >= 10 then
+        else
           if check_altitude() then
             active_channel = 2
             pattern_triggered = true
@@ -359,12 +468,10 @@ local function is_active()
             seq_idx = 0
             current_state = "idle"
             state_entered = false
-            trigger_cnt_2 = -1  -- disarm until switch released
           end
         end
-        -- trigger_cnt_2 == -1: disarmed, ignore until switch goes low
       else
-        trigger_cnt_2 = 0  -- switch released, re-arm
+        trigger_cnt_2 = 0
       end
     end
   end
@@ -386,8 +493,16 @@ local function is_active()
         gcs:send_text(MAV_SEVERITY_NOTICE,
           ('Pattern: GCS trigger CHN%d'):format(trig))
       else
-        -- Reset trigger if sequence unavailable or altitude too low
+        -- Reset the trigger, but say why: the GCS button is the primary trigger
+        -- mechanism, so a silent reset looks like the button did nothing.
         param:set_and_save(('%s_TRIGGER'):format(PARAM_PREFIX), 0)
+        if not trig_seq then
+          gcs:send_text(MAV_SEVERITY_WARNING,
+            ('Pattern: no sequence %d for PTRN_PNUM %d'):format(trig, ptrn_pnum))
+        else
+          gcs:send_text(MAV_SEVERITY_WARNING,
+            'Pattern: too low to start (need >10m above origin)')
+        end
       end
     end
   end
@@ -794,10 +909,7 @@ function do_pattern()
   -- ------------------------------------------------------------------
   elseif current_state == "complete" then
     param:set_and_save(('%s_TRIGGER'):format(PARAM_PREFIX), 0)
-    -- TOAUTO only applies after CHN1 patterns.  CHN2 patterns always
-    -- return to Loiter so the pilot retains control at the end of the
-    -- CHN1 -> CHN2 sequence (e.g. Phoenix).
-    if ptrn_toauto == 1 and active_channel == 1 then
+    if ptrn_toauto == 1 then
       vehicle:set_mode(copter_auto_mode_num)
       gcs:send_text(MAV_SEVERITY_NOTICE, 'Pattern Complete - Auto')
     else

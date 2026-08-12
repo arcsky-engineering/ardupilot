@@ -1,0 +1,41 @@
+{
+  "_README": [
+    "Metadata for parameters that Tools/autotest/param_metadata/param_parse.py",
+    "cannot extract, even though the @Param block exists in the source.",
+    "Keep each entry annotated with WHY it is needed and where the truth lives,",
+    "so it can be dropped if upstream ever fixes the parser. gen_param_docs.py",
+    "warns when an override becomes redundant."
+  ],
+  "FLTMODE_GCSBLOCK": {
+    "_why": "@Param block exists at libraries/AP_Vehicle/AP_Vehicle.cpp:152 but the parser block-regex does not match: the Bitmask is written as repeated per-line @Bitmask{Copter}: entries rather than one comma-separated line. Transcribed from that source block.",
+    "DisplayName": "Flight mode block from GCS",
+    "Description": "Bitmask of flight modes to disable for GCS selection. Mode can still be accessed via RC or failsafe.",
+    "User": "Standard",
+    "Bitmask": {
+      "0": "Stabilize",
+      "1": "Acro",
+      "2": "AltHold",
+      "3": "Auto",
+      "4": "Guided",
+      "5": "Loiter",
+      "6": "Circle",
+      "7": "Drift",
+      "8": "Sport",
+      "9": "Flip",
+      "10": "AutoTune",
+      "11": "PosHold",
+      "12": "Brake",
+      "13": "Throw",
+      "14": "Avoid_ADSB",
+      "15": "Guided_NoGPS",
+      "16": "Smart_RTL",
+      "17": "FlowHold",
+      "18": "Follow",
+      "19": "ZigZag",
+      "20": "SystemID",
+      "21": "Heli_Autorotate",
+      "22": "Auto RTL",
+      "23": "Turtle"
+    }
+  }
+}

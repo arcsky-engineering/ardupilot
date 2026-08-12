@@ -30,6 +30,7 @@ static const XplorerParamClamp xplorer_param_clamps[] = {
     { "BATT_CAPACITY",    8000.0f, 30000.0f },
     { "BATT2_CAPACITY",   8000.0f, 20000.0f },
     { "BATT3_CAPACITY",   8000.0f, 20000.0f },
+    { "EK3_ALT_M_NSE",        2.0f,    10.0f },
     { "FWDAVD_DIST",         3.0f,    40.0f },
     { "FWDAVD_SAMP",         1.0f,    20.0f },
     { "LAND_RNG_ALT",      600.0f,  2000.0f },
