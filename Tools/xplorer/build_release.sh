@@ -156,6 +156,15 @@ if [ "$DEV_BUILD" = "1" ]; then
 else
     RELDIR="release/xplorer-v$VERSION"
 fi
+# Start from an empty staging directory. Re-running after a new commit otherwise
+# leaves the previous run's artifacts alongside the new ones while MANIFEST.txt
+# lists only the latest -- filenames differ by an 8-char hash, so it is very easy
+# to publish the wrong binary. Everything here is reproducible from the tag, so
+# wiping is safe.
+if [ -d "$RELDIR" ] && [ -n "$(ls -A "$RELDIR" 2>/dev/null)" ]; then
+    echo "clearing previous contents of $RELDIR"
+    rm -rf "$RELDIR"
+fi
 mkdir -p "$RELDIR"
 MANIFEST="$RELDIR/MANIFEST.txt"
 

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Rebuild XplorerRelease.exe from Tools/xplorer/release_gui.py.
+    Rebuild ArcskyRelease.exe from Tools/xplorer/release_gui.py.
 
 .DESCRIPTION
     Run this after editing release_gui.py. Produces a single-file, windowed exe
@@ -30,7 +30,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Repo      = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 $Entry     = Join-Path $ScriptDir 'release_gui.py'
-$Name      = 'XplorerRelease'
+$Name      = 'ArcskyRelease'
 $WorkDir   = Join-Path $env:TEMP 'xplorer-gui-build'
 $DistDir   = Join-Path $WorkDir 'dist'
 

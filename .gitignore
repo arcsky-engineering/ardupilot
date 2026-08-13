@@ -182,7 +182,7 @@ nul
 *.out
 
 # Xplorer release GUI (rebuild with Tools/xplorer/build_gui_exe.ps1)
-XplorerRelease.exe
+ArcskyRelease.exe
 
 # Named test-build copies made by the release console
 testbuilds/

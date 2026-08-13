@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Arcsky Xplorer firmware build & release console.
+Arcsky firmware build & release console. Drives BOTH products.
 
 A GUI wrapper over the release process so it can be run without remembering the
 inner workings. It does not reimplement anything: every action shells out to the
@@ -9,7 +9,17 @@ command and its real output.
 
     python Tools/xplorer/release_gui.py
 
-Packaged as XplorerRelease.exe by Tools/xplorer/build_gui_exe.ps1.
+Packaged as ArcskyRelease.exe by Tools/xplorer/build_gui_exe.ps1.
+
+PRODUCTS
+  Everything product-specific is data in PROFILES below - version include,
+  changelog, boards, configure options, signing, whether parameter-disposition
+  tooling and an unlocked DEV target exist. The active profile is chosen by which
+  version include the repository contains, so pointing Settings at the other
+  clone switches products with no further configuration.
+
+  Deliberately ONE tool rather than two: two would drift, and the next fix would
+  land in only one of them.
 
 WHY IT SHELLS INTO CYGWIN
   ./waf is configured under Cygwin on this machine (see .lock-waf_cygwin_build),
@@ -29,19 +39,68 @@ import threading
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 
-APP = 'Xplorer Firmware Release Console'
-CFG_NAME = 'xplorer_release_gui.json'
+APP = 'Arcsky Firmware Release Console'   # title is set per-product at runtime
+CFG_NAME = 'arcsky_release_gui.json'
 
-VERSION_INC = 'libraries/AP_HAL_ChibiOS/hwdef/include/xplorer_version.inc'
-CHANGELOG = 'doc/XPLORER-FIRMWARE-CHANGELOG.md'
-RELEASE_SH = 'Tools/xplorer/build_release.sh'
-PARAM_DOCS = 'Tools/xplorer/gen_param_docs.py'
-PRIVATE_KEY = 'Arcsky_private_key.dat'
+# ---------------------------------------------------------------- profiles ---
+# Everything product-specific lives here as DATA. The console logic is shared, so
+# a fix lands for both products at once - which is the whole point of one tool
+# rather than two that drift apart.
+#
+# The active profile is chosen by which version include the repo contains, so
+# pointing Settings at the other clone switches products with no configuration.
 
-PROD_BOARD = 'CubeOrangePlus-ODID'
-DEV_BOARD = 'CubeOrangePlus-ODID-DEV'
-BOOTSTRAP_BOARD = 'CubeOrangePlus'
-BOARDS = [PROD_BOARD, DEV_BOARD, BOOTSTRAP_BOARD]
+PROFILES = [
+    {
+        'key': 'xplorer',
+        'name': 'Xplorer',
+        'fw_prefix': 'Xplorer',      # AP_CUSTOM_FIRMWARE_STRING "Xplorer v1.0.1"
+        'version_inc': 'libraries/AP_HAL_ChibiOS/hwdef/include/xplorer_version.inc',
+        'changelog': 'doc/XPLORER-FIRMWARE-CHANGELOG.md',
+        'release_sh': 'Tools/xplorer/build_release.sh',
+        'param_docs': 'Tools/xplorer/gen_param_docs.py',
+        'tag_prefix': 'xplorer-fw-v',
+        'artifact_prefix': 'xplorer',
+        'boards': ['CubeOrangePlus-ODID', 'CubeOrangePlus-ODID-DEV',
+                   'CubeOrangePlus'],
+        'dev_board': 'CubeOrangePlus-ODID-DEV',
+        'private_key': 'Arcsky_private_key.dat',
+        'configure_opts': '--signed-fw --private-key Arcsky_private_key.dat',
+        'changelog_needs_build': False,
+        'notes': 'ODID is compiled in via a hwdef define; firmware is signed.',
+    },
+    {
+        'key': 'x55',
+        'name': 'X55',
+        'fw_prefix': 'X55',
+        'version_inc': 'libraries/AP_HAL_ChibiOS/hwdef/include/x55_version.inc',
+        'changelog': 'doc/X55-FIRMWARE-CHANGELOG.md',
+        'release_sh': 'Tools/x55/build_release.sh',
+        'param_docs': None,          # no parameter disposition tooling on X55
+        'tag_prefix': 'x55-fw-v',
+        'artifact_prefix': 'x55',
+        'boards': ['CubeOrange', 'CubeOrangePlus'],
+        'dev_board': None,           # no unlocked engineering target on X55
+        'private_key': None,         # not signed
+        'configure_opts': '--enable-opendroneid',
+        'changelog_needs_build': True,   # X55 headings require "Build N"
+        'notes': 'ODID via the --enable-opendroneid build flag, not a hwdef '
+                 'define. Firmware is not signed. Changelog headings require a '
+                 'Build number.',
+    },
+]
+
+# Active profile. Populated by detect_profile(); never read before then.
+P = PROFILES[0]
+
+
+def detect_profile(repo):
+    """Pick the profile whose version include exists in this repo."""
+    if repo:
+        for prof in PROFILES:
+            if os.path.isfile(os.path.join(repo, prof['version_inc'])):
+                return prof
+    return None
 
 DEFAULT_BASH = r'C:\cygwin64\bin\bash.exe'
 
@@ -65,8 +124,10 @@ def find_repo(start=None):
     for c in cands:
         d = os.path.abspath(c)
         for _ in range(6):
+            # an ArduPilot tree carrying one of our product version includes
             if os.path.isfile(os.path.join(d, 'ArduCopter', 'version.h')) and \
-               os.path.isdir(os.path.join(d, 'Tools', 'xplorer')):
+               any(os.path.isfile(os.path.join(d, pr['version_inc']))
+                   for pr in PROFILES):
                 return d
             nd = os.path.dirname(d)
             if nd == d:
@@ -198,23 +259,26 @@ def git(repo, *a, timeout=60):
 # ---------------------------------------------------------------- status -----
 
 def read_version(repo):
-    path = os.path.join(repo, VERSION_INC)
+    path = os.path.join(repo, P['version_inc'])
     try:
         src = open(path, encoding='utf-8').read()
     except OSError:
         return None
-    m = re.search(r'^define\s+AP_CUSTOM_FIRMWARE_STRING\s+"Xplorer v([^"]+)"',
+    m = re.search(r'^define\s+AP_CUSTOM_FIRMWARE_STRING\s+"%s v([^"]+)"'
+                  % re.escape(P['fw_prefix']),
                   src, re.M)
     return m.group(1) if m else None
 
 
 def write_version(repo, new):
-    path = os.path.join(repo, VERSION_INC)
+    path = os.path.join(repo, P['version_inc'])
     src = open(path, encoding='utf-8').read()
-    out = re.sub(r'(^define\s+AP_CUSTOM_FIRMWARE_STRING\s+")Xplorer v[^"]+(")',
-                 r'\1Xplorer v%s\2' % new, src, count=1, flags=re.M)
+    out = re.sub(r'(^define\s+AP_CUSTOM_FIRMWARE_STRING\s+")%s v[^"]+(")'
+                 % re.escape(P['fw_prefix']),
+                 r'\g<1>%s v%s\g<2>' % (P['fw_prefix'], new),
+                 src, count=1, flags=re.M)
     if out == src:
-        raise RuntimeError('could not rewrite the version line in %s' % VERSION_INC)
+        raise RuntimeError('could not rewrite the version line in %s' % P['version_inc'])
     with open(path, 'w', encoding='utf-8', newline='') as f:
         f.write(out)
 
@@ -232,11 +296,11 @@ def gather_status(repo, bash, py=None):
     # --- version ---
     ver = read_version(repo)
     if ver:
-        add('Firmware version', OK, 'Xplorer v%s' % ver,
-            'from %s' % VERSION_INC)
+        add('Firmware version', OK, '%s v%s' % (P['fw_prefix'], ver),
+            'from %s' % P['version_inc'])
     else:
         add('Firmware version', FAIL, 'could not parse',
-            'check %s' % VERSION_INC)
+            'check %s' % P['version_inc'])
         return rows, False, blockers
 
     # --- branch / head ---
@@ -255,7 +319,7 @@ def gather_status(repo, bash, py=None):
         add('Working tree', OK, 'clean')
 
     # --- tag ---
-    tag = 'xplorer-fw-v%s' % ver
+    tag = P['tag_prefix'] + ver
     _, tags = git(repo, 'tag', '--points-at', 'HEAD')
     if tag in tags.split():
         add('Release tag', OK, '%s on HEAD' % tag)
@@ -269,9 +333,9 @@ def gather_status(repo, bash, py=None):
                 'create the tag once the changelog is written')
 
     # --- changelog ---
-    cl = os.path.join(repo, CHANGELOG)
+    cl = os.path.join(repo, P['changelog'])
     if not os.path.isfile(cl):
-        add('Changelog entry', FAIL, 'file missing', CHANGELOG)
+        add('Changelog entry', FAIL, 'file missing', P['changelog'])
     else:
         body = open(cl, encoding='utf-8').read()
         if re.search(r'^##\s+v%s\b' % re.escape(ver), body, re.M):
@@ -280,12 +344,13 @@ def gather_status(repo, bash, py=None):
             add('Changelog entry', FAIL, 'no entry for v%s' % ver,
                 'add a "## v%s - YYYY-MM-DD" section' % ver)
 
-    # --- signing key ---
-    if os.path.isfile(os.path.join(repo, PRIVATE_KEY)):
-        add('Signing key', OK, PRIVATE_KEY)
-    else:
-        add('Signing key', FAIL, '%s not found' % PRIVATE_KEY,
-            'copy it from Google Drive; it is gitignored')
+    # --- signing key (only products that sign) ---
+    if P['private_key']:
+        if os.path.isfile(os.path.join(repo, P['private_key'])):
+            add('Signing key', OK, P['private_key'])
+        else:
+            add('Signing key', FAIL, '%s not found' % P['private_key'],
+                'copy it from Google Drive; it is gitignored')
 
     # --- python interpreter (needed to run the helper scripts) ---
     if py:
@@ -294,11 +359,13 @@ def gather_status(repo, bash, py=None):
         add('Python', FAIL, 'no interpreter found',
             'install Python or set its path in Settings')
 
-    # --- parameter docs ---
-    if not py:
+    # --- parameter docs (only products that generate them) ---
+    if not P['param_docs']:
+        pass
+    elif not py:
         add('Parameter docs', INFO, 'not checked', 'needs a Python interpreter')
     else:
-        rc, out = run([py, PARAM_DOCS, '--check'], repo, timeout=300)
+        rc, out = run([py, P['param_docs'], '--check'], repo, timeout=300)
         if rc == 0:
             add('Parameter docs', OK, 'up to date')
         else:
@@ -343,33 +410,36 @@ def gather_status(repo, bash, py=None):
             'builds run under Cygwin; set the path in Settings')
 
     # --- built boards ---
-    for b in BOARDS:
+    for b in P['boards']:
         h = os.path.join(repo, 'build', b, 'hwdef.h')
         apj = os.path.join(repo, 'build', b, 'bin', 'arducopter.apj')
         if not os.path.isfile(h):
             add('Build: %s' % b, INFO, 'not built')
             continue
         src = open(h, encoding='utf-8', errors='ignore').read()
-        m = re.search(r'#define\s+AP_CUSTOM_FIRMWARE_STRING\s+"Xplorer v([^"]+)"', src)
+        m = re.search(r'#define\s+AP_CUSTOM_FIRMWARE_STRING\s+"%s v([^"]+)"'
+                      % re.escape(P['fw_prefix']), src)
         bv = m.group(1) if m else '?'
         unlocked = '#define XPLORER_DEV_UNLOCK_ENABLED 1' in src
         signed = '#define AP_SIGNED_FIRMWARE 1' in src
         bits = ['v%s' % bv]
         if unlocked:
             bits.append('PARAMS UNLOCKED')
-        if not signed:
+        if P['private_key'] and not signed:
             bits.append('UNSIGNED')
         if not os.path.isfile(apj):
             bits.append('no apj')
         detail = ', '.join(bits)
-        want_unlock = (b == DEV_BOARD)
+        # Only meaningful where an unlocked target exists. On products without
+        # one, ANY unlock compiled in is wrong.
+        want_unlock = (P['dev_board'] is not None and b == P['dev_board'])
         if bv != ver:
             add('Build: %s' % b, WARN, detail,
                 'stale - built at v%s, source is v%s' % (bv, ver))
         elif unlocked != want_unlock:
             add('Build: %s' % b, FAIL, detail,
                 'DEV unlock state is wrong for this board')
-        elif not signed:
+        elif P['private_key'] and not signed:
             add('Build: %s' % b, FAIL, detail, 'would not boot on a production Cube')
         else:
             add('Build: %s' % b, OK, detail)
@@ -413,7 +483,8 @@ def stamp_test_build(repo, board):
     # the DEV board's token already says DEV; do not say it twice
     dev_tag = '-DEV' if dev and 'DEV' not in token.upper() else ''
 
-    name = 'xplorer-v%s%s-%s-%s-%s%s' % (
+    name = '%s-v%s%s-%s-%s-%s%s' % (
+        P['artifact_prefix'],
         ver,
         dev_tag,
         token,
@@ -433,9 +504,28 @@ def stamp_test_build(repo, board):
     return made, None
 
 
-def build_changelog_md(version, date, headline, blocks):
-    """Render one changelog section from the structured form."""
-    L = ['## v%s — %s' % (version, date), '']
+def next_build_number(repo):
+    """Highest existing 'Build N' in the changelog, plus one. 1 if none."""
+    path = os.path.join(repo, P['changelog'])
+    try:
+        src = open(path, encoding='utf-8').read()
+    except OSError:
+        return 1
+    nums = [int(n) for n in re.findall(r'^##\s+.*?Build\s+(\d+)', src, re.M)]
+    return (max(nums) + 1) if nums else 1
+
+
+def build_changelog_md(version, date, headline, blocks, build=None):
+    """Render one changelog section from the structured form.
+
+    X55 changelog headings carry a Build number (its gen_release_notes.py
+    requires one); Xplorer's do not. Driven by the profile so one form serves
+    both.
+    """
+    if build:
+        L = ['## v%s — Build %s — %s' % (version, build, date), '']
+    else:
+        L = ['## v%s — %s' % (version, date), '']
     if headline:
         L += ['### %s' % headline.strip().upper(), '']
     for name in SECTIONS:
@@ -453,7 +543,7 @@ def build_changelog_md(version, date, headline, blocks):
 
 def insert_changelog_entry(repo, version, md, replace=False):
     """Insert (or replace) a version section, keeping newest-first order."""
-    path = os.path.join(repo, CHANGELOG)
+    path = os.path.join(repo, P['changelog'])
     src = open(path, encoding='utf-8').read()
     heads = list(re.finditer(r'^##\s+v(\d+\.\d+\.\d+)\b.*$', src, re.M))
 
@@ -497,13 +587,47 @@ class App(tk.Tk):
         self.q = queue.Queue()
         self.busy = False
         self.rows = []
+        self._use_profile(self.repo)
 
         self._build_ui()
+        self._use_profile(self.repo)      # now that the widgets exist
         if not self.repo:
             self.after(200, self.pick_repo)
         else:
             self.after(200, self.refresh)
         self.after(80, self._drain)
+
+    def _use_profile(self, repo):
+        """Switch the active product profile to match `repo`.
+
+        Called at startup and whenever the repository changes, so pointing at the
+        other clone switches products with no further configuration.
+        """
+        global P
+        prof = detect_profile(repo)
+        if prof is None:
+            return False
+        changed = prof is not P
+        P = prof
+        self.title('%s Firmware Release Console' % P['name'])
+        # Adapt controls that only make sense for some products.
+        if getattr(self, 'b_reldev', None) is not None:
+            self.b_reldev.config(
+                text='Build engineering (DEV)' if P['dev_board']
+                else 'Build engineering (relaxed gates)')
+        if getattr(self, 'b_docs', None) is not None:
+            self.b_docs.config(
+                state='normal' if P['param_docs'] else 'disabled')
+        if getattr(self, 'board', None) is not None:
+            self.board.set(P['boards'][0])
+        if getattr(self, 'board_combo', None) is not None:
+            self.board_combo.config(values=P['boards'])
+        if changed:
+            try:
+                self.emit('\nproduct: %s   (%s)\n' % (P['name'], P['notes']), 'ok')
+            except Exception:
+                pass          # emit() needs the queue; harmless during __init__
+        return True
 
     # -- layout --
     def _build_ui(self):
@@ -537,9 +661,11 @@ class App(tk.Tk):
 
         r1 = ttk.Frame(af); r1.pack(fill='x')
         ttk.Label(r1, text='Board:').pack(side='left')
-        self.board = tk.StringVar(value=PROD_BOARD)
-        ttk.Combobox(r1, textvariable=self.board, values=BOARDS, width=26,
-                     state='readonly').pack(side='left', padx=6)
+        self.board = tk.StringVar(value=P['boards'][0])
+        self.board_combo = ttk.Combobox(r1, textvariable=self.board,
+                                        values=P['boards'], width=26,
+                                        state='readonly')
+        self.board_combo.pack(side='left', padx=6)
         self.b_build = ttk.Button(r1, text='Build firmware (test)',
                                   command=self.do_build)
         self.b_build.pack(side='left', padx=4)
@@ -577,7 +703,7 @@ class App(tk.Tk):
         self.b_verify.pack(side='left', padx=4)
         self.b_rel = ttk.Button(r3, text='BUILD RELEASE', command=self.do_release)
         self.b_rel.pack(side='left', padx=4)
-        self.b_reldev = ttk.Button(r3, text='Build engineering (DEV)',
+        self.b_reldev = ttk.Button(r3, text='Build engineering',
                                    command=lambda: self.do_release(dev=True))
         self.b_reldev.pack(side='left', padx=4)
         self.b_open_rel = ttk.Button(r3, text='Open release folder',
@@ -686,7 +812,7 @@ class App(tk.Tk):
     def refresh(self):
         if not self.repo:
             return
-        self.repo_lbl.config(text=self.repo)
+        self.repo_lbl.config(text='%s  |  %s' % (P['name'], self.repo))
         self.q.put(('status', 'Checking status...', None))
 
         def worker():
@@ -717,7 +843,7 @@ class App(tk.Tk):
             self.ver_var.set(ver)
         if ready:
             self.banner.config(
-                text='READY to build release v%s' % ver,
+                text='READY to build release %s v%s' % (P['name'], ver),
                 bg='#d6f5dd', fg='#1a7f37')
         else:
             self.banner.config(
@@ -727,8 +853,8 @@ class App(tk.Tk):
     # -- actions --
     def do_build(self):
         b = self.board.get()
-        cmd = ('./waf configure --board %s --signed-fw --private-key %s '
-               '&& ./waf copter' % (b, PRIVATE_KEY))
+        cmd = ('./waf configure --board %s %s && ./waf copter'
+               % (b, P['configure_opts']))
         self._spawn('Build firmware: %s' % b, None, cygwin_cmd=cmd,
                     on_success=lambda: self._stamp(b))
 
@@ -759,7 +885,7 @@ class App(tk.Tk):
                      'Python, or set its path under Settings.')
             return
         self._spawn('Regenerate parameter documentation',
-                    [self.py, PARAM_DOCS])
+                    [self.py, P['param_docs']])
 
     def do_bump(self):
         new = self.ver_var.get().strip()
@@ -773,18 +899,18 @@ class App(tk.Tk):
         if not messagebox.askyesno(
                 APP, 'Set the firmware version from %s to %s?\n\n'
                      'This edits %s. You will still need a changelog entry, a '
-                     'commit and a tag.' % (cur, new, VERSION_INC)):
+                     'commit and a tag.' % (cur, new, P['version_inc'])):
             return
         try:
             write_version(self.repo, new)
         except Exception as e:
             messagebox.showerror(APP, str(e))
             return
-        self.emit('\nversion: %s -> %s (%s)\n' % (cur, new, VERSION_INC), 'ok')
+        self.emit('\nversion: %s -> %s (%s)\n' % (cur, new, P['version_inc']), 'ok')
         self.refresh()
 
     def open_changelog(self):
-        self._open(os.path.join(self.repo, CHANGELOG))
+        self._open(os.path.join(self.repo, P['changelog']))
 
     def open_build(self):
         self._open(os.path.join(self.repo, 'build', self.board.get(), 'bin'))
@@ -792,7 +918,7 @@ class App(tk.Tk):
     def open_release(self):
         ver = read_version(self.repo)
         d = os.path.join(self.repo, 'release')
-        cand = os.path.join(d, 'xplorer-v%s' % ver)
+        cand = os.path.join(d, '%s-v%s' % (P['artifact_prefix'], ver))
         self._open(cand if os.path.isdir(cand) else d)
 
     def _open(self, path):
@@ -823,7 +949,7 @@ class App(tk.Tk):
 
     def do_tag(self):
         ver = read_version(self.repo)
-        tag = 'xplorer-fw-v%s' % ver
+        tag = P['tag_prefix'] + ver
         _, porcelain = git(self.repo, 'status', '--porcelain')
         if [l for l in porcelain.splitlines() if l.strip()]:
             if not messagebox.askyesno(
@@ -920,7 +1046,7 @@ class App(tk.Tk):
                          'This runs the full gated release build.' % ver):
                 return
         self._spawn(title, None,
-                    cygwin_cmd='bash %s %s' % (RELEASE_SH, ' '.join(args)))
+                    cygwin_cmd='bash %s %s' % (P['release_sh'], ' '.join(args)))
 
     # -- settings --
     def pick_repo(self):
@@ -932,7 +1058,14 @@ class App(tk.Tk):
         if not os.path.isfile(os.path.join(d, 'ArduCopter', 'version.h')):
             messagebox.showerror(APP, 'That does not look like an ArduPilot repo.')
             return
+        if detect_profile(d) is None:
+            messagebox.showerror(
+                APP, 'No product version include found in that repo.\n\n'
+                     'Expected one of:\n  ' +
+                '\n  '.join(pr['version_inc'] for pr in PROFILES))
+            return
         self.repo = d
+        self._use_profile(d)
         self.cfg['repo'] = d
         save_cfg(self.cfg)
         self.refresh()
@@ -976,6 +1109,7 @@ class App(tk.Tk):
 
         def save():
             self.repo = rv.get() or self.repo
+            self._use_profile(self.repo)
             self.bash = bv.get() or self.bash
             if pv.get() and pv.get() != (self.py or ''):
                 self.cfg['python'] = pv.get()
@@ -1084,7 +1218,7 @@ FILES WORTH KNOWING
 
   libraries/AP_HAL_ChibiOS/hwdef/include/xplorer_version.inc
       The version. One line. Everything else follows from it.
-  doc/XPLORER-FIRMWARE-CHANGELOG.md
+  doc/<PRODUCT>-FIRMWARE-CHANGELOG.md
       Source of the customer release notes. Use the form, not an editor.
   libraries/AP_HAL_ChibiOS/hwdef/CubeOrangePlus-ODID/defaults.parm
       Shipped parameter defaults and @READONLY locks.
@@ -1153,6 +1287,13 @@ class ChangelogDialog(tk.Toplevel):
         ttk.Label(hdr, text='Date:').grid(row=0, column=2, sticky='w')
         self.v_date = tk.StringVar(value=datetime.date.today().isoformat())
         ttk.Entry(hdr, textvariable=self.v_date, width=14).grid(row=0, column=3, padx=(4, 16))
+        self.v_build = tk.StringVar()
+        if P['changelog_needs_build']:
+            ttk.Label(hdr, text='Build:').grid(row=1, column=0, sticky='w',
+                                               pady=(6, 0))
+            self.v_build.set(str(next_build_number(repo)))
+            ttk.Entry(hdr, textvariable=self.v_build, width=8).grid(
+                row=1, column=1, sticky='w', padx=(4, 16), pady=(6, 0))
         ttk.Label(hdr, text='Headline:').grid(row=0, column=4, sticky='w')
         self.v_head = tk.StringVar()
         ttk.Entry(hdr, textvariable=self.v_head, width=44).grid(row=0, column=5, padx=4)
@@ -1184,7 +1325,8 @@ class ChangelogDialog(tk.Toplevel):
         return build_changelog_md(
             self.v_ver.get().strip(), self.v_date.get().strip(),
             self.v_head.get().strip(),
-            {n: t.get('1.0', 'end') for n, t in self.boxes.items()})
+            {n: t.get('1.0', 'end') for n, t in self.boxes.items()},
+            build=self.v_build.get().strip() or None)
 
     def _preview(self):
         w = tk.Toplevel(self)
