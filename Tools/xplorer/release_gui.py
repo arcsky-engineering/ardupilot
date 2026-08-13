@@ -567,6 +567,9 @@ class App(tk.Tk):
         self.b_commit.pack(side='left', padx=4)
         self.b_tag = ttk.Button(r2, text='Create release tag', command=self.do_tag)
         self.b_tag.pack(side='left', padx=4)
+        self.b_movetag = ttk.Button(r2, text='Move tag to HEAD',
+                                    command=self.do_move_tag)
+        self.b_movetag.pack(side='left', padx=4)
 
         r3 = ttk.Frame(af); r3.pack(fill='x', pady=(8, 0))
         self.b_verify = ttk.Button(r3, text='Verify release (dry run)',
@@ -595,7 +598,8 @@ class App(tk.Tk):
         self.status_bar.pack(fill='x', side='bottom')
 
         self._action_buttons = [self.b_build, self.b_docs, self.b_bump, self.b_cl,
-                                self.b_commit, self.b_tag, self.b_verify,
+                                self.b_commit, self.b_tag, self.b_movetag,
+                                self.b_verify,
                                 self.b_rel, self.b_reldev]
 
     # -- log plumbing --
@@ -831,6 +835,73 @@ class App(tk.Tk):
         rc, out = run(['git', 'tag', '-a', tag, '-m',
                        'Xplorer firmware v%s' % ver], self.repo)
         self.emit('\n$ git tag -a %s\n%s\n' % (tag, out or '(created)'),
+                  'ok' if rc == 0 else 'err')
+        self.refresh()
+
+    def _tag_on_remote(self, tag):
+        """(is_on_remote, checked_ok). Network call; offline is not 'absent'."""
+        self.q.put(('status', 'Checking whether %s is on origin...' % tag, None))
+        rc, out = run(['git', 'ls-remote', '--tags', 'origin',
+                       'refs/tags/%s' % tag], self.repo, timeout=45)
+        self.q.put(('status', 'Ready', None))
+        if rc != 0:
+            return False, False
+        return ('refs/tags/%s' % tag) in out, True
+
+    def do_move_tag(self):
+        """Re-point the release tag at HEAD. Refuses if it is already published."""
+        ver = read_version(self.repo)
+        tag = 'xplorer-fw-v%s' % ver
+
+        _, exists = run(['git', 'tag', '--list', tag], self.repo)
+        if not exists.strip():
+            messagebox.showinfo(
+                APP, '%s does not exist yet.\n\nUse "Create release tag".' % tag)
+            return
+
+        _, at_head = run(['git', 'tag', '--points-at', 'HEAD'], self.repo)
+        if tag in at_head.split():
+            messagebox.showinfo(APP, '%s is already on HEAD. Nothing to do.' % tag)
+            return
+
+        on_remote, checked = self._tag_on_remote(tag)
+        if on_remote:
+            messagebox.showerror(
+                APP,
+                'REFUSING to move %s — it is already pushed to origin.\n\n'
+                'Moving a published tag means anyone who already fetched it has '
+                'different code under the same name, and a binary in the field '
+                'can no longer be resolved to source.\n\n'
+                'Bump to the next patch version instead, document it, and tag '
+                'that.' % tag)
+            self.emit('\nrefused to move %s: already on origin\n' % tag, 'err')
+            return
+        if not checked:
+            if not messagebox.askyesno(
+                    APP,
+                    'Could not reach origin to confirm whether %s has been '
+                    'pushed.\n\nOnly continue if you are sure it has NOT been '
+                    'pushed. Moving a published tag is not recoverable.\n\n'
+                    'Continue?' % tag):
+                return
+
+        old = run(['git', 'rev-parse', '--short=8', '%s^{commit}' % tag],
+                  self.repo)[1].strip()
+        head = run(['git', 'rev-parse', '--short=8', 'HEAD'], self.repo)[1].strip()
+        if not messagebox.askyesno(
+                APP, 'Move %s from %s to %s?\n\nThe tag is local only, so this is '
+                     'safe.' % (tag, old, head)):
+            return
+
+        rc, out = run(['git', 'tag', '-d', tag], self.repo)
+        self.emit('\n$ git tag -d %s\n%s' % (tag, out), 'cmd')
+        if rc != 0:
+            self.emit('failed to delete the old tag; aborting\n', 'err')
+            self.refresh()
+            return
+        rc, out = run(['git', 'tag', '-a', tag, '-m',
+                       'Xplorer firmware v%s' % ver], self.repo)
+        self.emit('$ git tag -a %s\n%s\n' % (tag, out or '(created on %s)' % head),
                   'ok' if rc == 0 else 'err')
         self.refresh()
 
