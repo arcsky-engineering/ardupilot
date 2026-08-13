@@ -129,6 +129,16 @@ fi
 # ----------------------------------------------------------------- build ------
 
 RELDIR="release/x55-v$VERSION"
+
+# Start from an empty staging directory. Re-running after a new commit otherwise
+# leaves the previous run's artifacts alongside the new ones while MANIFEST.txt
+# lists only the latest -- filenames differ by an 8-char hash, so it is very easy
+# to publish the wrong binary. Everything here is reproducible from the tag, so
+# wiping is safe.
+if [ -d "$RELDIR" ] && [ -n "$(ls -A "$RELDIR" 2>/dev/null)" ]; then
+    echo "clearing previous contents of $RELDIR"
+    rm -rf "$RELDIR"
+fi
 mkdir -p "$RELDIR"
 MANIFEST="$RELDIR/MANIFEST.txt"
 
@@ -155,6 +165,14 @@ for BOARD in $BOARDS; do
     if ! grep -qF "#define AP_CUSTOM_FIRMWARE_STRING \"$FWSTRING\"" "$HWDEF_H"; then
         fail "$BOARD did not compile in '$FWSTRING'. Does its hwdef.dat include ../include/x55_version.inc?
     got: $(grep AP_CUSTOM_FIRMWARE_STRING "$HWDEF_H" || echo '<nothing>')"
+    fi
+
+    # The X55 has no unlocked engineering target, so any parameter unlock
+    # compiled in is a defect, not a variant. Cheap guard against a stray define
+    # or a bad cherry-pick from the Xplorer branch reaching a release.
+    if grep -qF "#define XPLORER_DEV_UNLOCK_ENABLED 1" "$HWDEF_H"; then
+        fail "$BOARD has a parameter unlock compiled in. The X55 has no DEV
+    target; refusing to stage this as a release."
     fi
 
     APJ_ID=$(sed -n 's/^#define APJ_BOARD_ID \([0-9]*\).*/\1/p' "$HWDEF_H")

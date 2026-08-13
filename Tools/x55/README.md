@@ -3,6 +3,10 @@
 The X55 identifies itself as **`X55 v<X.Y.Z>`**, not `ArduCopter V4.4.4`, via
 ArduPilot's `AP_CUSTOM_FIRMWARE_STRING` vendor hook.
 
+This file covers the versioning and release tooling. For the whole workflow —
+setup, making a change, testing, releasing — see
+[`doc/X55-DEV-WORKFLOW.md`](../../doc/X55-DEV-WORKFLOW.md).
+
 ## Cutting a release
 
 ```bash

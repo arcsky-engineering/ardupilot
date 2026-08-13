@@ -156,3 +156,7 @@ tasklist.json
 modules/esp_idf
 .claude/build_compat_xlsx.py
 .claude/settings.local.json
+
+# Arcsky firmware release console (rebuild with the Xplorer repo's
+# Tools/xplorer/build_gui_exe.ps1; one exe drives both products)
+ArcskyRelease.exe

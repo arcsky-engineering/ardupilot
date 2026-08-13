@@ -76,6 +76,11 @@ Then create a new branch off the target upstream release and cherry-pick or reba
 
 ## Build Instructions
 
+**X55: start with [`doc/X55-DEV-WORKFLOW.md`](doc/X55-DEV-WORKFLOW.md)** — one-time
+setup, the change/test loop, and the release process end to end. Note in particular
+the Cygwin git line-ending fix, which will otherwise show ~4500 files as modified
+on your first `git status`.
+
 See the Arcsky Engineering Handbook for:
 - Windows build environment setup (waf, ARM GCC toolchain, Anaconda Python considerations)
 - SITL testing procedures
