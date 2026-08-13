@@ -20,7 +20,10 @@
 #
 # baseline-commit: cc3aec9c4f
 # provenance: live param download + BATT SOC failsafe params (5fab6c5e26)
-# count: 1232
+#   + FFT_* subgroup: gated by FFT_ENABLE (AP_PARAM_FLAG_ENABLE), so absent from a
+#     dump taken with FFT_ENABLE=0. Seeded in defaults.parm and listed here so the
+#     doc covers them before anyone turns FFT on in the field.
+# count: 1246
 ADSB_EMIT_TYPE
 ADSB_ICAO_ID
 ADSB_ICAO_SPECL
@@ -464,7 +467,21 @@ FENCE_OPTIONS
 FENCE_RADIUS
 FENCE_TOTAL
 FENCE_TYPE
+FFT_ATT_REF
+FFT_BW_HOVER
 FFT_ENABLE
+FFT_FREQ_HOVER
+FFT_HMNC_FIT
+FFT_HMNC_PEAK
+FFT_MAXHZ
+FFT_MINHZ
+FFT_NUM_FRAMES
+FFT_OPTIONS
+FFT_SAMPLE_MODE
+FFT_SNR_REF
+FFT_THR_REF
+FFT_WINDOW_OLAP
+FFT_WINDOW_SIZE
 FILT1_TYPE
 FILT2_TYPE
 FILT3_TYPE
