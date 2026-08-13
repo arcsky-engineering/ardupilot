@@ -797,7 +797,13 @@ def emit_html(rows, meta_info, path):
                  ('__GROUPS__', opts),
                  ('__ROWS__', '\n'.join(out))]:
         html = html.replace(k, v)
-    open(path, 'w', encoding='utf-8').write(html)
+    # newline='\n' so the bytes are identical no matter which interpreter writes
+    # them. Without it, Windows Python translates \n -> \r\n while Cygwin Python
+    # does not, so a file written by one looks "out of date" to the other and
+    # --check fails forever. build_release.sh runs under Cygwin; a developer
+    # regenerating from a Windows shell does not.
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(html)
     return path
 
 
@@ -877,7 +883,15 @@ def main():
 
 
 def _strip_stamp(s):
-    """Drop the generation timestamp so --check does not fire on time alone."""
+    """Normalise output for --check comparison.
+
+    Drops the generation timestamp so the check does not fire on time alone, and
+    normalises line endings so it does not fire merely because a different
+    interpreter wrote the file. build_release.sh runs under Cygwin Python (LF)
+    while a developer regenerating by hand may use Windows Python (CRLF); either
+    should be able to verify the other's output.
+    """
+    s = s.replace('\r\n', '\n').replace('\r', '\n')
     return re.sub(r'generated \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC', '', s)
 
 
