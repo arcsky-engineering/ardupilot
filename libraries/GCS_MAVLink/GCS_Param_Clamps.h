@@ -12,6 +12,7 @@
 
 #include <string.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Param/xplorer_dev_unlock.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -72,11 +73,20 @@ static inline const XplorerParamClamp* xplorer_param_clamp_lookup(const char *na
 // Returns true if value is in range (or param is unclamped). Reject semantics.
 static inline bool xplorer_param_clamp_in_range(const char *name, float value)
 {
+#if XPLORER_DEV_UNLOCK_ENABLED
+    // DEV build: the clamp table is a second, independent gate from @READONLY.
+    // Leaving it active would still reject tuning values on the six clamped
+    // params that overlap the dev unlock list (ANGLE_MAX, ATC_SLEW_YAW,
+    // EK3_ALT_M_NSE, LOIT_*, PILOT_*, WPNAV_*), so bypass it here too.
+    (void)name; (void)value;
+    return true;
+#else
     const XplorerParamClamp *c = xplorer_param_clamp_lookup(name);
     if (c == nullptr) {
         return true;
     }
     return (value >= c->min_val) && (value <= c->max_val);
+#endif
 }
 
 // Boot-time scrub. Any stored value outside its declared range is clamped to
@@ -84,6 +94,14 @@ static inline bool xplorer_param_clamp_in_range(const char *name, float value)
 // Call once during vehicle init after parameter storage is ready.
 static inline void xplorer_param_clamp_boot_scrub(void)
 {
+#if XPLORER_DEV_UNLOCK_ENABLED
+    // DEV build: without this, every reboot would silently scrub the tuning
+    // values an engineer had just set on the overlapping clamped params.
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                  "DEV BUILD: param clamps and %u @READONLY groups bypassed",
+                  (unsigned)XPLORER_DEV_UNLOCK_COUNT);
+    return;
+#else
     for (uint8_t i = 0; i < XPLORER_PARAM_CLAMP_COUNT; i++) {
         const XplorerParamClamp &c = xplorer_param_clamps[i];
         enum ap_var_type vtype;
@@ -101,4 +119,5 @@ static inline void xplorer_param_clamp_boot_scrub(void)
                           c.name, (double)cur, (double)clamped);
         }
     }
+#endif
 }

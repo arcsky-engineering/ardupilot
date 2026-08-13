@@ -180,3 +180,14 @@ Arcsky_public_key.dat
 .claude/settings.local.json
 nul
 *.out
+
+# Xplorer release GUI (rebuild with Tools/xplorer/build_gui_exe.ps1)
+XplorerRelease.exe
+
+# Named test-build copies made by the release console
+testbuilds/
+
+# Staged firmware release artifacts. Distributed via Dropbox, not git -
+# committing 7MB of binaries per release would bloat the repo permanently.
+# The MANIFEST.txt sha256 sums plus the git tag are the durable record.
+release/

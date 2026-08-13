@@ -1,2 +1,3 @@
 name,reason
 PSC_VELZ_IMAX,"Upstream metadata bug: value 1000 matches ArduPilot's own code default POSCONTROL_VEL_Z_IMAX (AC_PosControl.cpp), but the upstream @Range says 1.000-8.000. The range annotation is stale, not the default. Re-check when rebasing onto a newer ArduPilot."
+ATC_RAT_YAW_FLTE,"Accepted as-is for v1.0.1: 2.993685 Hz sits below the documented 5-50 Hz range, but it is a deliberate airframe value and is @READONLY so operators cannot change it. A lower yaw error-filter cutoff is reasonable on a heavy quad hovering at ~20 percent thrust. Kept knowingly rather than snapped to the documented minimum. Revisit if yaw tracking is ever investigated."

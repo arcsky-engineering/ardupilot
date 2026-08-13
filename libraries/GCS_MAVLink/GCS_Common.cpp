@@ -22,6 +22,7 @@
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Param/xplorer_dev_unlock.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
@@ -4590,6 +4591,14 @@ void GCS_MAVLINK::send_banner()
     // Custom firmware banner
     const AP_FWVersion &fwver = AP::fwversion();
     send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
+
+#if XPLORER_DEV_UNLOCK_ENABLED
+    // Engineering build: @READONLY and the clamp table are bypassed for the
+    // subsystems in xplorer_dev_unlock.h. Sent at WARNING severity, and repeated
+    // with the banner, so a dev aircraft can never be mistaken for production
+    // on the HUD or in a tlog.
+    send_text(MAV_SEVERITY_WARNING, "DEV BUILD - PARAMS UNLOCKED - NOT FOR FLIGHT OPS");
+#endif
 
     // if (fwver.middleware_name && fwver.os_name) {
     //     send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",

@@ -1,0 +1,1551 @@
+# CubeOrangePlus-ODID Default Parameters (Xplorer)
+# Auto-generated from xplorer-params-disposition-v1.xlsx
+#
+# Parameters marked @READONLY cannot be changed by users via GCS PARAM_SET
+# (firmware internal writes via set_and_save() bypass the readonly check, so
+#  calibration routines, learning algorithms, and runtime-managed values
+#  continue to update normally.)
+#
+# OMITTED from this file (runtime-managed; would seed stale state on a fresh drone):
+#   FENCE_TOTAL
+#   FORMAT_VERSION
+#   MIS_TOTAL
+#   RALLY_TOTAL
+#   STAT_BOOTCNT
+#   STAT_FLTTIME
+#   STAT_RESET
+#   STAT_RUNTIME
+
+
+# ============================================================
+# OpenDroneID  (5 params)
+# ============================================================
+DID_BARO_ACC -1 @READONLY
+DID_CANDRIVER 1 @READONLY
+DID_ENABLE 1 @READONLY
+DID_MAVPORT -1 @READONLY
+DID_OPTIONS 1 @READONLY
+
+# ============================================================
+# Board configuration  (26 params)
+# ============================================================
+BRD_ALT_CONFIG 0 @READONLY
+BRD_BOOT_DELAY 0   # TEMP-COMPASS-EXPERIMENT unlocked
+BRD_HEAT_I 0.07 @READONLY
+BRD_HEAT_IMAX 70 @READONLY
+BRD_HEAT_LOWMGN 5 @READONLY
+BRD_HEAT_P 50 @READONLY
+BRD_HEAT_TARG 45 @READONLY
+BRD_IO_DSHOT 0 @READONLY
+BRD_IO_ENABLE 1 @READONLY
+BRD_OPTIONS 1 @READONLY
+BRD_PWM_VOLT_SEL 0 @READONLY
+BRD_RTC_TYPES 1 @READONLY
+BRD_RTC_TZ_MIN 0 @READONLY
+BRD_SAFETYOPTION 0 @READONLY
+BRD_SAFETY_DEFLT 0 @READONLY
+BRD_SAFETY_MASK 16368 @READONLY
+BRD_SBUS_OUT 0
+BRD_SD_FENCE 0 @READONLY
+BRD_SD_MISSION 0 @READONLY
+BRD_SD_SLOWDOWN 0 @READONLY
+BRD_SER1_RTSCTS 2 @READONLY
+BRD_SER2_RTSCTS 2 @READONLY
+BRD_SERIAL_NUM 0 @READONLY
+BRD_TYPE 3 @READONLY
+BRD_VBUS_MIN 4.3 @READONLY
+BRD_VSERVO_MIN 0 @READONLY
+
+# ============================================================
+# System ID  (3 params)
+# ============================================================
+SYSID_ENFORCE 0 @READONLY
+SYSID_MYGCS 255 @READONLY
+SYSID_THISMAV 1 @READONLY
+
+# ============================================================
+# Scheduler  (3 params)
+# ============================================================
+SCHED_DEBUG 0 @READONLY
+SCHED_LOOP_RATE 400 @READONLY
+SCHED_OPTIONS 0 @READONLY
+
+# ============================================================
+# AHRS  (13 params)
+# ============================================================
+AHRS_COMP_BETA 0.1 @READONLY
+AHRS_EKF_TYPE 3 @READONLY
+AHRS_GPS_GAIN 1 @READONLY
+AHRS_GPS_MINSATS 6 @READONLY
+AHRS_GPS_USE 1 @READONLY
+AHRS_OPTIONS 0 @READONLY
+AHRS_ORIENTATION 8 @READONLY
+AHRS_RP_P 0.2 @READONLY
+AHRS_WIND_MAX 0 @READONLY
+AHRS_YAW_P 0.2 @READONLY
+
+# ============================================================
+# Frame  (2 params)
+# ============================================================
+FRAME_CLASS 1 @READONLY
+FRAME_TYPE 1 @READONLY
+
+# ============================================================
+# Attitude Control (ATC)  (60 params)
+# ============================================================
+ATC_ACCEL_P_MAX 70000 @READONLY
+ATC_ACCEL_R_MAX 70000 @READONLY
+ATC_ACCEL_Y_MAX 16000 @READONLY
+ATC_ANGLE_BOOST 1 @READONLY
+ATC_ANG_LIM_TC 1 @READONLY
+ATC_ANG_PIT_P 6.5 @READONLY
+ATC_ANG_RLL_P 6.5 @READONLY
+ATC_ANG_YAW_P 6.5 @READONLY
+ATC_INPUT_TC 0.15 @READONLY
+ATC_LAND_P_MULT 1 @READONLY
+ATC_LAND_R_MULT 1 @READONLY
+ATC_LAND_Y_MULT 1 @READONLY
+ATC_RATE_FF_ENAB 1 @READONLY
+ATC_RATE_P_MAX 0 @READONLY
+ATC_RATE_R_MAX 0 @READONLY
+ATC_RATE_Y_MAX 0 @READONLY
+ATC_RAT_PIT_D 0.0115 @READONLY
+ATC_RAT_PIT_D_FF 0 @READONLY
+ATC_RAT_PIT_FF 0 @READONLY
+ATC_RAT_PIT_FLTD 12.5 @READONLY
+ATC_RAT_PIT_FLTE 0 @READONLY
+ATC_RAT_PIT_FLTT 12.5 @READONLY
+ATC_RAT_PIT_I 0.08 @READONLY
+ATC_RAT_PIT_IMAX 0.5 @READONLY
+ATC_RAT_PIT_NEF 0 @READONLY
+ATC_RAT_PIT_NTF 0 @READONLY
+ATC_RAT_PIT_P 0.08 @READONLY
+ATC_RAT_PIT_PDMX 0 @READONLY
+ATC_RAT_PIT_SMAX 0 @READONLY
+ATC_RAT_RLL_D 0.0115 @READONLY
+ATC_RAT_RLL_D_FF 0 @READONLY
+ATC_RAT_RLL_FF 0 @READONLY
+ATC_RAT_RLL_FLTD 12.5 @READONLY
+ATC_RAT_RLL_FLTE 0 @READONLY
+ATC_RAT_RLL_FLTT 12.5 @READONLY
+ATC_RAT_RLL_I 0.08 @READONLY
+ATC_RAT_RLL_IMAX 0.5 @READONLY
+ATC_RAT_RLL_NEF 0 @READONLY
+ATC_RAT_RLL_NTF 0 @READONLY
+ATC_RAT_RLL_P 0.08 @READONLY
+ATC_RAT_RLL_PDMX 0 @READONLY
+ATC_RAT_RLL_SMAX 0 @READONLY
+ATC_RAT_YAW_D 0 @READONLY
+ATC_RAT_YAW_D_FF 0 @READONLY
+ATC_RAT_YAW_FF 0 @READONLY
+ATC_RAT_YAW_FLTD 20 @READONLY
+ATC_RAT_YAW_FLTE 2.993685 @READONLY
+ATC_RAT_YAW_FLTT 12.5 @READONLY
+ATC_RAT_YAW_I 0.0365 @READONLY
+ATC_RAT_YAW_IMAX 0.5 @READONLY
+ATC_RAT_YAW_NEF 0 @READONLY
+ATC_RAT_YAW_NTF 0 @READONLY
+ATC_RAT_YAW_P 0.365 @READONLY
+ATC_RAT_YAW_PDMX 0 @READONLY
+ATC_RAT_YAW_SMAX 0 @READONLY
+ATC_SLEW_YAW 6000
+ATC_THR_G_BOOST 0 @READONLY
+ATC_THR_MIX_MAN 0.1 @READONLY
+ATC_THR_MIX_MAX 0.5 @READONLY
+ATC_THR_MIX_MIN 0.1 @READONLY
+
+# ============================================================
+# Angle limit  (1 params)
+# ============================================================
+ANGLE_MAX 3500
+
+# ============================================================
+# Position Control (PSC)  (32 params)
+# ============================================================
+PSC_ACCZ_D 0 @READONLY
+PSC_ACCZ_D_FF 0 @READONLY
+PSC_ACCZ_FF 0 @READONLY
+PSC_ACCZ_FLTD 0 @READONLY
+PSC_ACCZ_FLTE 20 @READONLY
+PSC_ACCZ_FLTT 0 @READONLY
+PSC_ACCZ_I 0.44 @READONLY
+PSC_ACCZ_IMAX 800 @READONLY
+PSC_ACCZ_NEF 0 @READONLY
+PSC_ACCZ_NTF 0 @READONLY
+PSC_ACCZ_P 0.22 @READONLY
+PSC_ACCZ_PDMX 0 @READONLY
+PSC_ACCZ_SMAX 0 @READONLY
+PSC_ANGLE_MAX 0 @READONLY
+PSC_JERK_XY 5 @READONLY
+PSC_JERK_Z 5 @READONLY
+PSC_POSXY_P 0.75 @READONLY
+PSC_POSZ_P 1 @READONLY
+PSC_VELXY_D 0.5 @READONLY
+PSC_VELXY_FF 0 @READONLY
+PSC_VELXY_FLTD 5 @READONLY
+PSC_VELXY_FLTE 5 @READONLY
+PSC_VELXY_I 0.75 @READONLY
+PSC_VELXY_IMAX 1000 @READONLY
+PSC_VELXY_P 1.5 @READONLY
+PSC_VELZ_D 0 @READONLY
+PSC_VELZ_FF 0 @READONLY
+PSC_VELZ_FLTD 5 @READONLY
+PSC_VELZ_FLTE 5 @READONLY
+PSC_VELZ_I 0 @READONLY
+PSC_VELZ_IMAX 1000 @READONLY
+PSC_VELZ_P 8 @READONLY
+
+# ============================================================
+# EKF3  (83 params)
+# ============================================================
+EK3_ABIAS_P_NSE 0.02 @READONLY
+EK3_ACC_BIAS_LIM 1 @READONLY
+EK3_ACC_P_NSE 0.35 @READONLY
+EK3_AFFINITY 0 @READONLY
+EK3_ALT_M_NSE 2
+EK3_BCN_DELAY 50 @READONLY
+EK3_BCN_I_GTE 500 @READONLY
+EK3_BCN_M_NSE 1 @READONLY
+EK3_BETA_MASK 0 @READONLY
+EK3_CHECK_SCALE 100 @READONLY
+EK3_DRAG_BCOEF_X 0 @READONLY
+EK3_DRAG_BCOEF_Y 0 @READONLY
+EK3_DRAG_MCOEF 0 @READONLY
+EK3_DRAG_M_NSE 0.5 @READONLY
+EK3_EAS_I_GATE 400 @READONLY
+EK3_EAS_M_NSE 1.4 @READONLY
+EK3_ENABLE 1 @READONLY
+EK3_ERR_THRESH 0.2 @READONLY
+EK3_FLOW_DELAY 10 @READONLY
+EK3_FLOW_I_GATE 300 @READONLY
+EK3_FLOW_M_NSE 0.25 @READONLY
+EK3_FLOW_USE 1 @READONLY
+EK3_GBIAS_P_NSE 0.001 @READONLY
+EK3_GLITCH_RAD 25 @READONLY
+EK3_GND_EFF_DZ 4 @READONLY
+EK3_GPS_CHECK 31 @READONLY
+EK3_GPS_VACC_MAX 0 @READONLY
+EK3_GSF_RST_MAX 2 @READONLY
+EK3_GSF_RUN_MASK 3 @READONLY
+EK3_GSF_USE_MASK 3 @READONLY
+EK3_GYRO_P_NSE 0.015 @READONLY
+EK3_HGT_DELAY 60 @READONLY
+EK3_HGT_I_GATE 500 @READONLY
+EK3_HRT_FILT 2 @READONLY
+EK3_IMU_MASK 7 @READONLY
+EK3_LOG_LEVEL 0 @READONLY
+EK3_MAGB_P_NSE 0.0001 @READONLY
+EK3_MAGE_P_NSE 0.001 @READONLY
+EK3_MAG_CAL 3
+EK3_MAG_EF_LIM 50 @READONLY
+EK3_MAG_I_GATE 300 @READONLY
+EK3_MAG_MASK 0 @READONLY
+EK3_MAG_M_NSE 0.05 @READONLY
+EK3_MAX_FLOW 2.5 @READONLY
+EK3_NOAID_M_NSE 10 @READONLY
+EK3_OGNM_TEST_SF 2 @READONLY
+EK3_OGN_HGT_MASK 0 @READONLY
+EK3_OPTIONS 0 @READONLY
+EK3_POSNE_M_NSE 0.5 @READONLY
+EK3_POS_I_GATE 500 @READONLY
+EK3_PRIMARY 0 @READONLY
+EK3_RNG_I_GATE 500 @READONLY
+EK3_RNG_M_NSE 0.5 @READONLY
+EK3_RNG_USE_HGT -1 @READONLY
+EK3_RNG_USE_SPD 2 @READONLY
+EK3_SRC1_POSXY 3 @READONLY
+EK3_SRC1_POSZ 3
+EK3_SRC1_VELXY 3 @READONLY
+EK3_SRC1_VELZ 3 @READONLY
+EK3_SRC1_YAW 1 @READONLY
+EK3_SRC2_POSXY 0 @READONLY
+EK3_SRC2_POSZ 1
+EK3_SRC2_VELXY 0 @READONLY
+EK3_SRC2_VELZ 0 @READONLY
+EK3_SRC2_YAW 0 @READONLY
+EK3_SRC3_POSXY 0 @READONLY
+EK3_SRC3_POSZ 1
+EK3_SRC3_VELXY 0 @READONLY
+EK3_SRC3_VELZ 0 @READONLY
+EK3_SRC3_YAW 0 @READONLY
+EK3_SRC_OPTIONS 1 @READONLY
+EK3_TAU_OUTPUT 25 @READONLY
+EK3_TERR_GRAD 0.1 @READONLY
+EK3_VELD_M_NSE 0.5 @READONLY
+EK3_VELNE_M_NSE 0.3 @READONLY
+EK3_VEL_I_GATE 500 @READONLY
+EK3_VIS_VERR_MAX 0.9 @READONLY
+EK3_VIS_VERR_MIN 0.1 @READONLY
+EK3_WENC_VERR 0.1 @READONLY
+EK3_WIND_PSCALE 1 @READONLY
+EK3_WIND_P_NSE 0.2 @READONLY
+EK3_YAW_I_GATE 300 @READONLY
+EK3_YAW_M_NSE 0.5 @READONLY
+
+# ============================================================
+# External AHRS  (1 params)
+# ============================================================
+EAHRS_TYPE 0 @READONLY
+
+# ============================================================
+# Motors  (23 params)
+# ============================================================
+MOT_BAT_CURR_MAX 0 @READONLY
+MOT_BAT_CURR_TC 5 @READONLY
+MOT_BAT_IDX 0 @READONLY
+MOT_BAT_VOLT_MAX 25.2 @READONLY
+MOT_BAT_VOLT_MIN 19.8 @READONLY
+MOT_BOOST_SCALE 0 @READONLY
+MOT_HOVER_LEARN 2
+MOT_OPTIONS 0 @READONLY
+MOT_PWM_MAX 1900 @READONLY
+MOT_PWM_MIN 1050 @READONLY
+MOT_PWM_TYPE 0 @READONLY
+MOT_SAFE_DISARM 0 @READONLY
+MOT_SAFE_TIME 1 @READONLY
+MOT_SLEW_DN_TIME 0 @READONLY
+MOT_SLEW_UP_TIME 0 @READONLY
+MOT_SPIN_ARM 0.11 @READONLY
+MOT_SPIN_MAX 0.95 @READONLY
+MOT_SPIN_MIN 0.14 @READONLY
+MOT_SPOOL_TIME 0.5 @READONLY
+MOT_SPOOL_TIM_DN 0 @READONLY
+MOT_THST_EXPO 0.7 @READONLY
+MOT_THST_HOVER 0.201434 @READONLY
+MOT_YAW_HEADROOM 200 @READONLY
+
+# ============================================================
+# Servo / ESC outputs  (105 params)
+# ============================================================
+SERVO10_FUNCTION 0
+SERVO10_MAX 1900
+SERVO10_MIN 1100
+SERVO10_REVERSED 0
+SERVO10_TRIM 1500
+SERVO11_FUNCTION 0
+SERVO11_MAX 1900
+SERVO11_MIN 1100
+SERVO11_REVERSED 0
+SERVO11_TRIM 1500
+SERVO12_FUNCTION 0 @READONLY
+SERVO12_MAX 1900 @READONLY
+SERVO12_MIN 1100 @READONLY
+SERVO12_REVERSED 0 @READONLY
+SERVO12_TRIM 1500 @READONLY
+SERVO13_FUNCTION 0 @READONLY
+SERVO13_MAX 1900 @READONLY
+SERVO13_MIN 1100 @READONLY
+SERVO13_REVERSED 0 @READONLY
+SERVO13_TRIM 1500 @READONLY
+SERVO14_FUNCTION 0 @READONLY
+SERVO14_MAX 1900 @READONLY
+SERVO14_MIN 1100 @READONLY
+SERVO14_REVERSED 0 @READONLY
+SERVO14_TRIM 1500 @READONLY
+SERVO15_FUNCTION 0 @READONLY
+SERVO15_MAX 1900 @READONLY
+SERVO15_MIN 1100 @READONLY
+SERVO15_REVERSED 0 @READONLY
+SERVO15_TRIM 1500 @READONLY
+SERVO16_FUNCTION 0 @READONLY
+SERVO16_MAX 1900 @READONLY
+SERVO16_MIN 1100 @READONLY
+SERVO16_REVERSED 0 @READONLY
+SERVO16_TRIM 1500 @READONLY
+SERVO1_FUNCTION 33 @READONLY
+SERVO1_MAX 1900 @READONLY
+SERVO1_MIN 1100 @READONLY
+SERVO1_REVERSED 0 @READONLY
+SERVO1_TRIM 1500 @READONLY
+SERVO2_FUNCTION 34 @READONLY
+SERVO2_MAX 1900 @READONLY
+SERVO2_MIN 1100 @READONLY
+SERVO2_REVERSED 0 @READONLY
+SERVO2_TRIM 1500 @READONLY
+SERVO3_FUNCTION 35 @READONLY
+SERVO3_MAX 1900 @READONLY
+SERVO3_MIN 1100 @READONLY
+SERVO3_REVERSED 0 @READONLY
+SERVO3_TRIM 1500 @READONLY
+SERVO4_FUNCTION 36 @READONLY
+SERVO4_MAX 1900 @READONLY
+SERVO4_MIN 1100 @READONLY
+SERVO4_REVERSED 0 @READONLY
+SERVO4_TRIM 1500 @READONLY
+SERVO5_FUNCTION 0 @READONLY
+SERVO5_MAX 1900 @READONLY
+SERVO5_MIN 1100 @READONLY
+SERVO5_REVERSED 0 @READONLY
+SERVO5_TRIM 1500 @READONLY
+SERVO6_FUNCTION 0 @READONLY
+SERVO6_MAX 1900 @READONLY
+SERVO6_MIN 1100 @READONLY
+SERVO6_REVERSED 0 @READONLY
+SERVO6_TRIM 1500 @READONLY
+SERVO7_FUNCTION 0 @READONLY
+SERVO7_MAX 1900 @READONLY
+SERVO7_MIN 1100 @READONLY
+SERVO7_REVERSED 0 @READONLY
+SERVO7_TRIM 1500 @READONLY
+SERVO8_FUNCTION 0 @READONLY
+SERVO8_MAX 1900 @READONLY
+SERVO8_MIN 1100 @READONLY
+SERVO8_REVERSED 0 @READONLY
+SERVO8_TRIM 1500 @READONLY
+SERVO9_FUNCTION 0
+SERVO9_MAX 2100
+SERVO9_MIN 900
+SERVO9_REVERSED 0
+SERVO9_TRIM 1500
+SERVO_32_ENABLE 0 @READONLY
+SERVO_BLH_3DMASK 0 @READONLY
+SERVO_BLH_AUTO 0 @READONLY
+SERVO_BLH_DEBUG 0 @READONLY
+SERVO_BLH_MASK 0 @READONLY
+SERVO_BLH_OTYPE 0 @READONLY
+SERVO_BLH_POLES 14 @READONLY
+SERVO_BLH_PORT 0 @READONLY
+SERVO_BLH_RVMASK 0 @READONLY
+SERVO_BLH_TEST 0 @READONLY
+SERVO_BLH_TMOUT 0 @READONLY
+SERVO_BLH_TRATE 10 @READONLY
+SERVO_DSHOT_ESC 0 @READONLY
+SERVO_DSHOT_RATE 0 @READONLY
+SERVO_FTW_MASK 0 @READONLY
+SERVO_FTW_POLES 14 @READONLY
+SERVO_FTW_RVMASK 0 @READONLY
+SERVO_GPIO_MASK 0 @READONLY
+SERVO_RATE 50 @READONLY
+SERVO_RC_FS_MSK 0 @READONLY
+SERVO_ROB_POSMAX 4095 @READONLY
+SERVO_ROB_POSMIN 0 @READONLY
+SERVO_SBUS_RATE 50 @READONLY
+SERVO_VOLZ_MASK 0 @READONLY
+SERVO_VOLZ_RANGE 200 @READONLY
+
+# ============================================================
+# Battery monitoring  (65 params)
+# ============================================================
+BATT2_ARM_MAH 0 @READONLY
+BATT2_ARM_SOC 0
+BATT2_ARM_VOLT 20
+BATT2_CAPACITY 10000
+BATT2_CRT_MAH 0 @READONLY
+BATT2_CRT_SOC 20
+BATT2_CRT_VOLT 18.5
+BATT2_CURR_MULT 1 @READONLY
+BATT2_FS_CRT_ACT 1
+BATT2_FS_LOW_ACT 2
+BATT2_FS_VOLTSRC 0 @READONLY
+BATT2_LOW_MAH 0 @READONLY
+BATT2_LOW_SOC 30
+BATT2_LOW_TIMER 10 @READONLY
+BATT2_LOW_VOLT 19
+BATT2_MONITOR 8 @READONLY
+BATT2_OPTIONS 128 @READONLY
+BATT2_SERIAL_NUM 1 @READONLY
+BATT3_ARM_MAH 0 @READONLY
+BATT3_ARM_SOC 0
+BATT3_ARM_VOLT 20
+BATT3_CAPACITY 10000
+BATT3_CRT_MAH 0 @READONLY
+BATT3_CRT_SOC 20
+BATT3_CRT_VOLT 18.5
+BATT3_CURR_MULT 1 @READONLY
+BATT3_FS_CRT_ACT 1
+BATT3_FS_LOW_ACT 2
+BATT3_FS_VOLTSRC 0 @READONLY
+BATT3_LOW_MAH 0 @READONLY
+BATT3_LOW_SOC 30
+BATT3_LOW_TIMER 10 @READONLY
+BATT3_LOW_VOLT 19
+BATT3_MONITOR 8 @READONLY
+BATT3_OPTIONS 128 @READONLY
+BATT3_SERIAL_NUM 2 @READONLY
+BATT4_MONITOR 0 @READONLY
+BATT5_MONITOR 0 @READONLY
+BATT6_MONITOR 0 @READONLY
+BATT7_MONITOR 0 @READONLY
+BATT8_MONITOR 0 @READONLY
+BATT9_MONITOR 0 @READONLY
+BATT_AMP_OFFSET 1.645 @READONLY
+BATT_AMP_PERVLT 41.6666 @READONLY
+BATT_ARM_MAH 0 @READONLY
+BATT_ARM_SOC 0
+BATT_ARM_VOLT 0
+BATT_CAPACITY 20000
+BATT_CRT_MAH 0 @READONLY
+BATT_CRT_SOC 0
+BATT_CRT_VOLT 0 @READONLY
+BATT_CURR_PIN 15 @READONLY
+BATT_FS_CRT_ACT 0 @READONLY
+BATT_FS_LOW_ACT 0 @READONLY
+BATT_FS_VOLTSRC 0 @READONLY
+BATT_LOW_MAH 0 @READONLY
+BATT_LOW_SOC 0
+BATT_LOW_TIMER 10 @READONLY
+BATT_LOW_VOLT 0 @READONLY
+BATT_MONITOR 4 @READONLY
+BATT_OPTIONS 256 @READONLY
+BATT_SERIAL_NUM 1 @READONLY
+BATT_VLT_OFFSET 0 @READONLY
+BATT_VOLT_MULT 19 @READONLY
+BATT_VOLT_PIN 14 @READONLY
+
+# ============================================================
+# Failsafe  (12 params)
+# ============================================================
+FS_CRASH_CHECK 1 @READONLY
+FS_DR_ENABLE 1 @READONLY
+FS_DR_TIMEOUT 30 @READONLY
+FS_EKF_ACTION 1
+FS_EKF_FILT 5
+FS_EKF_THRESH 0.8
+FS_GCS_ENABLE 0
+FS_GCS_TIMEOUT 5
+FS_OPTIONS 8
+FS_THR_ENABLE 1
+FS_THR_VALUE 950
+FS_VIBE_ENABLE 1
+
+# ============================================================
+# Disarm  (1 params)
+# ============================================================
+DISARM_DELAY 10
+
+# ============================================================
+# Arming  (8 params)
+# ============================================================
+ARMING_ACCTHRESH 0.75 @READONLY
+ARMING_CHECK 540146
+ARMING_CRSDP_IGN 0 @READONLY
+ARMING_MAGTHRESH 100 @READONLY
+ARMING_MIS_ITEMS 0 @READONLY
+ARMING_NEED_LOC 0 @READONLY
+ARMING_OPTIONS 0 @READONLY
+ARMING_RUDDER 2 @READONLY
+
+# ============================================================
+# Initial mode  (1 params)
+# ============================================================
+INITIAL_MODE 5 @READONLY
+
+# ============================================================
+# Flight mode mapping  (8 params)
+# ============================================================
+FLTMODE1 0 @READONLY
+FLTMODE2 0 @READONLY
+FLTMODE3 0 @READONLY
+FLTMODE4 0 @READONLY
+FLTMODE5 0 @READONLY
+FLTMODE6 0 @READONLY
+FLTMODE_CH 0 @READONLY
+FLTMODE_GCSBLOCK 0 @READONLY
+
+# ============================================================
+# Super simple mode  (1 params)
+# ============================================================
+SUPER_SIMPLE 0 @READONLY
+
+# ============================================================
+# Throttle  (1 params)
+# ============================================================
+THR_DZ 100 @READONLY
+
+# ============================================================
+# Pilot input  (9 params)
+# ============================================================
+PILOT_ACCEL_Z 250
+PILOT_SPEED_DN 200
+PILOT_SPEED_UP 300
+PILOT_THR_BHV 0 @READONLY
+PILOT_THR_FILT 0 @READONLY
+PILOT_TKOFF_ALT 0 @READONLY
+PILOT_Y_EXPO 0 @READONLY
+PILOT_Y_RATE 60
+PILOT_Y_RATE_TC 0.25
+
+# ============================================================
+# Circle mode  (3 params)
+# ============================================================
+CIRCLE_OPTIONS 1 @READONLY
+CIRCLE_RADIUS 1000 @READONLY
+CIRCLE_RATE 20 @READONLY
+
+# ============================================================
+# Land mode  (7 params)
+# ============================================================
+LAND_ALT_LOW 1000
+LAND_REPOSITION 1
+LAND_RNG_ALT 800
+LAND_RNG_EN 1
+LAND_RNG_SPD 45
+LAND_SPEED 50
+LAND_SPEED_HIGH 0
+
+# ============================================================
+# Loiter mode  (6 params)
+# ============================================================
+LOIT_ACC_MAX 500
+LOIT_ANG_MAX 0
+LOIT_BRK_ACCEL 250
+LOIT_BRK_DELAY 1
+LOIT_BRK_JERK 500
+LOIT_SPEED 800
+
+# ============================================================
+# Payload Place  (4 params)
+# ============================================================
+PLDP_DELAY 0 @READONLY
+PLDP_RNG_MAX 0 @READONLY
+PLDP_SPEED_DN 0 @READONLY
+PLDP_THRESH 0.9 @READONLY
+
+# ============================================================
+# RTL  (8 params)
+# ============================================================
+RTL_ALT 5000
+RTL_ALT_FINAL 0
+RTL_ALT_TYPE 0
+RTL_CLIMB_MIN 0
+RTL_CONE_SLOPE 0
+RTL_LOIT_TIME 1000
+RTL_OPTIONS 0
+RTL_SPEED 0
+
+# ============================================================
+# SmartRTL  (3 params)
+# ============================================================
+SRTL_ACCURACY 2
+SRTL_OPTIONS 0
+SRTL_POINTS 300
+
+# ============================================================
+# Auto mission  (5 params)
+# ============================================================
+AUTO_OPTIONS 0
+AUTO_RSM_CLIMB 1
+AUTO_TILT_DN -90
+AUTO_TILT_EN 1
+AUTO_TILT_UP 0
+
+# ============================================================
+# Waypoint  (2 params)
+# ============================================================
+WP_NAVALT_MIN 0
+WP_YAW_BEHAVIOR 1
+
+# ============================================================
+# Waypoint navigation  (10 params)
+# ============================================================
+WPNAV_ACCEL 250
+WPNAV_ACCEL_C 220
+WPNAV_ACCEL_Z 100
+WPNAV_JERK 1
+WPNAV_RADIUS 400
+WPNAV_RFND_USE 0
+WPNAV_SPEED 800
+WPNAV_SPEED_DN 150
+WPNAV_SPEED_UP 200
+WPNAV_TER_MARGIN 10
+
+# ============================================================
+# Takeoff  (4 params)
+# ============================================================
+TKOFF_RPM_MAX 0 @READONLY
+TKOFF_RPM_MIN 0 @READONLY
+TKOFF_SLEW_TIME 3 @READONLY
+TKOFF_THR_MAX 0.9 @READONLY
+
+# ============================================================
+# Guided  (2 params)
+# ============================================================
+GUID_OPTIONS 0 @READONLY
+GUID_TIMEOUT 3 @READONLY
+
+# ============================================================
+# Mission  (3 params)
+# ============================================================
+MIS_LAST_INDEX 0
+MIS_OPTIONS 0
+MIS_RESTART 0
+
+# ============================================================
+# Geofence  (9 params)
+# ============================================================
+FENCE_ACTION 1
+FENCE_ALT_MAX 140
+FENCE_ALT_MIN -10
+FENCE_AUTOENABLE 0
+FENCE_ENABLE 1
+FENCE_MARGIN 2
+FENCE_OPTIONS 0
+FENCE_RADIUS 3000
+FENCE_TYPE 3
+
+# ============================================================
+# Rally points  (2 params)
+# ============================================================
+RALLY_INCL_HOME 1
+RALLY_LIMIT_KM 0.3
+
+# ============================================================
+# Terrain  (6 params)
+# ============================================================
+TERRAIN_CACHE_SZ 12
+TERRAIN_ENABLE 1
+TERRAIN_MARGIN 0.05
+TERRAIN_OFS_MAX 30
+TERRAIN_OPTIONS 0
+TERRAIN_SPACING 100
+
+# ============================================================
+# GPS  (25 params)
+# ============================================================
+GPS1_CAN_NODEID 121 @READONLY
+GPS1_CAN_OVRIDE 121
+GPS1_COM_PORT 1 @READONLY
+GPS1_DELAY_MS 0 @READONLY
+GPS1_GNSS_MODE 0 @READONLY
+GPS1_MB_TYPE 0 @READONLY
+GPS1_POS_X 0.05681 @READONLY
+GPS1_POS_Y 0 @READONLY
+GPS1_POS_Z -0.1217 @READONLY
+GPS1_RATE_MS 200 @READONLY
+GPS1_TYPE 9 @READONLY
+GPS2_TYPE 0 @READONLY
+GPS_AUTO_CONFIG 1
+GPS_AUTO_SWITCH 0 @READONLY
+GPS_BLEND_MASK 0 @READONLY
+GPS_DRV_OPTIONS 0
+GPS_HDOP_GOOD 140 @READONLY
+GPS_INJECT_TO 127 @READONLY
+GPS_MIN_ELEV -100 @READONLY
+GPS_NAVFILTER 8 @READONLY
+GPS_PRIMARY 0 @READONLY
+GPS_RAW_DATA 0 @READONLY
+GPS_SAVE_CFG 2 @READONLY
+GPS_SBAS_MODE 2 @READONLY
+GPS_SBP_LOGMASK -256 @READONLY
+
+# ============================================================
+# Compass  (71 params)
+# ============================================================
+COMPASS_AUTODEC 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_AUTO_ROT 2   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_CAL_FIT 16
+COMPASS_DEC 0 @READONLY
+COMPASS_DEV_ID 96515   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID2 162051   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID3 1313809   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID4 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID5 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID6 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID7 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DEV_ID8 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_DISBLMSK 0 @READONLY
+COMPASS_ENABLE 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_EXTERN2 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_EXTERN3 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_EXTERNAL 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_FLTR_RNG 0 @READONLY
+COMPASS_LEARN 0
+COMPASS_MOTCT 2   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_OFFS_MAX 1800
+COMPASS_OPTIONS 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_ORIENT 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_ORIENT2 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_ORIENT3 0   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_PMOT_EN 0 @READONLY
+COMPASS_PRIO1_ID 96515   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_PRIO2_ID 162051   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_PRIO3_ID 1313809   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_USE 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_USE2 1   # TEMP-COMPASS-EXPERIMENT unlocked
+COMPASS_USE3 0   # TEMP-COMPASS-EXPERIMENT unlocked
+
+# ============================================================
+# Inertial sensor (INS)  (80 params)
+# ============================================================
+INS_ACCEL_FILTER 10 @READONLY
+INS_ACC_BODYFIX 2 @READONLY
+INS_ENABLE_MASK 127 @READONLY
+INS_FAST_SAMPLE 7 @READONLY
+INS_GYRO_FILTER 25 @READONLY
+INS_GYRO_RATE 1 @READONLY
+INS_GYR_CAL 1 @READONLY
+INS_HNTC2_ENABLE 0 @READONLY
+INS_HNTCH_ATT 40 @READONLY
+INS_HNTCH_BW 40 @READONLY
+INS_HNTCH_ENABLE 1 @READONLY
+INS_HNTCH_FM_RAT 0.7 @READONLY
+INS_HNTCH_FREQ 50 @READONLY
+INS_HNTCH_HMNCS 3 @READONLY
+INS_HNTCH_MODE 1 @READONLY
+INS_HNTCH_OPTS 0 @READONLY
+INS_HNTCH_REF 0.2 @READONLY
+INS_LOG_BAT_CNT 1024
+INS_LOG_BAT_LGCT 32
+INS_LOG_BAT_LGIN 20
+INS_LOG_BAT_MASK 0
+INS_LOG_BAT_OPT 0
+INS_POS1_X 0 @READONLY
+INS_POS1_Y 0 @READONLY
+INS_POS1_Z 0 @READONLY
+INS_POS2_X 0 @READONLY
+INS_POS2_Y 0 @READONLY
+INS_POS2_Z 0 @READONLY
+INS_POS3_X 0 @READONLY
+INS_POS3_Y 0 @READONLY
+INS_POS3_Z 0 @READONLY
+INS_RAW_LOG_OPT 0 @READONLY
+INS_STILL_THRESH 2.5 @READONLY
+INS_TCAL1_ENABLE 0 @READONLY
+INS_TCAL2_ENABLE 0 @READONLY
+INS_TCAL3_ENABLE 0 @READONLY
+INS_TCAL_OPTIONS 0 @READONLY
+INS_TRIM_OPTION 1 @READONLY
+INS_USE 1 @READONLY
+INS_USE2 1 @READONLY
+INS_USE3 1 @READONLY
+
+# ============================================================
+# Barometer  (18 params)
+# ============================================================
+BARO1_DEVID 721442 @READONLY
+BARO1_GND_PRESS 98307.42 @READONLY
+BARO1_WCF_ENABLE 0 @READONLY
+BARO2_DEVID 721674 @READONLY
+BARO2_GND_PRESS 98251.39 @READONLY
+BARO2_WCF_ENABLE 0 @READONLY
+BARO3_DEVID 0 @READONLY
+BARO3_GND_PRESS 0 @READONLY
+BARO3_WCF_ENABLE 0 @READONLY
+BARO_ALTERR_MAX 2000 @READONLY
+BARO_ALT_OFFSET 0 @READONLY
+BARO_EXT_BUS -1 @READONLY
+BARO_FIELD_ELV 0 @READONLY
+BARO_FLTR_RNG 0 @READONLY
+BARO_GND_TEMP 0 @READONLY
+BARO_OPTIONS 0 @READONLY
+BARO_PRIMARY 0 @READONLY
+BARO_PROBE_EXT 0 @READONLY
+
+# ============================================================
+# Filters  (8 params)
+# ============================================================
+FILT1_TYPE 0 @READONLY
+FILT2_TYPE 0 @READONLY
+FILT3_TYPE 0 @READONLY
+FILT4_TYPE 0 @READONLY
+FILT5_TYPE 0 @READONLY
+FILT6_TYPE 0 @READONLY
+FILT7_TYPE 0 @READONLY
+FILT8_TYPE 0 @READONLY
+
+# ============================================================
+# FFT analysis  (15 params)
+# ============================================================
+FFT_ATT_REF 15
+FFT_BW_HOVER 20
+FFT_ENABLE 0
+FFT_FREQ_HOVER 50
+FFT_HMNC_FIT 10
+FFT_HMNC_PEAK 0
+FFT_MAXHZ 450
+FFT_MINHZ 35
+FFT_NUM_FRAMES 0 @READONLY
+FFT_OPTIONS 0 @READONLY
+FFT_SAMPLE_MODE 0 @READONLY
+FFT_SNR_REF 25
+FFT_THR_REF 0.2
+FFT_WINDOW_OLAP 0.75 @READONLY
+FFT_WINDOW_SIZE 64 @READONLY
+
+# ============================================================
+# Temperature calibration  (1 params)
+# ============================================================
+TCAL_ENABLED 0 @READONLY
+
+# ============================================================
+# Tuning  (2 params)
+# ============================================================
+TUNE_MAX 0 @READONLY
+TUNE_MIN 0 @READONLY
+
+# ============================================================
+# Autotune  (3 params)
+# ============================================================
+AUTOTUNE_AGGR 0.075 @READONLY
+AUTOTUNE_AXES 4 @READONLY
+AUTOTUNE_MIN_D 0.0005 @READONLY
+
+# ============================================================
+# ESC telemetry  (2 params)
+# ============================================================
+ESC_CALIBRATION 0 @READONLY
+ESC_TLM_MAV_OFS 0 @READONLY
+
+# ============================================================
+# CAN bus  (28 params)
+# ============================================================
+CAN_D1_PROTOCOL 1 @READONLY
+CAN_D1_PROTOCOL2 0 @READONLY
+CAN_D1_UC_ESC_BM 15 @READONLY
+CAN_D1_UC_ESC_OF 0 @READONLY
+CAN_D1_UC_ESC_RV 0 @READONLY
+CAN_D1_UC_NODE 10 @READONLY
+CAN_D1_UC_NTF_RT 20 @READONLY
+CAN_D1_UC_OPTION 2
+CAN_D1_UC_POOL 16384 @READONLY
+CAN_D1_UC_RLY_RT 0 @READONLY
+CAN_D1_UC_SER_EN 0 @READONLY
+CAN_D1_UC_SRV_BM 0 @READONLY
+CAN_D1_UC_SRV_RT 50 @READONLY
+CAN_D2_PROTOCOL 1 @READONLY
+CAN_D2_PROTOCOL2 0 @READONLY
+CAN_LOGLEVEL 3
+CAN_P1_BITRATE 1000000 @READONLY
+CAN_P1_DRIVER 1 @READONLY
+CAN_P1_FDBITRATE 8 @READONLY
+CAN_P1_OPTIONS 0 @READONLY
+CAN_P2_BITRATE 1000000 @READONLY
+CAN_P2_DRIVER 1 @READONLY
+CAN_P2_FDBITRATE 8 @READONLY
+CAN_P2_OPTIONS 0 @READONLY
+CAN_SLCAN_CPORT 1 @READONLY
+CAN_SLCAN_SDELAY 1 @READONLY
+CAN_SLCAN_SERNUM -1 @READONLY
+CAN_SLCAN_TIMOUT 2 @READONLY
+
+# ============================================================
+# KDE ESC  (1 params)
+# ============================================================
+KDE_NPOLE 14 @READONLY
+
+# ============================================================
+# Rangefinder  (41 params)
+# ============================================================
+RNGFND1_ADDR 0 @READONLY
+RNGFND1_FUNCTION 0 @READONLY
+RNGFND1_GNDCLEAR 30
+RNGFND1_MAX_CM 9500
+RNGFND1_MIN_CM 5
+RNGFND1_OFFSET 0
+RNGFND1_ORIENT 25
+RNGFND1_PIN -1 @READONLY
+RNGFND1_POS_X 0 @READONLY
+RNGFND1_POS_Y 0 @READONLY
+RNGFND1_POS_Z 0 @READONLY
+RNGFND1_PWRRNG 0 @READONLY
+RNGFND1_RMETRIC 1 @READONLY
+RNGFND1_SCALING 1 @READONLY
+RNGFND1_STOP_PIN -1 @READONLY
+RNGFND1_TYPE 8
+RNGFND2_ADDR 0 @READONLY
+RNGFND2_FUNCTION 0 @READONLY
+RNGFND2_GNDCLEAR 10
+RNGFND2_MAX_CM 4500
+RNGFND2_MIN_CM 20
+RNGFND2_OFFSET 0 @READONLY
+RNGFND2_ORIENT 0 @READONLY
+RNGFND2_PIN -1 @READONLY
+RNGFND2_POS_X 0 @READONLY
+RNGFND2_POS_Y 0 @READONLY
+RNGFND2_POS_Z 0 @READONLY
+RNGFND2_PWRRNG 0 @READONLY
+RNGFND2_RMETRIC 1 @READONLY
+RNGFND2_SCALING 1 @READONLY
+RNGFND2_STOP_PIN -1 @READONLY
+RNGFND2_TYPE 24
+RNGFND3_TYPE 0
+RNGFND4_TYPE 0 @READONLY
+RNGFND5_TYPE 0 @READONLY
+RNGFND6_TYPE 0 @READONLY
+RNGFND7_TYPE 0 @READONLY
+RNGFND8_TYPE 0 @READONLY
+RNGFND9_TYPE 0 @READONLY
+RNGFNDA_TYPE 0 @READONLY
+RNGFND_FILT 0.5
+
+# ============================================================
+# Rangefinder (legacy)  (1 params)
+# ============================================================
+RFND_BTN_EN 1
+
+# ============================================================
+# Proximity sensor  (9 params)
+# ============================================================
+PRX1_TYPE 0 @READONLY
+PRX2_TYPE 0 @READONLY
+PRX3_TYPE 0 @READONLY
+PRX4_TYPE 0 @READONLY
+PRX5_TYPE 0 @READONLY
+PRX_ALT_MIN 1 @READONLY
+PRX_FILT 0.25 @READONLY
+PRX_IGN_GND 0 @READONLY
+PRX_LOG_RAW 0 @READONLY
+
+# ============================================================
+# Object avoidance  (1 params)
+# ============================================================
+AVOID_ENABLE 0 @READONLY
+
+# ============================================================
+# ADSB avoidance  (1 params)
+# ============================================================
+AVD_ENABLE 0 @READONLY
+
+# ============================================================
+# Obstacle avoidance  (1 params)
+# ============================================================
+OA_TYPE 0 @READONLY
+
+# ============================================================
+# Forward avoidance  (9 params)
+# ============================================================
+FWDAVD_ACT_AUTO 2
+FWDAVD_ACT_MAN 4
+FWDAVD_ALT 5
+FWDAVD_BTN_EN 1
+FWDAVD_CHAN 0
+FWDAVD_COND 0
+FWDAVD_DIST 15
+FWDAVD_EN 3
+FWDAVD_SAMP 3
+
+# ============================================================
+# ADSB  (15 params)
+# ============================================================
+ADSB_EMIT_TYPE 14 @READONLY
+ADSB_ICAO_ID 0 @READONLY
+ADSB_ICAO_SPECL 0 @READONLY
+ADSB_LEN_WIDTH 1 @READONLY
+ADSB_LIST_ALT 0 @READONLY
+ADSB_LIST_MAX 25 @READONLY
+ADSB_LIST_RADIUS 10000 @READONLY
+ADSB_LOG 1 @READONLY
+ADSB_OFFSET_LAT 4 @READONLY
+ADSB_OFFSET_LON 1 @READONLY
+ADSB_OPTIONS 0 @READONLY
+ADSB_RF_CAPABLE 0 @READONLY
+ADSB_RF_SELECT 1 @READONLY
+ADSB_SQUAWK 1200 @READONLY
+ADSB_TYPE 1 @READONLY
+
+# ============================================================
+# Optical flow  (1 params)
+# ============================================================
+FLOW_TYPE 0 @READONLY
+
+# ============================================================
+# Visual odometry  (1 params)
+# ============================================================
+VISO_TYPE 0 @READONLY
+
+# ============================================================
+# Precision land  (1 params)
+# ============================================================
+PLND_ENABLED 0 @READONLY
+
+# ============================================================
+# Beacon  (1 params)
+# ============================================================
+BCN_TYPE 0 @READONLY
+
+# ============================================================
+# Mount / gimbal  (21 params)
+# ============================================================
+MNT1_DEFLT_MODE 3
+MNT1_DEVID 0 @READONLY
+MNT1_LEAD_PTCH 0 @READONLY
+MNT1_LEAD_RLL 0 @READONLY
+MNT1_NEUTRAL_X 0
+MNT1_NEUTRAL_Y 0
+MNT1_NEUTRAL_Z 0
+MNT1_OPTIONS 0
+MNT1_PITCH_MAX 20
+MNT1_PITCH_MIN -90
+MNT1_RC_RATE 90
+MNT1_RETRACT_X 0
+MNT1_RETRACT_Y 0
+MNT1_RETRACT_Z 0
+MNT1_ROLL_MAX 30
+MNT1_ROLL_MIN -30
+MNT1_SYSID_DFLT 0
+MNT1_TYPE 6
+MNT1_YAW_MAX 180
+MNT1_YAW_MIN -180
+MNT2_TYPE 0 @READONLY
+
+# ============================================================
+# Camera  (3 params)
+# ============================================================
+CAM_AUTO_ONLY 1 @READONLY
+CAM_MAX_ROLL 0 @READONLY
+CAM_RC_TYPE 0 @READONLY
+
+# ============================================================
+# Camera 1  (13 params)
+# ============================================================
+CAM1_DURATION 0.1
+CAM1_FEEDBAK_PIN -1 @READONLY
+CAM1_FEEDBAK_POL 1 @READONLY
+CAM1_HFOV 0 @READONLY
+CAM1_INTRVAL_MIN 0 @READONLY
+CAM1_MNT_INST 0 @READONLY
+CAM1_OPTIONS 0
+CAM1_RELAY_ON 1 @READONLY
+CAM1_SERVO_OFF 1100 @READONLY
+CAM1_SERVO_ON 1300 @READONLY
+CAM1_TRIGG_DIST 0
+CAM1_TYPE 5
+CAM1_VFOV 0 @READONLY
+
+# ============================================================
+# Camera 2  (1 params)
+# ============================================================
+CAM2_TYPE 0 @READONLY
+
+# ============================================================
+# OSD  (1 params)
+# ============================================================
+OSD_TYPE 0 @READONLY
+
+# ============================================================
+# Video TX  (1 params)
+# ============================================================
+VTX_ENABLE 0 @READONLY
+
+# ============================================================
+# Stream rates - SERIAL0 (USB)  (10 params)
+# ============================================================
+SR0_ADSB 2
+SR0_EXTRA1 0
+SR0_EXTRA2 0
+SR0_EXTRA3 0
+SR0_EXT_STAT 0
+SR0_PARAMS 0
+SR0_POSITION 0
+SR0_RAW_CTRL 0
+SR0_RAW_SENS 0
+SR0_RC_CHAN 0
+
+# ============================================================
+# Stream rates - SERIAL1 (TELEM1)  (10 params)
+# ============================================================
+SR1_ADSB 0
+SR1_EXTRA1 4
+SR1_EXTRA2 4
+SR1_EXTRA3 2
+SR1_EXT_STAT 2
+SR1_PARAMS 0
+SR1_POSITION 2
+SR1_RAW_CTRL 0
+SR1_RAW_SENS 2
+SR1_RC_CHAN 2
+
+# ============================================================
+# Stream rates - SERIAL2 (TELEM2 / payload)  (10 params)
+# ============================================================
+SR2_ADSB 0
+SR2_EXTRA1 0
+SR2_EXTRA2 0
+SR2_EXTRA3 0
+SR2_EXT_STAT 0
+SR2_PARAMS 0
+SR2_POSITION 0
+SR2_RAW_CTRL 0
+SR2_RAW_SENS 0
+SR2_RC_CHAN 0
+
+# ============================================================
+# Stream rates - SERIAL3  (10 params)
+# ============================================================
+SR3_ADSB 0
+SR3_EXTRA1 0
+SR3_EXTRA2 0
+SR3_EXTRA3 0
+SR3_EXT_STAT 0
+SR3_PARAMS 0
+SR3_POSITION 0
+SR3_RAW_CTRL 0
+SR3_RAW_SENS 0
+SR3_RC_CHAN 0
+
+# ============================================================
+# Stream rates - SERIAL4  (10 params)
+# ============================================================
+SR4_ADSB 0
+SR4_EXTRA1 4
+SR4_EXTRA2 4
+SR4_EXTRA3 2
+SR4_EXT_STAT 2
+SR4_PARAMS 0
+SR4_POSITION 2
+SR4_RAW_CTRL 0
+SR4_RAW_SENS 0
+SR4_RC_CHAN 0
+
+# ============================================================
+# Stream rates - SERIAL5  (10 params)
+# ============================================================
+SR5_ADSB 0 @READONLY
+SR5_EXTRA1 0 @READONLY
+SR5_EXTRA2 0 @READONLY
+SR5_EXTRA3 0 @READONLY
+SR5_EXT_STAT 0 @READONLY
+SR5_PARAMS 0 @READONLY
+SR5_POSITION 0 @READONLY
+SR5_RAW_CTRL 0 @READONLY
+SR5_RAW_SENS 0 @READONLY
+SR5_RC_CHAN 0 @READONLY
+
+# ============================================================
+# Stream rates - SERIAL6  (10 params)
+# ============================================================
+SR6_ADSB 0 @READONLY
+SR6_EXTRA1 0 @READONLY
+SR6_EXTRA2 0 @READONLY
+SR6_EXTRA3 0 @READONLY
+SR6_EXT_STAT 0 @READONLY
+SR6_PARAMS 0 @READONLY
+SR6_POSITION 0 @READONLY
+SR6_RAW_CTRL 0 @READONLY
+SR6_RAW_SENS 0 @READONLY
+SR6_RC_CHAN 0 @READONLY
+
+# ============================================================
+# Serial ports  (23 params)
+# ============================================================
+SERIAL0_BAUD 115 @READONLY
+SERIAL0_PROTOCOL 2 @READONLY
+SERIAL1_BAUD 115 @READONLY
+SERIAL1_OPTIONS 0 @READONLY
+SERIAL1_PROTOCOL 2 @READONLY
+SERIAL2_BAUD 500
+SERIAL2_OPTIONS 0
+SERIAL2_PROTOCOL 2
+SERIAL3_BAUD 115
+SERIAL3_OPTIONS 0
+SERIAL3_PROTOCOL -1
+SERIAL4_BAUD 115
+SERIAL4_OPTIONS 0
+SERIAL4_PROTOCOL 9
+SERIAL5_BAUD 115
+SERIAL5_OPTIONS 0
+SERIAL5_PROTOCOL -1
+SERIAL6_BAUD 115200 @READONLY
+SERIAL6_OPTIONS 0 @READONLY
+SERIAL6_PROTOCOL 22 @READONLY
+SERIAL_PASS1 0 @READONLY
+SERIAL_PASS2 -1 @READONLY
+SERIAL_PASSTIMO 15 @READONLY
+
+# ============================================================
+# Telemetry  (1 params)
+# ============================================================
+TELEM_DELAY 0 @READONLY
+
+# ============================================================
+# FrSky telemetry  (5 params)
+# ============================================================
+FRSKY_DNLINK1_ID 20 @READONLY
+FRSKY_DNLINK2_ID 7 @READONLY
+FRSKY_DNLINK_ID 27 @READONLY
+FRSKY_OPTIONS 0 @READONLY
+FRSKY_UPLINK_ID 13 @READONLY
+
+# ============================================================
+# NMEA output  (2 params)
+# ============================================================
+NMEA_MSG_EN 3
+NMEA_RATE_MS 100
+
+# ============================================================
+# MSP telemetry  (2 params)
+# ============================================================
+MSP_OPTIONS 0 @READONLY
+MSP_OSD_NCELLS 0 @READONLY
+
+# ============================================================
+# GCS  (1 params)
+# ============================================================
+GCS_PID_MASK 0 @READONLY
+
+# ============================================================
+# Networking  (5 params)
+# ============================================================
+NET_ENABLE 0 @READONLY
+NET_P1_TYPE 0 @READONLY
+NET_P2_TYPE 0 @READONLY
+NET_P3_TYPE 0 @READONLY
+NET_P4_TYPE 0 @READONLY
+
+# ============================================================
+# RC channels  (105 params)
+# ============================================================
+RC10_DZ 50
+RC10_MAX 2000
+RC10_MIN 1000
+RC10_OPTION 213  # wheel pitch
+RC10_REVERSED 0
+RC10_TRIM 1500
+RC11_DZ 0
+RC11_MAX 2000
+RC11_MIN 1000
+RC11_OPTION 9  # camera trigger
+RC11_REVERSED 0
+RC11_TRIM 1500
+RC12_DZ 0
+RC12_MAX 2000
+RC12_MIN 1000
+RC12_OPTION 163  # mount lock
+RC12_REVERSED 0
+RC12_TRIM 1500
+RC13_DZ 0
+RC13_MAX 2000
+RC13_MIN 1000
+RC13_OPTION 0
+RC13_REVERSED 0
+RC13_TRIM 1500
+RC14_DZ 0
+RC14_MAX 2000
+RC14_MIN 1000
+RC14_OPTION 0
+RC14_REVERSED 0
+RC14_TRIM 1500
+RC15_DZ 0
+RC15_MAX 2000
+RC15_MIN 1000
+RC15_OPTION 0
+RC15_REVERSED 0
+RC15_TRIM 1500
+RC16_DZ 0
+RC16_MAX 2000
+RC16_MIN 1000
+RC16_OPTION 0
+RC16_REVERSED 0
+RC16_TRIM 1500
+RC1_DZ 50
+RC1_MAX 1927
+RC1_MIN 1102
+RC1_OPTION 0 @READONLY
+RC1_REVERSED 0 @READONLY
+RC1_TRIM 1515
+RC2_DZ 20
+RC2_MAX 1927
+RC2_MIN 1102
+RC2_OPTION 0 @READONLY
+RC2_REVERSED 0 @READONLY
+RC2_TRIM 1515
+RC3_DZ 30
+RC3_MAX 1927
+RC3_MIN 1102
+RC3_OPTION 0 @READONLY
+RC3_REVERSED 0 @READONLY
+RC3_TRIM 1515
+RC4_DZ 20
+RC4_MAX 1927
+RC4_MIN 1102
+RC4_OPTION 0 @READONLY
+RC4_REVERSED 0 @READONLY
+RC4_TRIM 1515
+RC5_DZ 0
+RC5_MAX 1927
+RC5_MIN 1102
+RC5_OPTION 70 @READONLY  # now alt hold
+RC5_REVERSED 0 @READONLY
+RC5_TRIM 1515
+RC6_DZ 30
+RC6_MAX 2000
+RC6_MIN 1000
+RC6_OPTION 56 @READONLY  # now loiter
+RC6_REVERSED 0 @READONLY
+RC6_TRIM 1500
+RC7_DZ 50
+RC7_MAX 2000
+RC7_MIN 1000
+RC7_OPTION 4 @READONLY  # now RTL
+RC7_REVERSED 0 @READONLY
+RC7_TRIM 1500
+RC8_DZ 50
+RC8_MAX 2000
+RC8_MIN 1000
+RC8_OPTION 16 @READONLY  # now Auto
+RC8_REVERSED 0 @READONLY
+RC8_TRIM 1500
+RC9_DZ 50
+RC9_MAX 2000
+RC9_MIN 1000
+RC9_OPTION 214  # wheel - yaw
+RC9_REVERSED 0
+RC9_TRIM 1500
+RCMAP_PITCH 2 @READONLY
+RCMAP_ROLL 1 @READONLY
+RCMAP_THROTTLE 3 @READONLY
+RCMAP_YAW 4 @READONLY
+RC_FS_TIMEOUT 1
+RC_OPTIONS 32 @READONLY
+RC_OVERRIDE_TIME 3 @READONLY
+RC_PROTOCOLS 1 @READONLY
+RC_SPEED 490 @READONLY
+
+# ============================================================
+# RSSI  (1 params)
+# ============================================================
+RSSI_TYPE 0 @READONLY
+
+# ============================================================
+# LiDAR pattern (Xplorer Lua)  (12 params)
+# ============================================================
+PTRN_ATIME 6
+PTRN_CHN1 0
+PTRN_CHN2 0
+PTRN_ENABLE 1
+PTRN_PNUM 1
+PTRN_RADIUS 25
+PTRN_SHAPE 0
+PTRN_SLSPD 6
+PTRN_SLTIME 6
+PTRN_SPEED 5
+PTRN_TOAUTO 0
+PTRN_TRIGGER 0
+
+# ============================================================
+# Relays  (6 params)
+# ============================================================
+RELAY1_FUNCTION 0
+RELAY2_FUNCTION 0
+RELAY3_FUNCTION 0
+RELAY4_FUNCTION 0
+RELAY5_FUNCTION 0
+RELAY6_FUNCTION 0
+
+# ============================================================
+# Buttons  (1 params)
+# ============================================================
+BTN_ENABLE 0 @READONLY
+
+# ============================================================
+# Landing gear  (1 params)
+# ============================================================
+LGR_ENABLE 0 @READONLY
+
+# ============================================================
+# Logging  (13 params)
+# ============================================================
+LOG_BACKEND_TYPE 1 @READONLY
+LOG_BITMASK 178174
+LOG_DARM_RATEMAX 0 @READONLY
+LOG_DISARMED 0
+LOG_FILE_BUFSIZE 200 @READONLY
+LOG_FILE_DSRMROT 1
+LOG_FILE_MB_FREE 500 @READONLY
+LOG_FILE_RATEMAX 0
+LOG_FILE_TIMEOUT 5 @READONLY
+LOG_MAV_BUFSIZE 8 @READONLY
+LOG_MAV_RATEMAX 0 @READONLY
+LOG_MAX_FILES 500
+LOG_REPLAY 0 @READONLY
+
+# ============================================================
+# Notifications  (10 params)
+# ============================================================
+NTF_BUZZ_ON_LVL 1 @READONLY
+NTF_BUZZ_PIN 0 @READONLY
+NTF_BUZZ_TYPES 5 @READONLY
+NTF_BUZZ_VOLUME 100 @READONLY
+NTF_DISPLAY_TYPE 0 @READONLY
+NTF_LED_BRIGHT 3 @READONLY
+NTF_LED_LEN 1 @READONLY
+NTF_LED_OVERRIDE 0 @READONLY
+NTF_LED_TYPES 231 @READONLY
+NTF_OREO_THEME 0 @READONLY
+
+# ============================================================
+# Gripper  (1 params)
+# ============================================================
+GRIP_ENABLE 0 @READONLY
+
+# ============================================================
+# Winch  (1 params)
+# ============================================================
+WINCH_TYPE 0 @READONLY
+
+# ============================================================
+# Parachute  (1 params)
+# ============================================================
+CHUTE_ENABLED 0 @READONLY
+
+# ============================================================
+# Sprayer  (1 params)
+# ============================================================
+SPRAY_ENABLE 0 @READONLY
+
+# ============================================================
+# Wind vane  (1 params)
+# ============================================================
+WVANE_ENABLE 0 @READONLY
+
+# ============================================================
+# RPM sensor  (2 params)
+# ============================================================
+RPM1_TYPE 0 @READONLY
+RPM2_TYPE 0 @READONLY
+
+# ============================================================
+# Airspeed  (1 params)
+# ============================================================
+ARSPD_ENABLE 0 @READONLY
+
+# ============================================================
+# Scripting  (15 params)
+# ============================================================
+SCR_DEBUG_OPTS 0 @READONLY
+SCR_DIR_DISABLE 0 @READONLY
+SCR_ENABLE 1 @READONLY
+SCR_HEAP_SIZE 204800
+SCR_LD_CHECKSUM -1 @READONLY
+SCR_RUN_CHECKSUM -1 @READONLY
+SCR_SDEV_EN 0 @READONLY
+SCR_THD_PRIORITY 0 @READONLY
+SCR_USER1 0 @READONLY
+SCR_USER2 0 @READONLY
+SCR_USER3 0 @READONLY
+SCR_USER4 0 @READONLY
+SCR_USER5 0 @READONLY
+SCR_USER6 0 @READONLY
+SCR_VM_I_COUNT 10000 @READONLY
+
+# ============================================================
+# Flight  (1 params)
+# ============================================================
+FLIGHT_OPTIONS 0 @READONLY
+
+# ============================================================
+# Custom controller  (1 params)
+# ============================================================
+CUST_ROT_ENABLE 0 @READONLY
+
+# ============================================================
+# Developer  (1 params)
+# ============================================================
+DEV_OPTIONS 0 @READONLY
+
+# ============================================================
+# Ground  (1 params)
+# ============================================================
+GND_EFFECT_COMP 1 @READONLY
+
+# ============================================================
+# Surface tracking  (2 params)
+# ============================================================
+SURFTRAK_MODE 1
+SURFTRAK_TC 1
+
+# ============================================================
+# Other / uncategorized  (38 params)
+# ============================================================
+SIMPLE 0 @READONLY
+TUNE 0 @READONLY

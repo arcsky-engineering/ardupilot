@@ -9,6 +9,7 @@ python Tools/xplorer/gen_param_docs.py                    # all three outputs
 python Tools/xplorer/gen_param_docs.py --format html      # just the web page
 python Tools/xplorer/gen_param_docs.py --refresh-metadata # re-read @Param docs
 python Tools/xplorer/gen_param_docs.py --check            # CI: fail on drift
+python Tools/xplorer/gen_param_docs.py --dev              # the DEV build's disposition
 ```
 
 Outputs land in `doc/params/`. **They are build artifacts — never hand-edit
@@ -95,6 +96,217 @@ path with no build step. It has client-side search across name, description,
 notes and enum values, group and flag filters, and light/dark support. Every row
 is anchored (`…xplorer-params.html#BATT2_LOW_SOC`) so support can link a
 colleague straight to one parameter.
+
+## The release console (start here)
+
+`XplorerRelease.exe` in the repo root is a GUI over this whole process. **If you
+only read one section, read this one.** Double-click it.
+
+It shows a status panel with a green **READY** / red **NOT READY** banner and a
+line per check — firmware version, branch/commit, whether the tree is clean,
+whether the release tag exists, whether the changelog documents this version,
+whether the signing key is present, whether the parameter docs are current, and
+for each board whether it is built, at which version, signed, and whether the DEV
+parameter unlock is compiled in. Anything red tells you what to do about it.
+
+Buttons cover the whole cycle:
+
+| Button | What it runs |
+|---|---|
+| Build firmware (test) | `./waf configure --board <sel> --signed-fw --private-key … && ./waf copter` |
+| Regenerate param docs | `gen_param_docs.py` |
+| Set version | rewrites `xplorer_version.inc` |
+| Edit changelog | opens `doc/XPLORER-FIRMWARE-CHANGELOG.md` |
+| Stage all + commit | `git add -A` then `git commit -m …` |
+| Create release tag | `git tag -a xplorer-fw-v<version>` |
+| Verify release (dry run) | `build_release.sh --check` |
+| BUILD RELEASE | `build_release.sh` |
+| Build engineering (DEV) | `build_release.sh --dev` |
+
+It reimplements nothing — every button shells out to the same command you would
+type, and the log pane shows the command and its live output. If the GUI is ever
+broken or unavailable, everything below still works by hand.
+
+**It shells into Cygwin for builds.** `./waf` is configured under Cygwin on this
+machine (see `.lock-waf_cygwin_build`), so building from a Windows shell would
+make waf re-configure and break paths. Git runs natively. The Cygwin path
+defaults to `C:\cygwin64\bin\bash.exe` and is changeable under **Settings**,
+which also lets you point at a different repo clone (handy for the X55 checkout).
+Settings persist in `%LOCALAPPDATA%\xplorer_release_gui.json`.
+
+The exe bundles Python and tkinter only — not the repo, git, waf or Cygwin. It
+finds the repo by walking up from its own location, so keeping it in the repo
+root means zero configuration. It is gitignored.
+
+### Onboarding another engineer
+
+The console does no authentication of its own. It runs `git` with whatever
+identity is configured on that machine, and **it never pushes** — publishing
+stays a deliberate manual act.
+
+To set someone up:
+
+1. **GitHub access.** The remote is `arcsky-engineering/ardupilot` over HTTPS.
+   Add them to the org/repo as a collaborator. Their first `fetch` or `push`
+   triggers Git Credential Manager (`credential.helper = manager`), which opens a
+   browser login and caches a token per Windows user. Nothing to configure by
+   hand.
+2. **Their own git identity**, so commits are attributed to them and not to you:
+   ```
+   git config user.name  "Their Name"
+   git config user.email "their@email"
+   ```
+   The console's "Stage all + commit" uses this.
+3. **The signing key.** `Arcsky_private_key.dat` is **not in git** (gitignored,
+   deliberately) — a fresh clone cannot build loadable firmware without it.
+   Copy it from Google Drive into the repo root. The status panel shows a red
+   **Signing key** row until it is there.
+4. **Build environment.** Cygwin + the ARM toolchain, then the pip prerequisites
+   below. ArduPilot's `Tools/environment_install/install-prereqs-windows.ps1`
+   covers most of it but installs into the wrong Python — see the next section.
+5. **The exe.** Either copy `XplorerRelease.exe` from another machine or rebuild
+   it; it is gitignored so it does not arrive with a clone.
+
+**The signing key is the real access control, not GitHub.** Anyone holding it can
+sign firmware that every fielded Xplorer will accept, regardless of repo
+permissions. Treat it accordingly: it should not be on a laptop that leaves the
+building, and if it is ever exposed, every bootloader in the field would need
+re-keying to revoke it. GitHub access only controls who can change source.
+
+### Cygwin build prerequisites — the empy trap
+
+If a build ever prints `you need to install empy with 'python -m pip install
+empy==3.3.4'` (or the same for `pexpect`), **do not** work around it with
+`PYTHONPATH`. Here is what is actually going on.
+
+Cygwin on this machine has **two** interpreters:
+
+| command | version |
+|---|---|
+| `python` | 3.7.12 |
+| `python3` | 3.9.16 |
+
+`./waf` starts with `#!/usr/bin/env python3`, so **builds run under 3.9**. But
+ArduPilot's own installer (`Tools/environment_install/install-prereqs-windows.ps1`)
+hardcodes `python3.7 -m pip install empy==3.3.4 pyserial pymavlink intelhex
+dronecan pexpect` — so a fresh setup installs the build dependencies into the
+interpreter that does *not* run the build.
+
+The old fix was `export PYTHONPATH=/usr/lib/python3.7/site-packages:$PYTHONPATH`,
+which works only because empy is pure Python — and it exposes every 3.7 package
+to 3.9, so anything with a compiled extension would break in confusing ways.
+
+**The real fix**, run once, from a Cygwin shell:
+
+```bash
+python3 -m pip install empy==3.3.4 pexpect pyserial future
+```
+
+Note `python3`, not `python`. After that, builds are clean with no `PYTHONPATH`
+set. `lxml` is reported as a missing `pymavlink` dependency but is not needed —
+the build completes without it.
+
+The release console checks this on every refresh (**Build prereqs** row), probing
+the interpreter that `env python3` actually resolves to and naming any missing
+module with the exact pip command. So this cannot silently come back.
+
+### Rebuilding the exe
+
+After editing [`release_gui.py`](release_gui.py):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Tools\xplorer\build_gui_exe.ps1
+```
+
+~11 MB, about 30 seconds. The script syntax-checks the Python first, installs
+PyInstaller if missing, and copies the result to the repo root. Add
+`-KeepConsole` to get a console window for tracebacks while debugging, and
+`-SkipCopy` to leave it in the temp dist folder.
+
+## Release flow, by hand
+
+```bash
+# 1. bump the version
+#    libraries/AP_HAL_ChibiOS/hwdef/include/xplorer_version.inc
+# 2. document it
+#    doc/XPLORER-FIRMWARE-CHANGELOG.md   ->  ## v1.0.2 - 2026-08-20
+# 3. commit and tag
+git add -A && git commit -m "Xplorer firmware v1.0.2"
+git tag -a xplorer-fw-v1.0.2 -m "Xplorer firmware v1.0.2"
+# 4. build
+Tools/xplorer/build_release.sh            # or --check to verify only
+```
+
+Artifacts land in `release/xplorer-v1.0.2/` with the version and commit in every
+filename, a `MANIFEST.txt` of sha256 sums, the generated customer release notes,
+and a copy of the parameter reference.
+
+## The DEV (engineering) build
+
+`CubeOrangePlus-ODID-DEV` is a separate board target that **ignores `@READONLY`**
+for the subsystems listed in
+[`libraries/AP_Param/xplorer_dev_unlock.h`](../../libraries/AP_Param/xplorer_dev_unlock.h)
+and **bypasses the clamp table entirely**, so engineering can tune PSC / ATC /
+EK3 and the filters over MAVLink without a firmware rebuild per change.
+
+```bash
+./waf configure --board CubeOrangePlus-ODID-DEV
+./waf copter
+python Tools/xplorer/gen_param_docs.py --dev     # doc for that build
+```
+
+As currently configured that unlocks **221 of the 734** read-only params and
+drops all 30 clamps. 513 stay locked — battery failsafes, compass, Remote ID,
+`BRD_*`, serial config, `FRAME_CLASS` and the INS sensor rates are all still
+protected.
+
+**Why a board target and not a build flag.** `--extra-hwdef` would also work and
+needs no duplicate `defaults.parm`, but `waf configure` is sticky: configure once
+with the flag and every later `./waf copter` silently produces DEV firmware. A
+board target puts the name in every build command instead.
+
+**Board ID: shared with production, deliberately.** The DEV target inherits
+`APJ_BOARD_ID 10163`. Fielded Xplorer bootloaders are built with
+`AP_SIGNED_FIRMWARE` (confirmed: `build/CubeOrangePlus-ODID/hwdef.h` has
+`#define AP_SIGNED_FIRMWARE 1`) and enforce `board_id == APJ_BOARD_ID` with no
+`ALT_BOARD_ID`, so a firmware with a unique board ID **cannot be uploaded to any
+existing aircraft**. A distinct ID would make this build undeployable, not safer.
+
+**So separation is procedural, not hardware-enforced:**
+
+- the boot banner sends `DEV BUILD - PARAMS UNLOCKED - NOT FOR FLIGHT OPS` at
+  `MAV_SEVERITY_WARNING`, repeated with every banner request, and
+  `xplorer_param_clamp_boot_scrub()` announces its own bypass — so a dev
+  aircraft is unmistakable on the HUD and in any tlog
+- build output is isolated under `build/CubeOrangePlus-ODID-DEV/`
+- **DEV apj files must never go to the release/update channel.** A DEV build
+  still has to be signed with the Arcsky key to boot, and once signed it will
+  load onto any Xplorer.
+
+**If you want hardware-enforced separation**, the lever is the signing key, not
+the board ID. `Tools/scripts/signing/make_secure_bl.py` embeds up to 10 public
+keys in a bootloader. Generate a second (dev) keypair, build a bootloader
+carrying both the production and dev keys, flash it onto the dedicated dev
+airframes, and sign DEV firmware with the dev key only. Production bootloaders
+hold just the production key and would then reject DEV firmware outright, while
+dev airframes still accept production builds. Cost is a one-time bootloader
+flash per dev airframe (DFU/SWD, or `MAV_CMD_FLASH_BOOTLOADER` from a signed
+build that embeds it).
+
+**How the unlock works.** `AP_Param::parse_param_line()` is the only place
+`@READONLY` is interpreted, and `num_read_only` is derived from what it returns,
+so clearing the flag there is consistent for `is_read_only()`,
+`allow_set_via_mavlink()` and the parameter count reported to the GCS. That is
+the entire hook — three lines.
+
+**`defaults.parm` is a byte-identical copy** in the DEV board directory, because
+`chibios_hwdef.py` only looks in the board's own directory rather than through
+the include chain. Since the unlock is applied at runtime by parameter name, the
+files never need to differ, and `--check` fails if they drift.
+
+To unlock another subsystem, add its prefix to `xplorer_dev_unlock.h` (matching
+is by prefix, so `ATC_` covers all 60 `ATC_RAT_*` params) and re-run with
+`--dev`.
 
 ## Adding a new parameter — the whole checklist
 

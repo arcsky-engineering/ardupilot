@@ -127,7 +127,10 @@ define AP_GRIPPER_ENABLED 0
 define AP_WINCH_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 
-define AP_CUSTOM_FIRMWARE_STRING "Xplorer v1.0.1"
+# Arcsky Xplorer firmware version string (AP_CUSTOM_FIRMWARE_STRING).
+# Single source of truth - bump it there, not here. Inherited by
+# CubeOrangePlus-ODID and CubeOrangePlus-ODID-DEV via their include chains.
+include ../include/xplorer_version.inc
 
 # Embed the LiDAR pattern (figure-8) Lua script directly into firmware ROMFS.
 # Scripts in @ROMFS/scripts/ are auto-loaded by AP_Scripting at boot, no SD

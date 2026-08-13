@@ -42,6 +42,7 @@
 #endif
 
 #include "AP_Param_config.h"
+#include "xplorer_dev_unlock.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -2290,6 +2291,18 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
     const char *flags_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
     if (flags_s && strcmp(flags_s, "@READONLY") == 0) {
         read_only = true;
+#if XPLORER_DEV_UNLOCK_ENABLED
+        /*
+          Xplorer DEV build: ignore @READONLY for the subsystems listed in
+          xplorer_dev_unlock.h. This is the only place @READONLY is interpreted
+          and num_read_only is derived from what we return here, so clearing the
+          flag is consistent for is_read_only(), allow_set_via_mavlink() and the
+          parameter count reported to the GCS.
+         */
+        if (xplorer_dev_unlocked(pname)) {
+            read_only = false;
+        }
+#endif
     } else {
         read_only = false;
     }

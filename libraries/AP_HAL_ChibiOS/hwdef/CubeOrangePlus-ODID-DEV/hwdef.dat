@@ -1,0 +1,53 @@
+# Xplorer ENGINEERING / DEV build.
+#
+# Identical to CubeOrangePlus-ODID except that the @READONLY markers in
+# defaults.parm are ignored for the subsystems listed in
+# libraries/AP_Param/xplorer_dev_unlock.h, and the GCS_Param_Clamps.h hard
+# clamp table is bypassed. This exists so engineering can tune PSC / ATC / EK3
+# and the filters over MAVLink without a firmware rebuild per change.
+#
+# NOT FOR CUSTOMER AIRCRAFT.
+#
+# BOARD ID: deliberately inherited from CubeOrangePlus-ODID (10163), NOT unique.
+# Fielded Xplorer bootloaders are built with AP_SIGNED_FIRMWARE and enforce
+# APJ_BOARD_ID == 10163 with no ALT_BOARD_ID, so a firmware carrying any other
+# board ID simply cannot be uploaded to an existing aircraft. A unique ID would
+# make this build undeployable rather than safer.
+#
+# That means separation here is PROCEDURAL, not hardware-enforced:
+#   - the boot banner reports "DEV BUILD - PARAMS UNLOCKED" at WARNING severity
+#   - the build output lives under build/CubeOrangePlus-ODID-DEV/
+#   - DEV apj files must never be published to the release/update channel
+# This build still has to be signed with the Arcsky key to boot, so treat a
+# signed DEV apj with the same care as a production one.
+#
+# For hardware-enforced separation you would give dev airframes a bootloader
+# carrying a SECOND signing key (make_secure_bl.py takes up to 10) and sign DEV
+# firmware with that key only. Production bootloaders, holding just the
+# production key, would then reject DEV firmware outright. That needs a
+# one-time bootloader flash per dev airframe - see Tools/xplorer/README.md.
+#
+# Build:
+#   ./waf configure --board CubeOrangePlus-ODID-DEV
+#   ./waf copter
+#
+# defaults.parm in this directory is a byte-identical copy of the ODID one.
+# It has to be a copy because chibios_hwdef.py only looks for defaults.parm in
+# the board's own directory, not through the include chain. The unlock is done
+# at runtime by parameter name, so the two files never need to differ -
+# gen_param_docs.py fails if they drift.
+
+include ../CubeOrangePlus-ODID/hwdef.dat
+
+# APJ_BOARD_ID is intentionally NOT overridden - we inherit 10163 from
+# CubeOrangePlus-ODID so this firmware is uploadable to existing aircraft.
+# See the note above before changing it.
+
+# Embed the production ODID bootloader rather than expecting a
+# Tools/bootloaders/CubeOrangePlus-ODID-DEV_bl.bin that does not exist. Correct
+# because this target is the same hardware and the same board ID (10163); it
+# also means there is no DEV bootloader to build, sign or accidentally flash.
+USE_BOOTLOADER_FROM_BOARD CubeOrangePlus-ODID
+
+# Ignore @READONLY for the dev unlock list, and bypass the clamp table.
+define XPLORER_DEV_UNLOCK_ENABLED 1

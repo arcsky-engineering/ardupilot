@@ -72,6 +72,16 @@ HIDDEN_IGNORE = {
 LUA_APPLETS = [
     ('libraries/AP_Scripting/applets/copter-fly-figure-8-v2.lua', 'PTRN'),
 ]
+# defaults.parm copies that must stay byte-identical to DEFAULTS_PARM.
+# CubeOrangePlus-ODID-DEV needs its own copy because chibios_hwdef.py only looks
+# in the board's own directory, not through the include chain; the DEV unlock is
+# done at runtime by name, so the files never need to differ.
+DEFAULTS_MIRRORS = [
+    'libraries/AP_HAL_ChibiOS/hwdef/CubeOrangePlus/defaults.parm',
+    'libraries/AP_HAL_ChibiOS/hwdef/CubeOrangePlus-ODID-DEV/defaults.parm',
+]
+DEV_UNLOCK_H = 'libraries/AP_Param/xplorer_dev_unlock.h'
+
 LUA_DEPLOY_MIRROR = {
     'libraries/AP_Scripting/applets/copter-fly-figure-8-v2.lua':
         'ArduCopter/scripts/copter-fly-figure-8-v2.lua',
@@ -270,6 +280,20 @@ def load_manifest():
     return names, baseline
 
 
+def parse_dev_unlock():
+    """Prefixes whose @READONLY is ignored in the DEV build."""
+    src = open(os.path.join(REPO, DEV_UNLOCK_H), encoding='utf-8').read()
+    try:
+        body = src.split('xplorer_dev_unlock[] = {', 1)[1].split('};', 1)[0]
+    except IndexError:
+        raise SystemExit('FAIL: could not parse the unlock list from %s'
+                         % DEV_UNLOCK_H)
+    pre = re.findall(r'"([A-Z0-9_]+)"', body)
+    if not pre:
+        raise SystemExit('FAIL: unlock list in %s is empty' % DEV_UNLOCK_H)
+    return pre
+
+
 def load_waivers():
     """{name: reason} for sanity-check findings that are accepted, not defects."""
     if not os.path.exists(WAIVERS):
@@ -317,7 +341,7 @@ def group_of(name):
     return name
 
 
-def build():
+def build(dev=False):
     problems, notices = [], []
     print('Collecting inputs ...')
     ensure_pdef()
@@ -361,6 +385,10 @@ def build():
             return True
         return any(n.startswith(p) for p in hidden_prefixes)
 
+    unlock = parse_dev_unlock() if dev else []
+    if dev:
+        print('  DEV unlock         %d prefixes' % len(unlock))
+
     rows = []
     for n in names:
         m = meta.get(n)
@@ -368,6 +396,10 @@ def build():
         seeded = n in defaults
         dflt, ro, inline = defaults.get(n, (None, False, ''))
         cl = clamps.get(n)
+        if dev:
+            if ro and any(n.startswith(pfx) for pfx in unlock):
+                ro = False
+            cl = None          # the DEV build bypasses the clamp table entirely
         rng = (m.get('Range') or {}) if m else {}
         lrng = lu.get('range') if lu else None
 
@@ -443,6 +475,16 @@ def build():
                 'rewrite it): %s = %g, clamp %g..%g'
                 % (r['name'], r['default'], r['clamp_min'], r['clamp_max']))
 
+    # every board's defaults.parm must be byte-identical
+    base = open(DEFAULTS_PARM, encoding='utf-8').read()
+    for m in DEFAULTS_MIRRORS:
+        mp = os.path.join(REPO, m)
+        if not os.path.exists(mp):
+            problems.append('missing defaults.parm mirror: %s' % m)
+        elif open(mp, encoding='utf-8').read() != base:
+            problems.append('defaults.parm mirror out of sync: %s differs from '
+                            '%s' % (m, os.path.relpath(DEFAULTS_PARM, REPO)))
+
     # drift checks
     extra = sorted(set(defaults) - set(names))
     if extra:
@@ -461,7 +503,8 @@ def build():
         'commit': git('rev-parse', '--short', 'HEAD'),
         'branch': git('rev-parse', '--abbrev-ref', 'HEAD'),
         'describe': git('describe', '--tags', '--always', '--dirty'),
-        'board': BOARD,
+        'board': ('CubeOrangePlus-ODID-DEV (ENGINEERING - params unlocked)'
+                  if dev else BOARD),
         'vehicle': VEHICLE,
         'count': len(rows),
         'readonly': sum(1 for r in rows if r['read_only']),
@@ -766,6 +809,10 @@ def main():
     ap.add_argument('--format', default='all',
                     choices=['all', 'csv', 'xlsx', 'html'])
     ap.add_argument('--outdir', default=OUTDIR)
+    ap.add_argument('--dev', action='store_true',
+                    help='describe the CubeOrangePlus-ODID-DEV build instead: '
+                         'applies the xplorer_dev_unlock.h list and drops the '
+                         'clamp columns. Writes xplorer-params-DEV.*')
     ap.add_argument('--check', action='store_true',
                     help='regenerate into a temp dir and fail if outputs would '
                          'change or drift is detected (for CI)')
@@ -776,23 +823,24 @@ def main():
     if args.refresh_metadata and os.path.exists(PDEF_JSON):
         os.remove(PDEF_JSON)
 
-    rows, meta_info, problems, notices = build()
+    rows, meta_info, problems, notices = build(dev=args.dev)
 
     outdir = args.outdir
     if args.check:
         import tempfile
         outdir = tempfile.mkdtemp(prefix='xplorer-params-')
     os.makedirs(outdir, exist_ok=True)
+    STEM = 'xplorer-params-DEV' if args.dev else 'xplorer-params'
 
     written = []
     if args.format in ('all', 'csv'):
-        written.append(emit_csv(rows, meta_info, os.path.join(outdir, 'xplorer-params.csv')))
+        written.append(emit_csv(rows, meta_info, os.path.join(outdir, STEM + '.csv')))
     if args.format in ('all', 'xlsx'):
-        p = emit_xlsx(rows, meta_info, os.path.join(outdir, 'xplorer-params.xlsx'))
+        p = emit_xlsx(rows, meta_info, os.path.join(outdir, STEM + '.xlsx'))
         if p:
             written.append(p)
     if args.format in ('all', 'html'):
-        written.append(emit_html(rows, meta_info, os.path.join(outdir, 'xplorer-params.html')))
+        written.append(emit_html(rows, meta_info, os.path.join(outdir, STEM + '.html')))
 
     print('\n%d parameters | %d read-only | %d hidden | %d clamped'
           % (meta_info['count'], meta_info['readonly'], meta_info['hidden'],
