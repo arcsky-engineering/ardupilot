@@ -31,4 +31,4 @@
 # by the apj "summary" field, and by the release filename. Keeping one version
 # number means there is only ever one place to bump.
 
-define AP_CUSTOM_FIRMWARE_STRING "Xplorer v1.0.1"
+define AP_CUSTOM_FIRMWARE_STRING "Xplorer v1.0.2"
