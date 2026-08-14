@@ -63,9 +63,9 @@ not field-upgradable in place.
   latitude/longitude 0, so the aircraft was transmitting an operator location of
   0,0 and nothing objected. The autopilot had been leaving this check to the
   Remote ID module, which the DB201 did perform and the DB300 is not confirmed
-  to. Pre-arm now reports `No Operator Location from GCS`, or
-  `Operator Location stale` if the ground station link has gone quiet for more
-  than 3 seconds while a previously good position is still being rebroadcast.
+  to. Pre-arm now reports `No Operator Location`, or `Operator Location stale`
+  if the ground station link has gone quiet for more than 3 seconds while a
+  previously good position is still being rebroadcast.
 
   Bench testing indoors will now fail this check when neither the controller nor
   the aircraft has a GPS fix. That is the check working — take the aircraft

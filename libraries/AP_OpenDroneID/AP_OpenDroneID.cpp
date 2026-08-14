@@ -266,7 +266,7 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
     // transmission. The DB201 caught this itself; the DB300 is not confirmed
     // to, so check locally rather than trust the module. Restored from upstream.
     if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
-        strncpy(failmsg, "No Operator Location from GCS", failmsg_len);
+        strncpy(failmsg, "No Operator Location", failmsg_len);
         failmsg[failmsg_len - 1] = '\0';
         return false;
     }
