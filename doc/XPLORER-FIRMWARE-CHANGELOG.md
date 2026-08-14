@@ -57,6 +57,20 @@ not field-upgradable in place.
   Not yet confirmed against DB300 hardware; the code mapping is taken from the
   DB300 manual v1.3 and matches the X55 firmware, which uses the same module.
 
+- Arming is blocked again when the ground station has no operator location, or
+  has stopped reporting one. Remote ID broadcasts must carry the operator's
+  position; when the GCS has no fix it does not omit the field, it sends
+  latitude/longitude 0, so the aircraft was transmitting an operator location of
+  0,0 and nothing objected. The autopilot had been leaving this check to the
+  Remote ID module, which the DB201 did perform and the DB300 is not confirmed
+  to. Pre-arm now reports `No Operator Location from GCS`, or
+  `Operator Location stale` if the ground station link has gone quiet for more
+  than 3 seconds while a previously good position is still being rebroadcast.
+
+  Bench testing indoors will now fail this check when neither the controller nor
+  the aircraft has a GPS fix. That is the check working — take the aircraft
+  outside, or clear the `EnforceArming` bit in `DID_OPTIONS` for bench work.
+
 ### Changed
 - `SR5_PARAMS` and `SR6_PARAMS` are no longer read-only. A stream rate locked at
   0 means that channel can never be recovered in the field, and the DEV unlock

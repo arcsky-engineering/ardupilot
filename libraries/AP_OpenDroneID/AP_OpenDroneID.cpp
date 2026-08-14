@@ -258,8 +258,33 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
-    // Trust the DB201's arm status - it checks everything internally
-    // (BasicID, Location, System, Operator Location)
+    // Operator location must actually be present. QGroundControl does not skip
+    // the System message when it has no operator fix -- it sends latitude and
+    // longitude 0 as its "unknown" sentinel (MAVLINK_UNKNOWN_LAT/LON in
+    // RemoteIDManager.cc), so 0,0 means "GCS has no position", not an aircraft
+    // at Null Island. Broadcasting 0,0 is a non-compliant Remote ID
+    // transmission. The DB201 caught this itself; the DB300 is not confirmed
+    // to, so check locally rather than trust the module. Restored from upstream.
+    if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
+        strncpy(failmsg, "No Operator Location from GCS", failmsg_len);
+        failmsg[failmsg_len - 1] = '\0';
+        return false;
+    }
+
+    // ...and it must be current. Without this a GCS that drops off leaves us
+    // rebroadcasting its last known operator position indefinitely, which no
+    // other check would notice. SYSTEM carries the full set, SYSTEM_UPDATE
+    // refreshes just the operator position, so either arriving counts as fresh.
+    if (last_system_ms == 0 ||
+        (now_ms - last_system_ms > max_age_ms &&
+         now_ms - last_system_update_ms > max_age_ms)) {
+        strncpy(failmsg, "Operator Location stale", failmsg_len);
+        failmsg[failmsg_len - 1] = '\0';
+        return false;
+    }
+
+    // Finally, the module's own verdict. Operator location is checked above
+    // rather than delegated -- see comment there.
     if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
         translate_arm_status_error(arm_status.error, failmsg, failmsg_len);
         return false;
