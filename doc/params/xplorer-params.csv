@@ -1135,7 +1135,7 @@ SR0_EXTRA1,SR,0,False,True,,,Extra data type 1 stream rate,"MAVLink Stream rate 
 SR0_EXTRA2,SR,0,False,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR0_EXTRA3,SR,0,False,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR0_EXT_STAT,SR,0,False,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR0_PARAMS,SR,0,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR0_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR0_POSITION,SR,0,False,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR0_RAW_CTRL,SR,0,False,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR0_RAW_SENS,SR,0,False,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1145,7 +1145,7 @@ SR1_EXTRA1,SR,4,False,True,,,Extra data type 1 stream rate,"MAVLink Stream rate 
 SR1_EXTRA2,SR,4,False,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR1_EXTRA3,SR,2,False,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR1_EXT_STAT,SR,2,False,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR1_PARAMS,SR,0,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR1_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR1_POSITION,SR,2,False,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR1_RAW_CTRL,SR,0,False,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR1_RAW_SENS,SR,2,False,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1155,7 +1155,7 @@ SR2_EXTRA1,SR,0,False,True,,,Extra data type 1 stream rate,"MAVLink Stream rate 
 SR2_EXTRA2,SR,0,False,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR2_EXTRA3,SR,0,False,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR2_EXT_STAT,SR,0,False,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR2_PARAMS,SR,0,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR2_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR2_POSITION,SR,0,False,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR2_RAW_CTRL,SR,0,False,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR2_RAW_SENS,SR,0,False,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1165,7 +1165,7 @@ SR3_EXTRA1,SR,0,False,True,,,Extra data type 1 stream rate,"MAVLink Stream rate 
 SR3_EXTRA2,SR,0,False,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR3_EXTRA3,SR,0,False,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR3_EXT_STAT,SR,0,False,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR3_PARAMS,SR,0,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR3_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR3_POSITION,SR,0,False,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR3_RAW_CTRL,SR,0,False,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR3_RAW_SENS,SR,0,False,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1175,7 +1175,7 @@ SR4_EXTRA1,SR,4,False,True,,,Extra data type 1 stream rate,"MAVLink Stream rate 
 SR4_EXTRA2,SR,4,False,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR4_EXTRA3,SR,2,False,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR4_EXT_STAT,SR,2,False,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR4_PARAMS,SR,0,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR4_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR4_POSITION,SR,2,False,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR4_RAW_CTRL,SR,0,False,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR4_RAW_SENS,SR,0,False,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1185,7 +1185,7 @@ SR5_EXTRA1,SR,0,True,True,,,Extra data type 1 stream rate,"MAVLink Stream rate o
 SR5_EXTRA2,SR,0,True,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR5_EXTRA3,SR,0,True,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR5_EXT_STAT,SR,0,True,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR5_PARAMS,SR,0,True,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR5_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR5_POSITION,SR,0,True,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR5_RAW_CTRL,SR,0,True,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR5_RAW_SENS,SR,0,True,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
@@ -1195,7 +1195,7 @@ SR6_EXTRA1,SR,0,True,True,,,Extra data type 1 stream rate,"MAVLink Stream rate o
 SR6_EXTRA2,SR,0,True,True,,,Extra data type 2 stream rate,MAVLink Stream rate of VFR_HUD,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR6_EXTRA3,SR,0,True,True,,,Extra data type 3 stream rate,"MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS",,,,,,,,,apm.pdef.json
 SR6_EXT_STAT,SR,0,True,True,,,Extended status stream rate,"MAVLink Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW_INT (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, FENCE_STATUS, and GLOBAL_TARGET_POS_INT",Hz,,,0,50,Advanced,True,,apm.pdef.json
-SR6_PARAMS,SR,0,True,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
+SR6_PARAMS,SR,10,False,True,,,Parameter stream rate,MAVLink Stream rate of PARAM_VALUE,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR6_POSITION,SR,0,True,True,,,Position stream rate,MAVLink Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR6_RAW_CTRL,SR,0,True,True,,,Unused,Unused,Hz,,,0,50,Advanced,True,,apm.pdef.json
 SR6_RAW_SENS,SR,0,True,True,,,Raw sensor stream rate,"MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED",Hz,,,0,50,Advanced,True,,apm.pdef.json
