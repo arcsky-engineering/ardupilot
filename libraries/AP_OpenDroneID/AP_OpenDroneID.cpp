@@ -166,19 +166,59 @@ void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
     }
 }
 
-// Translate DB201 error codes into user-friendly messages
-// DB201 sends codes like "LOC ID SYS OP_LOC" which are cryptic
+// Translate Remote ID module error strings into user-friendly messages.
+// The DB201 sends text tokens like "LOC ID SYS OP_LOC". The DB300 (and other
+// ArduRemoteID-style modules) instead report a numeric bitmask in the error
+// field, e.g. "err 8". Both are cryptic to the operator, so decode either form.
 static void translate_arm_status_error(const char* error, char* failmsg, uint8_t failmsg_len)
 {
+    // DB300 numeric bitmask path: pull the first integer out of the error
+    // string (robust to "err 8", "8", "ERR 8", etc.). See the db300 manual
+    // v1.3 section 1.8 "Status codes":
+    //   1  = transmission disabled        2  = no BasicID received/configured
+    //   4  = no OperatorID received       8  = no drone Location msg / no GPS fix
+    //   16 = no System msg / no GPS info
+    // Codes combine (e.g. 10 = 2 | 8). Surface configuration faults first as
+    // they won't clear on their own, then the GPS/timing-dependent ones.
+    long code = -1;
+    for (const char *p = error; *p != '\0'; p++) {
+        if (*p >= '0' && *p <= '9') {
+            code = 0;
+            while (*p >= '0' && *p <= '9') {
+                code = (code * 10) + (*p - '0');
+                p++;
+            }
+            break;
+        }
+    }
+    if (code > 0) {
+        if (code & 2) {
+            strncpy(failmsg, "Basic I D not Configured", failmsg_len);
+        } else if (code & 4) {
+            strncpy(failmsg, "No Operator Location", failmsg_len);
+        } else if (code & 8) {
+            strncpy(failmsg, "No Drone Location or GPS fix", failmsg_len);
+        } else if (code & 16) {
+            strncpy(failmsg, "No System Message or GPS info", failmsg_len);
+        } else if (code & 1) {
+            strncpy(failmsg, "Remote I D Tx Disabled", failmsg_len);
+        } else {
+            strncpy(failmsg, "Remote ID module not ready", failmsg_len);
+        }
+        failmsg[failmsg_len - 1] = '\0';
+        return;
+    }
+
+    // DB201 text-token path
     // Check for specific error codes from DB201 and translate them
     if (strstr(error, "OP_LOC") != nullptr) {
         strncpy(failmsg, "No Operator Location", failmsg_len);
     } else if (strstr(error, "LOC") != nullptr) {
         strncpy(failmsg, "No Drone Location", failmsg_len);
     } else if (strstr(error, "SYS") != nullptr) {
-        strncpy(failmsg, "Remote ID System Message", failmsg_len);
+        strncpy(failmsg, "Remote I D System Message", failmsg_len);
     } else if (strstr(error, "ID") != nullptr) {
-        strncpy(failmsg, "BasicID not Configured", failmsg_len);
+        strncpy(failmsg, "Basic I D not Configured", failmsg_len);
     } else if (strlen(error) > 0) {
         // Unknown error, pass through as-is
         strncpy(failmsg, error, failmsg_len);
