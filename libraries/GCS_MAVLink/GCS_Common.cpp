@@ -4597,7 +4597,7 @@ void GCS_MAVLINK::send_banner()
     // subsystems in xplorer_dev_unlock.h. Sent at WARNING severity, and repeated
     // with the banner, so a dev aircraft can never be mistaken for production
     // on the HUD or in a tlog.
-    send_text(MAV_SEVERITY_WARNING, "DEV BUILD - PARAMS UNLOCKED - NOT FOR FLIGHT OPS");
+    send_text(MAV_SEVERITY_WARNING, "DEV BUILD - NOT FOR PRODUCTION");
 #endif
 
     // if (fwver.middleware_name && fwver.os_name) {

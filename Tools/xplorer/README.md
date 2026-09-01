@@ -274,7 +274,7 @@ existing aircraft**. A distinct ID would make this build undeployable, not safer
 
 **So separation is procedural, not hardware-enforced:**
 
-- the boot banner sends `DEV BUILD - PARAMS UNLOCKED - NOT FOR FLIGHT OPS` at
+- the boot banner sends `DEV BUILD - NOT FOR PRODUCTION` at
   `MAV_SEVERITY_WARNING`, repeated with every banner request, and
   `xplorer_param_clamp_boot_scrub()` announces its own bypass — so a dev
   aircraft is unmistakable on the HUD and in any tlog

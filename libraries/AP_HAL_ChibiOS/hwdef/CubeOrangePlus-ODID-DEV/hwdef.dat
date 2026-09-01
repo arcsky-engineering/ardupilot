@@ -15,7 +15,7 @@
 # make this build undeployable rather than safer.
 #
 # That means separation here is PROCEDURAL, not hardware-enforced:
-#   - the boot banner reports "DEV BUILD - PARAMS UNLOCKED" at WARNING severity
+#   - the boot banner reports "DEV BUILD - NOT FOR PRODUCTION" at WARNING severity
 #   - the build output lives under build/CubeOrangePlus-ODID-DEV/
 #   - DEV apj files must never be published to the release/update channel
 # This build still has to be signed with the Arcsky key to boot, so treat a

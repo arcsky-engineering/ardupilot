@@ -1207,7 +1207,7 @@ PRODUCTION vs DEV BUILD — IMPORTANT
   upload. So the separation is PROCEDURAL:
 
     * DEV firmware announces itself at WARNING level on every boot:
-        "DEV BUILD - PARAMS UNLOCKED - NOT FOR FLIGHT OPS"
+        "DEV BUILD - NOT FOR PRODUCTION"
     * DEV artifacts have -DEV in the filename.
     * A signed DEV apj WILL load onto any Xplorer. Never publish one to the
       release/update channel.

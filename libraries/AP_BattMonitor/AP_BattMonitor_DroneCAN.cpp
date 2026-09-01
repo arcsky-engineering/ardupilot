@@ -174,10 +174,14 @@ void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_B
         _has_model_name = (len > 7);  // only consider valid once serial number is appended
     }
 
-    // force unhealthy only if errors (not warnings) are set
-    if ((_errorFlags & BMS_ERROR_MASK) != 0){
+    // Only flags that invalidate the telemetry may clear healthy. Pack-condition
+    // faults (thermal, cell voltage, overcurrent, imbalance) leave the data
+    // trustworthy and are reported via get_mavlink_fault_bitmask(),
+    // has_persistent_error_flags() and the pre-arm check instead. Clearing
+    // healthy for those would disable the SoC failsafes.
+    if ((_errorFlags & BMS_DATA_INVALID_MASK) != 0) {
         _interim_state.healthy = false;
-    }    
+    }
 
 } // end of handle_battery_info
 
@@ -587,7 +591,8 @@ uint32_t AP_BattMonitor_DroneCAN::get_mavlink_fault_bitmask() const
     // convert BMS error flags to mavlink fault bitmask
     if (_errorFlags != 0) {
         // overtemperature conditions (cell, chip, or FET)
-        if (_errorFlags & (BMS_ERR_CELL_OVERTEMP | BMS_ERR_CHIP_OVERTEMP | BMS_ERR_FET_OVERTEMP)) {
+        if (_errorFlags & (BMS_ERR_CELL_OVERTEMP | BMS_ERR_CHIP_OVERTEMP |
+                           BMS_ERR_FET_OVERTEMP | BMS_ERR_CRITICAL_THERMAL)) {
             mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
         }
         // undertemperature
@@ -671,8 +676,34 @@ bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) 
         return true;
     }
 
-    // check error flags first (higher priority)
-    if (_errorFlags & BMS_ERR_CELL_OVERTEMP) {
+    // an active error flag is the higher-priority explanation
+    if (fault_string(buffer, buflen)) {
+        return true;
+    }
+
+    // no errors (warnings only or no flags) but not ready - battery is not in
+    // an armable mode
+    strncpy(buffer, "not in armable mode", buflen);
+    if (buflen > 0) {
+        buffer[buflen - 1] = '\0';
+    }
+    return true;  // battery is not ready
+}
+
+// Describe the highest-priority active error flag (upper 16 bits only).
+// Returns false and leaves buffer untouched when no error flag is set, so a
+// caller can tell "pack fault" apart from "no fault". Shared by the pre-arm
+// reason string and the in-flight fault annunciation so a given condition is
+// worded identically in both places.
+bool AP_BattMonitor_DroneCAN::fault_string(char *buffer, size_t buflen) const
+{
+    if ((_errorFlags & BMS_ERROR_MASK) == 0) {
+        return false;
+    }
+
+    if (_errorFlags & BMS_ERR_CRITICAL_THERMAL) {
+        strncpy(buffer, "critical overtemp", buflen);
+    } else if (_errorFlags & BMS_ERR_CELL_OVERTEMP) {
         strncpy(buffer, "cell overtemp", buflen);
     } else if (_errorFlags & BMS_ERR_CHIP_OVERTEMP) {
         strncpy(buffer, "chip overtemp", buflen);
@@ -698,12 +729,9 @@ bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) 
         strncpy(buffer, "bay charger ID loss", buflen);
     } else if (_errorFlags & BMS_ERR_GENERIC) {
         strncpy(buffer, "BMS error", buflen);
-    } else if ((_errorFlags & BMS_ERROR_MASK) != 0) {
-        // unknown error flag (upper 16 bits)
-        hal.util->snprintf(buffer, buflen, "error 0x%08X", (unsigned)_errorFlags);
     } else {
-        // no errors (warnings only or no flags) but not ready - battery is not in an armable mode
-        strncpy(buffer, "not in armable mode", buflen);
+        // an error bit with no name here - show it raw so it stays actionable
+        hal.util->snprintf(buffer, buflen, "error 0x%08X", (unsigned)_errorFlags);
     }
 
     // ensure null termination
@@ -711,7 +739,7 @@ bool AP_BattMonitor_DroneCAN::get_not_ready_reason(char *buffer, size_t buflen) 
         buffer[buflen - 1] = '\0';
     }
 
-    return true;  // battery is not ready
+    return true;
 }
 
 bool AP_BattMonitor_DroneCAN::all_batteries_ready_for_arm()

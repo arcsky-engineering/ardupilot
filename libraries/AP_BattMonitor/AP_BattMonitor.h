@@ -184,6 +184,12 @@ public:
     // return true if all configured battery monitors are healthy
     bool healthy() const;
 
+    // return true if any battery is reporting a fault condition, for operator
+    // annunciation only. Deliberately separate from healthy(): healthy() means
+    // "the telemetry can be trusted" and gates SoC reporting and the SoC
+    // failsafes, so it must not be used to signal a bad pack condition.
+    bool has_fault() const;
+
     /// voltage - returns battery voltage in volts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
@@ -330,6 +336,16 @@ private:
     /// returns the failsafe state of the battery
     Failsafe check_failsafe(const uint8_t instance);
     void check_failsafes(void); // checks all batteries failsafes
+
+    // Re-announce an active pack fault to the operator on a timer while armed.
+    // Division of labour: the BMS interface board owns ONSET (it emits a named
+    // message on the 0->1 edge of every error bit), this owns PERSISTENCE. We
+    // deliberately stay silent at onset so the operator does not get the same
+    // condition twice in two seconds at two different severities.
+    void annunciate_faults(void);
+
+    uint32_t _fault_announce_ms;        // start of the current re-announce interval
+    bool     _fault_active;             // a fault was already present last pass, so onset has been announced by the BMS interface board
 
     battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;
     const int8_t *_failsafe_priorities; // array of failsafe priorities, sorted highest to lowest priority, -1 indicates no more entries

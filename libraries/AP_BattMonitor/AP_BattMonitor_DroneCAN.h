@@ -28,6 +28,9 @@ enum BMS_ErrorFlags : uint32_t {
     BMS_ERR_CELL_UNDERTEMP       = 1UL << 21,
     BMS_ERR_GENERIC              = 1UL << 20,
     BMS_ERR_BAY_CHG_ID_LOSS      = 1UL << 19,
+    // cell >100C or FET >110C. Firmware-derived in the pack rather than a BQ
+    // status bit, so it can be set on its own. Most severe pack condition.
+    BMS_ERR_CRITICAL_THERMAL     = 1UL << 18,
     // Warnings (lower 16 bits) - do not block arming
     BMS_WARN_CELL_TEMP           = 1UL << 15,
     BMS_WARN_CHIP_TEMP           = 1UL << 14,
@@ -39,6 +42,18 @@ enum BMS_ErrorFlags : uint32_t {
 #define BMS_ERROR_MASK  0xFFFF0000UL
 // Mask for warnings only (lower 16 bits) - these allow arming but may be reported
 #define BMS_WARNING_MASK  0x0000FFFFUL
+
+// Subset of BMS_ERROR_MASK meaning the telemetry itself cannot be trusted, as
+// opposed to meaning the pack is in a bad condition. Only these flags may clear
+// _state.healthy, because healthy is defined as "communicating properly" and it
+// gates capacity_remaining_pct(), which in turn gates the BATT_LOW_SOC and
+// BATT_CRT_SOC failsafes in check_failsafe_types(). A pack-condition fault must
+// never disable a failsafe.
+//   COMM_BQ76942 - the BMS cannot read its analog front end, so voltage,
+//                  current, temperature and SoC are all stale. The receive
+//                  timeout in read() cannot catch this: the interface board
+//                  keeps publishing BatteryInfo at 10Hz with the last values.
+#define BMS_DATA_INVALID_MASK  (BMS_ERR_COMM_BQ76942)
 
 // Battery operating modes (must match BMS interface firmware)
 enum BMS_OperatingMode : uint8_t {
@@ -96,6 +111,11 @@ public:
 
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     uint32_t get_mavlink_fault_bitmask() const override;
+
+    // describe the highest-priority active error flag. returns false if no
+    // error flag (upper 16 bits) is set. see the implementation for why this is
+    // separate from get_not_ready_reason().
+    bool fault_string(char *buffer, size_t buflen) const;
 
     // return battery operating mode
     uint8_t get_operating_mode() const override { return _operating_mode; }

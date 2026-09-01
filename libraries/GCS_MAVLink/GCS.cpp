@@ -222,7 +222,11 @@ void GCS::update_sensor_status_flags()
     if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-    if (battery.healthy() && !battery.has_failsafed()) {
+    // has_fault() is separate from healthy() on purpose: healthy() means the
+    // telemetry is trustworthy, while has_fault() means the pack is in a bad
+    // condition. Both should clear the sensor health bit so the operator gets a
+    // persistent indication, but only healthy() may gate SoC reporting.
+    if (battery.healthy() && !battery.has_failsafed() && !battery.has_fault()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 #endif

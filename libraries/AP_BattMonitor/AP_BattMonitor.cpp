@@ -41,6 +41,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+// How often an active, persistent pack fault is re-announced to the operator
+// while armed. Matches AP_Arming's PREARM_DISPLAY_PERIOD so the cadence feels
+// the same as the pre-arm reporting the pilot already knows.
+#ifndef BATTERY_FAULT_ANNOUNCE_MS
+#define BATTERY_FAULT_ANNOUNCE_MS 30000U
+#endif
+
 AP_BattMonitor *AP_BattMonitor::_singleton;
 
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
@@ -467,6 +474,8 @@ AP_BattMonitor::init()
 
     _highest_failsafe_priority = INT8_MAX;
     _announced_failsafe = Failsafe::None;
+    _fault_announce_ms = 0;
+    _fault_active = false;
 
 #ifdef HAL_BATT_MONITOR_DEFAULT
     _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
@@ -736,7 +745,9 @@ void AP_BattMonitor::read()
     }
 
     check_failsafes();
-    
+
+    annunciate_faults();
+
     checkPoweringOff();
 }
 
@@ -1325,6 +1336,116 @@ bool AP_BattMonitor::healthy() const
         }
     }
     return true;
+}
+
+/*
+  check whether any battery is reporting a fault condition. Used for operator
+  annunciation (eg. the SYS_STATUS battery sensor health bit) so that a bad pack
+  condition stays visible for as long as it lasts, rather than only appearing as
+  a one-shot text message.
+
+  Routed through get_mavlink_charge_state() so it inherits that call's debounce:
+  DroneCAN backends require error flags to persist for
+  AP_BATTMONITOR_UAVCAN_ERROR_DEBOUNCE_MS before reporting UNHEALTHY, which
+  keeps transient hot-swap faults from flickering the indicator.
+
+  This must never gate failsafes or SoC reporting - see has_fault() in the
+  header for why that distinction matters.
+ */
+bool AP_BattMonitor::has_fault() const
+{
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (drivers[i] == nullptr || configured_type(i) == Type::NONE) {
+            continue;
+        }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
+        if (get_mavlink_charge_state(i) == MAV_BATTERY_CHARGE_STATE_UNHEALTHY) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  Re-announce an active pack fault while armed.
+
+  Division of labour with the BMS interface board:
+    onset       -> the interface board, which emits a named message on the 0->1
+                   edge of every error bit (eg. "BATT 1:CELL OVERTEMP") at
+                   LogLevel ERROR.
+    persistence -> here. The board never repeats, so without this a fault that
+                   stays set is annunciated exactly once and then scrolls off
+                   the GCS message list.
+
+  We deliberately do NOT announce at onset: doing so put the same condition on
+  screen twice within about a second, worded differently and at a lower
+  severity than the board's message, which reads like a de-escalation when
+  nothing has improved. The first repeat lands one full interval after onset.
+
+  Other deliberate choices:
+   - armed only. Disarmed, AP_Arming already re-displays a specific pre-arm
+     reason every PREARM_DISPLAY_PERIOD seconds.
+   - one line, not one per flag. fault_string() returns only the highest
+     priority condition, so a multi-flag fault does not spam the operator.
+   - InternalUseOnly instances are skipped, matching check_failsafes().
+ */
+void AP_BattMonitor::annunciate_faults(void)
+{
+#if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+    if (!hal.util->get_soft_armed()) {
+        // disarmed: the pre-arm check is the operator's channel for this
+        _fault_active = false;
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (drivers[i] == nullptr ||
+            allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            continue;
+        }
+        if (option_is_set(i, AP_BattMonitor_Params::Options::InternalUseOnly)) {
+            continue;
+        }
+        const AP_BattMonitor_DroneCAN *dc =
+            static_cast<const AP_BattMonitor_DroneCAN*>(drivers[i]);
+
+        // only annunciate faults that have settled, so a hot-swap transient
+        // does not produce a spurious in-flight warning
+        if (!dc->has_persistent_error_flags()) {
+            continue;
+        }
+
+        char reason[50] {};
+        if (!dc->fault_string(reason, sizeof(reason))) {
+            continue;
+        }
+
+        if (!_fault_active) {
+            // onset. The interface board is announcing this right now, so stay
+            // quiet and just start the clock for the first repeat.
+            _fault_active = true;
+            _fault_announce_ms = now;
+            return;
+        }
+
+        if ((now - _fault_announce_ms) < BATTERY_FAULT_ANNOUNCE_MS) {
+            return;
+        }
+
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d fault: %s",
+                      user_display_number(i), reason);
+        _fault_announce_ms = now;
+        return;   // one message per pass, worst battery wins
+    }
+
+    // nothing faulted any more. The interface board sends its own CLEARED
+    // message on the 1->0 edge, so again we stay quiet and simply re-arm.
+    _fault_active = false;
+#endif  // AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
 }
 
 bool AP_BattMonitor::dronecan_all_batteries_ready_for_arm() const

@@ -27,7 +27,7 @@
 #
 # The DEV build (CubeOrangePlus-ODID-DEV) deliberately reports this SAME version
 # string -- it is the same firmware baseline. Its DEV-ness is signalled by the
-# MAV_SEVERITY_WARNING "DEV BUILD - PARAMS UNLOCKED" banner that follows this one,
+# MAV_SEVERITY_WARNING "DEV BUILD - NOT FOR PRODUCTION" banner that follows it,
 # by the apj "summary" field, and by the release filename. Keeping one version
 # number means there is only ever one place to bump.
 

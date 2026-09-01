@@ -97,8 +97,11 @@ static inline void xplorer_param_clamp_boot_scrub(void)
 #if XPLORER_DEV_UNLOCK_ENABLED
     // DEV build: without this, every reboot would silently scrub the tuning
     // values an engineer had just set on the overlapping clamped params.
+    // Detail line only - the "DEV BUILD - NOT FOR PRODUCTION" banner in
+    // GCS_Common.cpp carries the headline. Kept under the 50-char STATUSTEXT
+    // field so it survives on an OSD, which shows only the first chunk.
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                  "DEV BUILD: param clamps and %u @READONLY groups bypassed",
+                  "DEV: %u param groups unlocked",
                   (unsigned)XPLORER_DEV_UNLOCK_COUNT);
     return;
 #else
