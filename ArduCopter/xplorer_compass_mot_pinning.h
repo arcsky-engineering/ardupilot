@@ -20,6 +20,15 @@
      canonical table below. To make a recalibration stick, update the table
      in this file and rebuild firmware. This is intentional for a locked
      production build where canonical values are part of the signed image.
+
+   Device IDs below were validated live over MAVLink on 2026-09-01 against the
+   dev airframe: Ark Mag + Cube Orange+ internal + an OLDER single-compass Here4
+   (RM3100 only). The NEWER Here4 is the dual-compass one and adds a second
+   sensor on the same node; both variants are covered by the table.
+   The DroneCAN IDs are deterministic: node IDs on both peripherals are set
+   STATICALLY, and CAN_P1_DRIVER == CAN_P2_DRIVER == 1 puts both physical CAN
+   ports on driver index 0, so neither the node-ID nor the bus field of the
+   devid can shift with DNA allocation order or a harness reroute.
  */
 
 #pragma once
@@ -37,11 +46,26 @@ struct XplorerCompassMot {
 };
 
 // Canonical compass-motor compensation per physical device.
-// Values mirror defaults.parm; update both together if recalibrating.
+// MOT values are NOT seeded in defaults.parm (stripped in 6f1d594) — this table
+// is their only source of truth. Devid encoding for DroneCAN mags is
+// make_bus_id(UAVCAN, driver_index, node_id, sensor_id + 1); see
+// AP_Compass_DroneCAN::get_dronecan_backend().
 static const XplorerCompassMot xplorer_compass_mot_table[] = {
-    {   96515u,   5.4f,  -0.6f,  -3.2f },  // RM3100 (external, expected slot 1 via PRIO1_ID)
-    {  162051u,   4.9f,   0.2f,  -2.8f },  // Here4 AKM via DroneCAN (expected slot 2 via PRIO2_ID)
-    { 1313809u,   0.0f,   0.0f,   0.0f },  // CubeOrangePlus internal IST8310 (expected slot 3 via PRIO3_ID)
+    //  devid        MOT_X   MOT_Y   MOT_Z
+    {   96259u,   0.0f,   0.0f,   0.0f },  // Ark Mag, node 120 sensor 0 — pinned to PRIO1. No
+                                           // compassmot by design: measured clean, left at zero.
+    {   96515u,   5.4f,   0.0f,  -3.2f },  // Here4 RM3100, node 121 sensor 0 — pinned to PRIO2.
+                                           // Present on every Here4 version, old and new.
+                                           // Y deliberately 0: its sign was ambiguous across
+                                           // battery packs, so zero was chosen as the safe value.
+    {  162051u,   0.0f,   0.0f,   0.0f },  // Here4 second compass, node 121 sensor 1. Present
+                                           // only on the NEWER dual-compass Here4, and not used
+                                           // for yaw (USE3=0), so held at zero rather than
+                                           // carrying the old unverified 4.9/0.2/-2.8 forward.
+    { 1313809u,   0.0f,   0.0f,   0.0f },  // Cube Orange+ internal AK09918, I2C2 0x0C.
+    {  592913u,   0.0f,   0.0f,   0.0f },  // Same slot on AK09916-fitted Cube batches. devtype is
+                                           // read from the chip at runtime, so the devid differs.
+                                           // Computed, not yet observed on hardware.
 };
 
 static const uint8_t XPLORER_COMPASS_MOT_COUNT =
@@ -110,6 +134,12 @@ static inline void xplorer_compass_mot_apply_for_slot(const char *dev_id_name,
 
 // Boot-time alignment for all three compass slots. Call once during init,
 // after parameter storage and compass detection are complete.
+//
+// Slots 1 and 2 are pinned by PRIO1_ID/PRIO2_ID to the Ark Mag and the Here4
+// RM3100. Slot 3 is left floating: it holds the Cube internal on airframes with an
+// older single-compass Here4, and the Here4 second compass on airframes with the
+// newer dual-compass Here4. That is safe here because every device that can land
+// there is a zero entry above, and an unrecognised device is a no-op.
 static inline void xplorer_compass_mot_boot_align(void)
 {
     xplorer_compass_mot_apply_for_slot("COMPASS_DEV_ID",

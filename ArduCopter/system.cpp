@@ -211,9 +211,7 @@ void Copter::init_ardupilot()
     // Xplorer: align compass-motor compensation values to the device currently
     // in each compass slot. Defends against slot shuffling silently mis-applying
     // MOT compensation to the wrong physical sensor.
-    // TEMP-COMPASS-EXPERIMENT: disabled to allow live experimentation with
-    // compass ordering / MOT values. Revert (uncomment) before production build.
-    // xplorer_compass_mot_boot_align();
+    xplorer_compass_mot_boot_align();
 
     // flag that initialisation has completed
     ap.initialised = true;
