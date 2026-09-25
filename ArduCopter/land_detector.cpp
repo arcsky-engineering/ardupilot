@@ -226,6 +226,15 @@ void Copter::set_land_complete(bool b)
     // tell AHRS flying state
     set_likely_flying(!b);
 
+#if MODE_AUTO_ENABLED
+    // a landing away from AUTO means any mission in progress was interrupted on the ground
+    // (battery swap, breakout to LAND); AUTO needs to know so it can decide what to do with
+    // the mission's camera trigger distance on the way back in. See AUTO_CAM_RSM.
+    if (b && flightmode->mode_number() != Mode::Number::AUTO) {
+        mode_auto.note_landed_out_of_auto();
+    }
+#endif
+
     if (!b) {
         // not landed, no further action
         return;

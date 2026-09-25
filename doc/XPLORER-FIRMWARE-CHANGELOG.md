@@ -23,6 +23,15 @@ not field-upgradable in place.
 
 ---
 
+## v1.0.3 — 2026-09-25
+
+### UPDATED AUTO MISSION CAMERA BEHAVIOR
+
+### Added
+- feature to allow breaking out of auto mission and resuming while still retaining trigger distance
+
+---
+
 ## v1.0.2 — unreleased
 
 ### Fixed

@@ -53,8 +53,8 @@ local PARAM_TABLE     = {
   { 'SPEED',   5},   -- 4:  figure-8 / maneuver speed (m/s)
   { 'PNUM',    1},   -- 5:  vendor pattern (1=Phoenix, 2=IL, 3=YS)
   { 'SLSPD',   8},   -- 6:  straight line speed (m/s)
-  { 'CHN1',   10},   -- 7:  RC channel for primary trigger
-  { 'CHN2',   11},   -- 8:  RC channel for secondary trigger
+  { 'CHN1',    0},   -- 7:  RC channel for primary trigger (0=disabled, GCS only)
+  { 'CHN2',    0},   -- 8:  RC channel for secondary trigger (0=disabled, GCS only)
   { 'SHAPE',   0},   -- 9:  figure-8 shape (0=lemniscate, 1=circles)
   { 'ATIME',  10},   -- 10: accel/decel ramp time (s)
   { 'TRIGGER', 0},   -- 11: GCS trigger (0=idle, 1=start CHN1, 2=start CHN2)

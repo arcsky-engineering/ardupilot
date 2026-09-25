@@ -557,6 +557,16 @@ public:
         NAV_ATTITUDE_TIME,
     };
 
+    // AUTO_CAM_RSM: what happens to a mission's DO_SET_CAM_TRIGG_DIST value when AUTO is left
+    enum class AutoCamResume : uint8_t {
+        NEVER   = 0,    // never touch it; CAM_AUTO_ONLY governs triggering out of AUTO
+        ON_LAND = 1,    // as NEVER, but a landing out of AUTO zeroes it until the resume WP
+        ALWAYS  = 2,    // zero it on every AUTO exit, restore only at the resume WP
+    };
+
+    // called by the land detector when a landing is detected while not in AUTO
+    void note_landed_out_of_auto();
+
     // set submode.  returns true on success, false on failure
     void set_submode(SubMode new_submode);
 
@@ -768,10 +778,15 @@ private:
     bool resume_climb_pending;      // true while doing the vertical climb to first WP altitude
     Location resume_climb_dest;     // the actual WP destination, deferred until climb completes
 
-    // Resume-trigger-distance restore: on AUTO exit we zero CAM_TRIG_DIST so the breakout
-    // / battery-swap transit doesn't fire shutter. On the first do_nav_wp after AUTO entry
-    // we scan the mission backward for the most recent DO_SET_CAM_TRIGG_DIST and stash its
-    // value here. The stashed value is applied to AP_Camera once we reach the resume WP.
+    // Resume-trigger-distance restore (see AUTO_CAM_RSM). When the trigger distance has
+    // been zeroed so the transit back to the mission doesn't fire the shutter, the first
+    // do_nav_wp after AUTO entry scans the mission backward for the most recent
+    // DO_SET_CAM_TRIGG_DIST and stashes its value here; it is applied to AP_Camera once we
+    // reach the resume WP. When the value was left alone (an in-air pause) none of this
+    // runs and capture continues as soon as AUTO is re-entered.
+    bool defer_cam_trig_restore;        // true if the trigger distance was zeroed for this AUTO entry
+    bool landed_out_of_auto;            // true if a landing was detected since we last left AUTO
+    bool mission_interrupted;           // true if a running mission was left part-way through
     bool resume_pending_trig_dist;
     float resume_pending_trig_dist_m;
 

@@ -1367,6 +1367,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("LAND_RNG_EN", 25, ParametersG2, land_rng_en, 0),
 
+    // @Param: AUTO_CAM_RSM
+    // @DisplayName: Auto-Mode Camera Trigger Distance Resume Policy
+    // @Description: Controls what happens to the camera trigger distance set by a DO_SET_CAM_TRIGG_DIST mission command when AUTO is left and re-entered. 0 (Never) leaves the trigger distance untouched, so capture resumes as soon as AUTO is re-entered; set CAM_AUTO_ONLY=1 to suppress triggering while out of AUTO. 1 (OnLand) is the same, except that landing while out of AUTO also zeroes the trigger distance, so the transit back after a battery swap is flown with the shutter off and capture restarts on arrival at the resume waypoint. 2 (Always) zeroes the trigger distance on every AUTO exit and only restores it on arrival at the resume waypoint, so any breakout stops capture for the remainder of that leg.
+    // @Values: 0:Never,1:OnLand,2:Always
+    // @User: Standard
+    AP_GROUPINFO("AUTO_CAM_RSM", 26, ParametersG2, auto_cam_rsm, 1),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

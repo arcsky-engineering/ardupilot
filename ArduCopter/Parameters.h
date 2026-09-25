@@ -714,6 +714,10 @@ public:
     // vertical climb to that WP's altitude before flying horizontally (only if airborne
     // and below the WP's alt).
     AP_Int8  auto_rsm_climb_en; // 0=disabled, 1=enabled
+
+    // Auto-mode camera trigger-distance resume policy: whether the mission's
+    // DO_SET_CAM_TRIGG_DIST value survives leaving AUTO. See ModeAuto::AutoCamResume.
+    AP_Int8  auto_cam_rsm;      // 0=never, 1=on land, 2=always
 };
 
 extern const AP_Param::Info        var_info[];

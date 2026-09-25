@@ -55,9 +55,33 @@ bool ModeAuto::init(bool ignore_checks)
         resume_climb_first_wp = true;
         resume_climb_pending = false;
 
-        // arm resume-trigger-distance restore: we may stash a value on the first do_nav_wp
+        // Decide how the mission's camera trigger distance is handled for this AUTO entry
+        // (see AUTO_CAM_RSM). A landing while out of AUTO is a battery swap or similar, so
+        // the flight back to the resume WP should be made with the shutter off: zero the
+        // trigger distance and defer the restore until we arrive. An in-air pause (breakout
+        // to LOITER and straight back) never left the survey line, so the value is left
+        // alone and capture continues immediately.
         resume_pending_trig_dist = false;
         resume_pending_trig_dist_m = 0.0f;
+        defer_cam_trig_restore = false;
+#if AP_CAMERA_ENABLED
+        switch ((AutoCamResume)copter.g2.auto_cam_rsm.get()) {
+        case AutoCamResume::ALWAYS:
+            // already zeroed on the way out in exit()
+            defer_cam_trig_restore = true;
+            break;
+        case AutoCamResume::ON_LAND:
+            if (landed_out_of_auto) {
+                // zeroed by note_landed_out_of_auto() when the landing was detected
+                defer_cam_trig_restore = true;
+            }
+            break;
+        case AutoCamResume::NEVER:
+            break;
+        }
+#endif
+        landed_out_of_auto = false;
+        mission_interrupted = false;
 
         // initialise mission change check (ignore results)
         IGNORE_RETURN(mis_change_detector.check_for_mission_change());
@@ -82,7 +106,10 @@ bool ModeAuto::init(bool ignore_checks)
 // stop mission when we leave auto mode
 void ModeAuto::exit()
 {
-    if (copter.mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
+    // note whether a mission was abandoned part-way through, so a later landing can tell a
+    // broken-out mission apart from an ordinary flight that was never in AUTO at all
+    mission_interrupted = (copter.mode_auto.mission.state() == AP_Mission::MISSION_RUNNING);
+    if (mission_interrupted) {
         copter.mode_auto.mission.stop();
     }
 #if HAL_MOUNT_ENABLED
@@ -90,13 +117,36 @@ void ModeAuto::exit()
 #endif  // HAL_MOUNT_ENABLED
 
 #if AP_CAMERA_ENABLED
-    // Zero CAM_TRIG_DIST so a breakout to LOITER (or hot-swap transit) doesn't fire the
-    // shutter. The original value, if it was set by a DO_SET_CAM_TRIGG_DIST in the mission
-    // before our resume index, is restored on the first WP reached after AUTO is re-entered.
-    copter.camera.set_trigger_distance(0);
+    // Under AUTO_CAM_RSM=Always, zero CAM_TRIG_DIST on the way out so no breakout can fire
+    // the shutter; the value is recovered from the mission on arrival at the resume WP.
+    // The other policies leave it alone here so that pausing to LOITER and returning to
+    // AUTO resumes capture straight away - CAM_AUTO_ONLY=1 suppresses triggering while
+    // out of AUTO without destroying the value.
+    if ((AutoCamResume)copter.g2.auto_cam_rsm.get() == AutoCamResume::ALWAYS) {
+        copter.camera.set_trigger_distance(0);
+    }
 #endif
 
     auto_RTL = false;
+}
+
+// note_landed_out_of_auto - called by the land detector when a landing is detected while
+// not in AUTO. Under AUTO_CAM_RSM=OnLand this is the battery-swap case: drop the mission's
+// trigger distance now so neither the time on the ground nor the flight back to the resume
+// WP fires the shutter. The value is recovered from the mission on the next AUTO entry.
+void ModeAuto::note_landed_out_of_auto()
+{
+    if (!mission_interrupted) {
+        // nothing was interrupted, so there is no mission-set trigger distance to protect.
+        // Leave CAM1_TRIGG_DIST alone: it may have been set by hand for a manual survey.
+        return;
+    }
+    landed_out_of_auto = true;
+#if AP_CAMERA_ENABLED
+    if ((AutoCamResume)copter.g2.auto_cam_rsm.get() == AutoCamResume::ON_LAND) {
+        copter.camera.set_trigger_distance(0);
+    }
+#endif
 }
 
 // auto_run - runs the auto controller
@@ -1613,10 +1663,11 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     resume_climb_first_wp = false;
 
 #if AP_CAMERA_ENABLED
-    // On the first WP after entering AUTO, scan the mission backward from this command
-    // for the most recent DO_SET_CAM_TRIGG_DIST. If found, stash its value to be applied
-    // once we reach this WP (the resume target). Camera stays off through the transit.
-    if (first_wp && cmd.index > 1) {
+    // On the first WP after entering AUTO, and only if the trigger distance was zeroed for
+    // this entry (see AUTO_CAM_RSM), scan the mission backward from this command for the
+    // most recent DO_SET_CAM_TRIGG_DIST. If found, stash its value to be applied once we
+    // reach this WP (the resume target). Camera stays off through the transit.
+    if (first_wp && defer_cam_trig_restore && cmd.index > 1) {
         AP_Mission::Mission_Command tmp_cmd;
         for (uint16_t i = cmd.index; i-- > 1;) {
             if (!mission.read_cmd_from_storage(i, tmp_cmd)) {
