@@ -141,7 +141,7 @@ fi
 
 if [ -f "$PARAM_DOCS" ] && [ "$CHECK_TAG" = "1" ]; then
     $PYTHON "$PARAM_DOCS" --check \
-        || fail "parameter docs are stale or drifting (see above). Run: $PYTHON $PARAM_DOCS"
+        || fail "parameter docs are stale or drifting (see above). Run: $PYTHON $PARAM_DOCS --fix"
 fi
 
 if [ "$CHECK_ONLY" = "1" ]; then

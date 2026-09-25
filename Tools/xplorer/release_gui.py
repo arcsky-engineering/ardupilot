@@ -372,7 +372,7 @@ def gather_status(repo, bash, py=None):
             probs = [l.strip('- ').strip() for l in out.splitlines()
                      if l.strip().startswith('-')]
             add('Parameter docs', WARN, '%d issue(s)' % len(probs),
-                probs[0] if probs else 'run gen_param_docs.py')
+                probs[0] if probs else 'click "Regenerate param docs"')
 
     # --- cygwin ---
     if os.path.isfile(bash):
@@ -885,7 +885,7 @@ class App(tk.Tk):
                      'Python, or set its path under Settings.')
             return
         self._spawn('Regenerate parameter documentation',
-                    [self.py, P['param_docs']])
+                    [self.py, P['param_docs'], '--fix'])
 
     def do_bump(self):
         new = self.ver_var.get().strip()

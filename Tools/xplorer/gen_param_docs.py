@@ -4,6 +4,7 @@ Generate the Xplorer parameter disposition document from firmware source.
 
     python Tools/xplorer/gen_param_docs.py              # write all outputs
     python Tools/xplorer/gen_param_docs.py --check      # CI: fail on drift
+    python Tools/xplorer/gen_param_docs.py --fix        # repair drift, then write
     python Tools/xplorer/gen_param_docs.py --format html
 
 Everything in the output is derived from source. Do not hand-edit the outputs -
@@ -28,6 +29,7 @@ import csv
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -230,10 +232,28 @@ def parse_lua_params(rel, prefix):
     return out
 
 
+# Trees whose @Param blocks param_parse.py reads. apm.pdef.json is regenerated
+# whenever any .cpp/.h under these is newer than it.
+PDEF_SOURCE_DIRS = ('ArduCopter', 'libraries')
+
+
+def pdef_is_stale():
+    if not os.path.exists(PDEF_JSON):
+        return True
+    built = os.path.getmtime(PDEF_JSON)
+    for d in PDEF_SOURCE_DIRS:
+        for root, _, files in os.walk(os.path.join(REPO, d)):
+            for f in files:
+                if f.endswith(('.cpp', '.h')) and \
+                        os.path.getmtime(os.path.join(root, f)) > built:
+                    return True
+    return False
+
+
 def ensure_pdef(force=False):
     """Generate apm.pdef.json if absent or older than the newest source file."""
     script = os.path.join(REPO, 'Tools/autotest/param_metadata/param_parse.py')
-    if os.path.exists(PDEF_JSON) and not force:
+    if not force and not pdef_is_stale():
         return
     print('  generating apm.pdef.json (%s) ...' % VEHICLE)
     subprocess.check_call([sys.executable, script, '--vehicle', VEHICLE,
@@ -367,7 +387,8 @@ def build(dev=False):
                     problems.append(
                         'Lua applet mirror out of sync: %s differs from the '
                         'tracked %s - the deployed script is not the documented '
-                        'one' % (mirror, rel))
+                        'one (--fix copies the tracked file over it)'
+                        % (mirror, rel))
 
     print('  defaults.parm      %d params (%d @READONLY)'
           % (len(defaults), sum(1 for v in defaults.values() if v[1])))
@@ -488,15 +509,15 @@ def build(dev=False):
     # drift checks
     extra = sorted(set(defaults) - set(names))
     if extra:
-        problems.append('in defaults.parm but not in the manifest: %s'
-                        % ', '.join(extra))
+        problems.append('in defaults.parm but not in the manifest: %s '
+                        '(--fix adds them)' % ', '.join(extra))
     if baseline:
         added = params_added_since(baseline)
         unlisted = sorted(added - set(names))
         if unlisted:
             problems.append(
                 'param(s) added to source since baseline %s but missing from the '
-                'manifest: %s' % (baseline, ', '.join(unlisted)))
+                'manifest: %s (--fix adds them)' % (baseline, ', '.join(unlisted)))
 
     meta_info = {
         'generated': datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC'),
@@ -529,6 +550,61 @@ def params_added_since(baseline):
                          diff, re.M):
         out.add(m.group(1))
     return out
+
+
+def add_to_manifest(new):
+    """Insert names into the manifest's sorted name list, keeping comments."""
+    lines = open(MANIFEST, encoding='utf-8').read().splitlines()
+    for n in sorted(new):
+        at = len(lines)
+        for i, line in enumerate(lines):
+            s = line.strip()
+            if not s or s.startswith('#'):
+                continue
+            if s > n:
+                at = i
+                break
+            at = i + 1
+        lines.insert(at, n)
+    with open(MANIFEST, 'w', encoding='utf-8', newline='\n') as f:
+        f.write('\n'.join(lines) + '\n')
+
+
+def apply_fixes():
+    """--fix: repair the drift that has a mechanical answer, before building.
+
+    The tracked Lua applet is what the firmware embeds (hwdef ROMFS), so it wins
+    over the deployed mirror; the old mirror is kept as .bak because it is
+    gitignored and would otherwise be unrecoverable. Manifest additions are only
+    made for full names confirmed by defaults.parm or the @Param metadata:
+    params_added_since() sees bare AP_GROUPINFO names, which for a library group
+    lack the prefix, and guessing that would put a bogus row in the doc.
+    """
+    for rel, mirror in LUA_DEPLOY_MIRROR.items():
+        tp, mp = os.path.join(REPO, rel), os.path.join(REPO, mirror)
+        if os.path.exists(mp) and os.path.exists(tp) and \
+                open(tp, encoding='utf-8', errors='ignore').read() != \
+                open(mp, encoding='utf-8', errors='ignore').read():
+            shutil.copy2(mp, mp + '.bak')
+            shutil.copyfile(tp, mp)
+            print('  fixed: copied %s over %s (old copy kept as %s.bak)'
+                  % (rel, mirror, os.path.basename(mirror)))
+
+    ensure_pdef()
+    names, baseline = load_manifest()
+    defaults = set(parse_defaults_parm(DEFAULTS_PARM))
+    missing = defaults - set(names)
+    if baseline:
+        missing |= params_added_since(baseline) - set(names)
+    known = defaults | set(load_pdef())
+    addable = sorted(missing & known)
+    if addable:
+        add_to_manifest(addable)
+        print('  fixed: added to %s: %s'
+              % (os.path.relpath(MANIFEST, REPO), ', '.join(addable)))
+    for n in sorted(missing - known):
+        warn('%s looks new but matches no full param name; add it to the '
+             'manifest by hand' % n)
 
 
 # --------------------------------------------------------------------------
@@ -824,10 +900,18 @@ def main():
                          'change or drift is detected (for CI)')
     ap.add_argument('--refresh-metadata', action='store_true',
                     help='force regeneration of apm.pdef.json')
+    ap.add_argument('--fix', action='store_true',
+                    help='before writing, sync the deployed Lua mirror from the '
+                         'tracked applet and add new params to the manifest')
     args = ap.parse_args()
+    if args.fix and args.check:
+        ap.error('--fix and --check are mutually exclusive')
 
     if args.refresh_metadata and os.path.exists(PDEF_JSON):
         os.remove(PDEF_JSON)
+    if args.fix:
+        print('Applying fixes ...')
+        apply_fixes()
 
     rows, meta_info, problems, notices = build(dev=args.dev)
 
@@ -871,7 +955,7 @@ def main():
         for p in problems:
             print('  - %s' % p, file=sys.stderr)
         if args.check:
-            print('\nRun: python Tools/xplorer/gen_param_docs.py', file=sys.stderr)
+            print('\nRun: python Tools/xplorer/gen_param_docs.py --fix', file=sys.stderr)
             return 1
     else:
         print('\nNo problems detected.')

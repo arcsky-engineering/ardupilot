@@ -9,6 +9,7 @@ python Tools/xplorer/gen_param_docs.py                    # all three outputs
 python Tools/xplorer/gen_param_docs.py --format html      # just the web page
 python Tools/xplorer/gen_param_docs.py --refresh-metadata # re-read @Param docs
 python Tools/xplorer/gen_param_docs.py --check            # CI: fail on drift
+python Tools/xplorer/gen_param_docs.py --fix              # repair drift, then write
 python Tools/xplorer/gen_param_docs.py --dev              # the DEV build's disposition
 ```
 
@@ -114,7 +115,7 @@ Buttons cover the whole cycle:
 | Button | What it runs |
 |---|---|
 | Build firmware (test) | `./waf configure --board <sel> --signed-fw --private-key … && ./waf copter` |
-| Regenerate param docs | `gen_param_docs.py` |
+| Regenerate param docs | `gen_param_docs.py --fix` |
 | Set version | rewrites `xplorer_version.inc` |
 | Edit changelog | opens `doc/XPLORER-FIRMWARE-CHANGELOG.md` |
 | Stage all + commit | `git add -A` then `git commit -m …` |
@@ -315,13 +316,14 @@ is by prefix, so `ATC_` covers all 60 `ATC_RAT_*` params) and re-run with
 2. Seed it in **both** `CubeOrangePlus-ODID/defaults.parm` and
    `CubeOrangePlus/defaults.parm` (kept byte-identical), adding `@READONLY` if it
    should be locked.
-3. Add the name to `param_manifest.txt`, and a row to `param_notes.csv` if
-   there is anything non-obvious about it.
+3. Add a row to `param_notes.csv` if there is anything non-obvious about it.
+   Step 5's `--fix` adds the name to `param_manifest.txt`.
 4. Add a clamp in `GCS_Param_Clamps.h` if it needs a hard bound. Skip this when
    `0` means "disabled" — a single min/max window cannot express "0 or 15..40",
    and the boot scrub would rewrite a deliberately-disabled value.
-5. Run `python Tools/xplorer/gen_param_docs.py` and move `baseline-commit` in
-   the manifest to HEAD.
+5. Commit, run `python Tools/xplorer/gen_param_docs.py --fix` (or the GUI's
+   "Regenerate param docs"), and move `baseline-commit` in the manifest to HEAD.
+   `apm.pdef.json` regenerates on its own whenever a `.cpp`/`.h` is newer than it.
 
 Lua applet params work the same way: document them with `// @Param:` blocks
 inside `--[[ ]]`, exactly as `libraries/AP_Scripting/applets/BattEstimate.lua`
